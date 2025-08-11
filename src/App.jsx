@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import {Login} from './views/Login';
-import {Points} from './views/Points';
-import {Register} from './views/Register';
-import Header  from './components/Header';
+import { Login } from './views/Login';
+import { Points } from './views/Points';
+import { RegisterPurchase } from './views/RegisterPurchase';
+import { RegisterClient } from './views/RegisterClient';
+import Header from './components/Header';
 
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [transactions, setTransactions] = useState([]);
+  const [clients, setClients] = useState([]);
 
   const handleLogin = (status) => {
     setIsAuthenticated(status);
@@ -21,6 +23,10 @@ const App = () => {
     setTransactions(prev => [transaction, ...prev]);
   };
 
+  const handleAddClient = (client) => {
+    setClients(prev => [client, ...prev]);
+  };
+
   return (
     <Router>
       <div className="min-h-screen bg-gray-100">
@@ -31,7 +37,7 @@ const App = () => {
             index
             element={
               isAuthenticated ? (
-                <Points transactions={transactions} />
+                <Points transactions={transactions} clients={clients} />
               ) : (
                 <Navigate to="/login" replace />
               )
@@ -48,10 +54,23 @@ const App = () => {
             } 
           />
           <Route 
-            path="/register" 
+            path="/registrar-cliente" 
             element={
               isAuthenticated ? (
-                <Register onAddTransaction={handleAddTransaction} />
+                <RegisterClient onAddClient={handleAddClient} />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            } 
+          />
+          <Route 
+            path="/registrar-compra" 
+            element={
+              isAuthenticated ? (
+                <RegisterPurchase 
+                  onAddTransaction={handleAddTransaction} 
+                  clients={clients} 
+                />
               ) : (
                 <Navigate to="/login" replace />
               )
