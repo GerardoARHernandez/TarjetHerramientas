@@ -1,4 +1,9 @@
-export const Points = ({ transactions, clients }) => {
+// src/apps/admin-puntos/views/Points.jsx
+import { usePoints } from '../../../contexts/PointsContext';
+
+export const Points = () => {
+  const { transactions, clients } = usePoints();
+
   // Combinar datos de clientes con sus transacciones
   const clientsWithTransactions = clients.map(client => {
     const clientTransactions = transactions.filter(t => t.clientId === client.id);

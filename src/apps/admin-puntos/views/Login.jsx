@@ -1,33 +1,24 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+// src/apps/admin-puntos/views/Login.jsx
+import { useState, useEffect } from 'react';
+import { useAuth } from '../../../contexts/AuthContext';
 
-export const Login = ({ onLogin }) => {
+export const Login = () => {
   const [credentials, setCredentials] = useState({ username: '', password: '' });
-  const [error, setError] = useState('');
-  const navigate = useNavigate();
+  const { login, isLoading, error, clearError } = useAuth();
 
-  // Credenciales válidas solo para administrador
-  const adminCredentials = {
-    username: 'admin',
-    password: '123'
-  };
+  // Limpiar error cuando el componente se monta o las credenciales cambian
+  useEffect(() => {
+    clearError();
+  }, [credentials, clearError]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
 
     if (!credentials.username || !credentials.password) {
-      setError('Por favor ingresa usuario y contraseña');
       return;
     }
 
-    if (credentials.username === adminCredentials.username && 
-        credentials.password === adminCredentials.password) {
-      onLogin(true);
-      navigate('/');
-    } else {
-      setError('Credenciales incorrectas');
-    }
+    await login(credentials);
   };
 
   return (
@@ -55,6 +46,7 @@ export const Login = ({ onLogin }) => {
               onChange={(e) => setCredentials({...credentials, username: e.target.value})}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
               placeholder="Ingresa tu usuario"
+              disabled={isLoading}
             />
           </div>
           
@@ -68,16 +60,37 @@ export const Login = ({ onLogin }) => {
               onChange={(e) => setCredentials({...credentials, password: e.target.value})}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
               placeholder="Ingresa tu contraseña"
+              disabled={isLoading}
             />
           </div>
           
           <button
             type="submit"
-            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold py-3 px-4 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-200 transform hover:scale-105"
+            disabled={isLoading || !credentials.username || !credentials.password}
+            className={`w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 ${
+              isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:from-blue-600 hover:to-purple-700'
+            }`}
           >
-            Iniciar Sesión
+            {isLoading ? (
+              <span className="flex items-center justify-center">
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Verificando...
+              </span>
+            ) : (
+              'Iniciar Sesión'
+            )}
           </button>
         </form>
+
+        {/* Información de demo */}
+        <div className="mt-6 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <p className="text-sm text-yellow-800 text-center">
+            <strong>Demo:</strong> Usuario: <code>admin</code> / Contraseña: <code>123</code>
+          </p>
+        </div>
       </div>
     </div>
   );

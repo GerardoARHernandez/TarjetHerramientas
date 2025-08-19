@@ -1,11 +1,14 @@
+// src/apps/admin-puntos/views/RegisterClient.jsx
 import { useState } from 'react';
+import { usePoints } from '../../../contexts/PointsContext';
 
-export const RegisterClient = ({ onAddClient }) => {
+export const RegisterClient = () => {
   const [formData, setFormData] = useState({ 
     name: '', 
     phone: '' 
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { addClient } = usePoints();
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -31,7 +34,7 @@ export const RegisterClient = ({ onAddClient }) => {
         registrationDate: new Date().toLocaleDateString('es-MX')
       };
 
-      onAddClient(newClient);
+      addClient(newClient);
       setFormData({ name: '', phone: '' });
       setIsSubmitting(false);
       alert(`Cliente registrado exitosamente:\n\nNombre: ${newClient.name}\nTeléfono: ${newClient.phone}`);

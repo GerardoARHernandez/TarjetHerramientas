@@ -1,6 +1,8 @@
+// src/apps/admin-puntos/views/RegisterPurchase.jsx
 import { useState, useEffect } from 'react';
+import { usePoints } from '../../../contexts/PointsContext';
 
-export const RegisterPurchase = ({ onAddTransaction, clients }) => {
+export const RegisterPurchase = () => {
   const [formData, setFormData] = useState({ 
     clientId: '',
     amount: '',
@@ -8,6 +10,8 @@ export const RegisterPurchase = ({ onAddTransaction, clients }) => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [filteredClients, setFilteredClients] = useState([]);
+  
+  const { clients, addTransaction } = usePoints();
 
   // Filtrar clientes cuando cambia el teléfono
   useEffect(() => {
@@ -84,7 +88,7 @@ export const RegisterPurchase = ({ onAddTransaction, clients }) => {
 
     // Simular tiempo de procesamiento
     setTimeout(() => {
-      onAddTransaction(transaction);
+      addTransaction(transaction);
       setFormData({ clientId: '', amount: '', phone: '' });
       setIsSubmitting(false);
       
@@ -143,7 +147,6 @@ Puntos otorgados: ${points}`);
               {filteredClients.map(client => (
                 <option key={client.id} value={client.id}>
                   {client.name} - {client.phone} 
-                  {client.totalPoints > 0 && ` (${client.totalPoints} pts)`}
                 </option>
               ))}
             </select>

@@ -1,88 +1,42 @@
-import { useState } from 'react';
+// src/App.jsx
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Login } from './views/Login';
-import { Points } from './views/Points';
-import { RegisterPurchase } from './views/RegisterPurchase';
-import { RegisterClient } from './views/RegisterClient';
-import Header from './components/Header';
+import { AuthProvider } from './contexts/AuthContext';
+import { PointsProvider } from './contexts/PointsContext';
+import AdminPointsRoutes from './apps/admin-puntos/routes';
+
+import DigitalMenusRoutes from './apps/menus/routes';
 
 const App = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [transactions, setTransactions] = useState([]);
-  const [clients, setClients] = useState([]);
-
-  const handleLogin = (status) => {
-    setIsAuthenticated(status);
-  };
-
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-  };
-
-  const handleAddTransaction = (transaction) => {
-    setTransactions(prev => [transaction, ...prev]);
-  };
-
-  const handleAddClient = (client) => {
-    setClients(prev => [client, ...prev]);
-  };
-
   return (
-    <Router>
-      <div className="min-h-screen bg-gray-100">
-        {isAuthenticated && <Header onLogout={handleLogout} />}
-        
-        <Routes>
-          <Route 
-            index
-            element={
-              isAuthenticated ? (
-                <Points transactions={transactions} clients={clients} />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            } 
-          />
-          <Route 
-            path="/login" 
-            element={
-              !isAuthenticated ? (
-                <Login onLogin={handleLogin} />
-              ) : (
-                <Navigate to="/" replace />
-              )
-            } 
-          />
-          <Route 
-            path="/registrar-cliente" 
-            element={
-              isAuthenticated ? (
-                <RegisterClient onAddClient={handleAddClient} />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            } 
-          />
-          <Route 
-            path="/registrar-compra" 
-            element={
-              isAuthenticated ? (
-                <RegisterPurchase 
-                  onAddTransaction={handleAddTransaction} 
-                  clients={clients} 
-                />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            } 
-          />
-          <Route 
-            path="*" 
-            element={<Navigate to={isAuthenticated ? "/" : "/login"} replace />} 
-          />
-        </Routes>
-      </div>
-    </Router>
+    <AuthProvider>
+      <PointsProvider>
+        <Router>
+          <div className="min-h-screen bg-blue-100">
+            <Routes>
+              <Route index element={<Navigate to="/points-admin" replace />} />
+              
+              {/* Página 1: Admin de Puntos */}
+              <Route 
+                path='/points-admin/*' 
+                element={<AdminPointsRoutes />} 
+              />
+
+              {/* Página 2: Menús Digitales (para implementar después) */}
+              <Route 
+                path='/digital-menus/*' 
+                element={<DigitalMenusRoutes />} 
+              />
+
+              {/* Ruta por defecto para URLs no encontradas */}
+              <Route 
+                path="*" 
+                element={<Navigate to="/points-admin" replace />} 
+              />
+            </Routes>
+          </div>
+        </Router>
+      </PointsProvider>
+    </AuthProvider>
   );
 };
 
