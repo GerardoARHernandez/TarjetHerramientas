@@ -16,6 +16,19 @@ function App() {
     setCategories([...categories, newCategory]);
   };
 
+  const editCategory = (categoryId, newName) => {
+    setCategories(categories.map(category => 
+      category.id === categoryId ? { ...category, name: newName } : category
+    ));
+  };
+
+  const deleteCategory = (categoryId) => {
+    // Primero eliminamos los productos de esa categoría
+    setProducts(products.filter(product => String(product.categoryId) !== String(categoryId)));
+    // Luego eliminamos la categoría
+    setCategories(categories.filter(category => category.id !== categoryId));
+  };
+
   const addProduct = (productData) => {
     const newProduct = {
       id: Date.now(),
@@ -42,6 +55,8 @@ function App() {
               categories={categories} 
               products={products}
               addCategory={addCategory}
+              editCategory={editCategory}
+              deleteCategory={deleteCategory}
               addProduct={addProduct}
               editProduct={editProduct}
             />

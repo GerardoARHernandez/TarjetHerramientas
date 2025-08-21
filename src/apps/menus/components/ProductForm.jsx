@@ -1,5 +1,6 @@
 // src/menus/components/ProductForm.jsx
 import { useState } from 'react';
+import { FiPlus, FiUploadCloud } from 'react-icons/fi';
 
 const ProductForm = ({ categories, onAddProduct }) => {
   const [productData, setProductData] = useState({
@@ -9,7 +10,8 @@ const ProductForm = ({ categories, onAddProduct }) => {
     categoryId: '',
     image: null
   });
-  const [showSuccess, setShowSuccess] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [imagePreview, setImagePreview] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -28,6 +30,7 @@ const ProductForm = ({ categories, onAddProduct }) => {
           ...productData,
           image: reader.result
         });
+        setImagePreview(reader.result);
       };
       reader.readAsDataURL(file);
     }
@@ -40,6 +43,7 @@ const ProductForm = ({ categories, onAddProduct }) => {
         ...productData,
         price: parseFloat(productData.price)
       });
+      
       // Reiniciar el formulario
       setProductData({
         name: '',
@@ -48,25 +52,24 @@ const ProductForm = ({ categories, onAddProduct }) => {
         categoryId: '',
         image: null
       });
+      setImagePreview(null);
+      
       // Limpiar el input de archivo
       document.getElementById('image').value = '';
+      
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
     }
-
-    setShowSuccess(true);
-
-    setTimeout(() => {
-      setShowSuccess(false)
-    }, 3000);
-
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
-      <h2 className="text-xl font-semibold mb-4">Crear Producto</h2>
-      <form onSubmit={handleSubmit}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-2" htmlFor="name">
+    <div className="p-6">
+      <h2 className="text-xl font-semibold mb-6 text-gray-800">Crear Nuevo Producto</h2>
+      
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-gray-700 mb-2 font-medium" htmlFor="name">
               Nombre del producto *
             </label>
             <input
@@ -75,31 +78,36 @@ const ProductForm = ({ categories, onAddProduct }) => {
               name="name"
               value={productData.name}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
               required
             />
           </div>
 
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-2" htmlFor="price">
+          <div>
+            <label className="block text-gray-700 mb-2 font-medium" htmlFor="price">
               Precio *
             </label>
-            <input
-              type="number"
-              id="price"
-              name="price"
-              value={productData.price}
-              onChange={handleChange}
-              min="0"
-              step="0.01"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
+            <div className="relative">
+              <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">
+                $
+              </span>
+              <input
+                type="number"
+                id="price"
+                name="price"
+                value={productData.price}
+                onChange={handleChange}
+                min="0"
+                step="0.01"
+                className="w-full pl-8 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                required
+              />
+            </div>
           </div>
         </div>
 
-        <div className="mb-4">
-          <label className="block text-gray-700 mb-2" htmlFor="description">
+        <div>
+          <label className="block text-gray-700 mb-2 font-medium" htmlFor="description">
             Descripción
           </label>
           <textarea
@@ -108,13 +116,14 @@ const ProductForm = ({ categories, onAddProduct }) => {
             value={productData.description}
             onChange={handleChange}
             rows="3"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+            placeholder="Describe el producto de manera atractiva..."
           ></textarea>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-2" htmlFor="categoryId">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-gray-700 mb-2 font-medium" htmlFor="categoryId">
               Categoría *
             </label>
             <select
@@ -122,7 +131,7 @@ const ProductForm = ({ categories, onAddProduct }) => {
               name="categoryId"
               value={productData.categoryId}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
               required
             >
               <option value="">Seleccionar categoría</option>
@@ -134,43 +143,55 @@ const ProductForm = ({ categories, onAddProduct }) => {
             </select>
           </div>
 
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-2" htmlFor="image">
+          <div>
+            <label className="block text-gray-700 mb-2 font-medium" htmlFor="image">
               Imagen (opcional)
             </label>
-            <input
-              type="file"
-              id="image"
-              accept="image/*"
-              onChange={handleImageChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <div className="relative border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors">
+              <input
+                type="file"
+                id="image"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              />
+              <FiUploadCloud className="mx-auto text-gray-400 mb-2" size={24} />
+              <p className="text-sm text-gray-600">
+                {imagePreview ? 'Imagen seleccionada' : 'Haz clic o arrastra una imagen aquí'}
+              </p>
+            </div>
           </div>
         </div>
 
-        {productData.image && (
-          <div className="mb-4">
-            <p className="text-gray-700 mb-2">Vista previa:</p>
-            <img 
-              src={productData.image} 
-              alt="Vista previa" 
-              className="h-32 object-cover rounded-md"
-            />
+        {imagePreview && (
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <p className="text-gray-700 mb-2 font-medium">Vista previa:</p>
+            <div className="flex justify-center">
+              <img 
+                src={imagePreview} 
+                alt="Vista previa" 
+                className="h-40 w-40 object-cover rounded-lg shadow-md"
+              />
+            </div>
           </div>
         )}
 
         <button
           type="submit"
-          className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-colors"
+          className="flex items-center justify-center bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors shadow-md hover:shadow-lg hover:cursor-pointer"
         >
+          <FiPlus className="mr-2" />
           Crear Producto
         </button>
       </form>
 
       {showSuccess && (
-        <h1 className='bg-green-500 font-semibold text-white py-6'>Producto Agregado Correctamente</h1>
+        <div className="mt-6 animate-fade-in">
+          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg">
+            Producto agregado correctamente
+          </div>
+        </div>
       )}
-
     </div>
   );
 };

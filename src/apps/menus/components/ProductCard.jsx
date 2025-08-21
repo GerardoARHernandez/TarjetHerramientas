@@ -1,34 +1,56 @@
-// src/components/ProductCard.jsx
+// src/menus/components/ProductCard.jsx
+import { FiEdit2, FiTrash2 } from 'react-icons/fi';
 
-const ProductCard = ({ product, onEdit, isAdmin = false }) => {
+const ProductCard = ({ product, onEdit, onDelete, isAdmin = false }) => {
+  const handleEdit = () => {
+    onEdit(product);
+  };
+
+  const handleDelete = () => {
+    if (window.confirm(`¿Estás seguro de que quieres eliminar "${product.name}"?`)) {
+      onDelete(product.id);
+    }
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden transition-transform duration-200 hover:scale-105 relative">
-      {isAdmin && (
-        <button
-          onClick={() => onEdit(product)}
-          className="absolute top-2 right-2 bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600 z-10"
-          title="Editar producto"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-          </svg>
-        </button>
+    <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 hover:shadow-lg transition-shadow">
+      {product.image && (
+        <div className="h-48 overflow-hidden">
+          <img 
+            src={product.image} 
+            alt={product.name}
+            className="w-full h-full object-cover"
+          />
+        </div>
       )}
       
-      {product.image && (
-        <img 
-          src={product.image} 
-          alt={product.name}
-          className="w-full h-48 object-cover"
-        />
-      )}
-      <div className="p-4">
+      <div className="p-5">
         <div className="flex justify-between items-start mb-2">
-          <h3 className="text-lg font-semibold">{product.name}</h3>
-          <span className="text-green-600 font-bold">${product.price.toFixed(2)}</span>
+          <h3 className="text-xl font-semibold text-gray-800">{product.name}</h3>
+          <span className="text-lg font-bold text-blue-600">${product.price.toFixed(2)}</span>
         </div>
+        
         {product.description && (
-          <p className="text-gray-600 text-sm">{product.description}</p>
+          <p className="text-gray-600 mb-4">{product.description}</p>
+        )}
+        
+        {isAdmin && (
+          <div className="flex justify-end space-x-2 pt-3 border-t border-gray-100">
+            <button
+              onClick={handleEdit}
+              className="p-2 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+              aria-label="Editar producto"
+            >
+              <FiEdit2 size={18} />
+            </button>
+            <button
+              onClick={handleDelete}
+              className="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors"
+              aria-label="Eliminar producto"
+            >
+              <FiTrash2 size={18} />
+            </button>
+          </div>
         )}
       </div>
     </div>
