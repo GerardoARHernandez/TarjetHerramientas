@@ -5,6 +5,7 @@ import { PointsProvider } from './contexts/PointsContext';
 import AdminPointsRoutes from './apps/admin-puntos/routes';
 
 import DigitalMenusRoutes from './apps/menus/routes';
+import ClientPointsRoutes from './apps/puntos-cliente/routes';
 
 const App = () => {
   return (
@@ -25,6 +26,11 @@ const App = () => {
               <Route 
                 path='/digital-menus/*' 
                 element={<DigitalMenusRoutes />} 
+              />
+
+              <Route 
+                path='/client/*' 
+                element={<ClientPointsRoutes />} 
               />
 
               {/* Ruta por defecto para URLs no encontradas */}
