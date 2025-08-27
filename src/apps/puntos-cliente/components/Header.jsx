@@ -8,7 +8,7 @@ const Header = ({ title, userName }) => {
   const handleLogout = () => {
     localStorage.removeItem('isAuthenticated');
     localStorage.removeItem('userName');
-    navigate('/login');
+    navigate('/client/login');
   };
 
   return (
