@@ -18,7 +18,9 @@ const Login = () => {
 
   const handleLogin = () => {
     if (code === '123') {
-      onLogin('Amelia García Suarez');
+      localStorage.setItem('isAuthenticated', 'true');
+      localStorage.setItem('userName', 'Amelia García Suarez');
+      navigate('/client/stamps');
     } else {
       alert('Código incorrecto. Use 123');
     }
