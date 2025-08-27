@@ -8,7 +8,7 @@ const Register = () => {
     fullName: '',
     acceptNotifications: false
   });
-  const navigate = useNavigate();
+    const navigate = useNavigate();
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -55,7 +55,7 @@ const Register = () => {
             Volver
           </button>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Teléfono:
@@ -109,12 +109,12 @@ const Register = () => {
             </div>
 
             <button
-              type="submit"
+              onClick={handleSubmit}
               className="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors"
             >
               Registro
             </button>
-          </form>
+          </div>
         </div>
       </div>
     </div>
