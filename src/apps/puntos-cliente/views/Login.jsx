@@ -30,19 +30,8 @@ const Login = () => {
     <div className="min-h-screen bg-gradient-to-br from-red-500 to-red-700 px-4 py-8">
       <div className="max-w-md mx-auto">
         {/* Loyalty Card Header */}
-        <div className="bg-white rounded-2xl shadow-2xl p-6 mb-6">
-          <div className="text-center">
-            <Gift className="mx-auto w-16 h-16 text-red-600 mb-4" />
-            <h1 className="text-xl font-bold text-gray-800 mb-2">
-              TARJETA DE LEALTAD
-            </h1>
-            <h2 className="text-lg font-semibold text-red-600">
-              RECOMPENSAS Y BENEFICIOS
-            </h2>
-            <div className="mt-4 bg-red-50 rounded-lg p-3">
-              <p className="text-red-800 font-medium">SELLOS • PUNTOS • PREMIOS</p>
-            </div>
-          </div>
+        <div className="bg-white rounded-2xl shadow-2xl p-2 mb-6">
+          <img src="/images/header-client.jpeg" alt="Header de Cliente" />
         </div>
 
         {/* Login Form Card */}

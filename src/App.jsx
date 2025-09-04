@@ -14,7 +14,7 @@ const App = () => {
         <Router>
           <div className="min-h-screen bg-blue-100">
             <Routes>
-              <Route index element={<Navigate to="/points-admin" replace />} />
+              <Route index element={<Navigate to="/client" replace />} />
               
               {/* Página 1: Admin de Puntos */}
               <Route 
@@ -36,7 +36,7 @@ const App = () => {
               {/* Ruta por defecto para URLs no encontradas */}
               <Route 
                 path="*" 
-                element={<Navigate to="/points-admin" replace />} 
+                element={<Navigate to="/client" replace />} 
               />
             </Routes>
           </div>
