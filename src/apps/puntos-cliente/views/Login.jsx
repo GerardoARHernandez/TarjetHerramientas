@@ -30,8 +30,11 @@ const Login = () => {
     <div className="min-h-screen bg-gradient-to-br from-red-500 to-red-700 px-4 py-8">
       <div className="max-w-md mx-auto">
         {/* Loyalty Card Header */}
-        <div className="bg-white rounded-2xl shadow-2xl p-2 mb-6">
-          <img src="/images/header-client.jpeg" alt="Header de Cliente" />
+        <div className="p-2 mb-6">
+          <img 
+            src="/images/header-client.jpeg" alt="Header de Cliente" 
+            className='rounded-[20px] shadow-2xl'
+          />
         </div>
 
         {/* Login Form Card */}
