@@ -1,7 +1,7 @@
 
 import { useNavigate } from 'react-router-dom';
 import { Star, Clock } from 'lucide-react';
-import Header from '../components/Header';
+import ClientHeader from '../../components/ClientHeader';
 
 const Stamps = () => {
   const userName = localStorage.getItem('userName') || 'Usuario';
@@ -24,7 +24,7 @@ const Stamps = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header title="Recompensas" userName={userName} />
+      <ClientHeader title="Recompensas" userName={userName} />
       
       <div className="p-4 space-y-6">
         {/* Navigation */}

@@ -2,10 +2,9 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { PointsProvider } from './contexts/PointsContext';
-import AdminPointsRoutes from './apps/admin-puntos/routes';
 
 import DigitalMenusRoutes from './apps/menus/routes';
-import ClientPointsRoutes from './apps/puntos-cliente/routes';
+import PointsRoutes from './apps/points/routes';
 
 const App = () => {
   return (
@@ -14,12 +13,12 @@ const App = () => {
         <Router>
           <div className="min-h-screen bg-blue-100">
             <Routes>
-              <Route index element={<Navigate to="/client" replace />} />
+              <Route index element={<Navigate to="/points-loyalty" replace />} />
               
-              {/* Página 1: Admin de Puntos */}
+              {/* Página 1: Administración de Puntos */}
               <Route 
-                path='/points-admin/*' 
-                element={<AdminPointsRoutes />} 
+                path='/points-loyalty/*' 
+                element={<PointsRoutes />} 
               />
 
               {/* Página 2: Menús Digitales (para implementar después) */}
@@ -28,15 +27,10 @@ const App = () => {
                 element={<DigitalMenusRoutes />} 
               />
 
-              <Route 
-                path='/client/*' 
-                element={<ClientPointsRoutes />} 
-              />
-
               {/* Ruta por defecto para URLs no encontradas */}
               <Route 
                 path="*" 
-                element={<Navigate to="/client" replace />} 
+                element={<Navigate to="/points-loyalty" replace />} 
               />
             </Routes>
           </div>

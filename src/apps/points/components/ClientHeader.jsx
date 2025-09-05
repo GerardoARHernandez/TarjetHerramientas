@@ -1,14 +1,21 @@
-
+// src/apps/points/components/ClientHeader.jsx
 import { useNavigate } from 'react-router-dom';
-import { Gift} from 'lucide-react';
+import { Gift } from 'lucide-react';
+import { useAuth } from '../../../contexts/AuthContext';
 
-const Header = ({ title, userName }) => {
+const ClientHeader = ({ title, userName }) => {
   const navigate = useNavigate();
+  const { logout } = useAuth();
 
   const handleLogout = () => {
+    // Limpiar localStorage para cliente
     localStorage.removeItem('isAuthenticated');
     localStorage.removeItem('userName');
-    navigate('/client/login');
+    
+    // Si estaba autenticado en el contexto también, cerrar sesión
+    logout();
+    
+    navigate('/points-loyalty/login');
   };
 
   return (
@@ -17,7 +24,7 @@ const Header = ({ title, userName }) => {
         <h1 className="text-xl font-bold">{title}</h1>
         <button
           onClick={handleLogout}
-          className="text-sm bg-red-800 px-3 py-1 rounded hover:bg-red-900"
+          className="text-sm bg-red-800 px-3 py-1 rounded hover:bg-red-900 hover:cursor-pointer transition-colors duration-200"
         >
           Salir
         </button>
@@ -37,4 +44,4 @@ const Header = ({ title, userName }) => {
   );
 };
 
-export default Header;
+export default ClientHeader;

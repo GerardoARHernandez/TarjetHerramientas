@@ -1,6 +1,6 @@
 // src/apps/admin-puntos/views/RegisterPurchase.jsx
 import { useState, useEffect } from 'react';
-import { usePoints } from '../../../contexts/PointsContext';
+import { usePoints } from '../../../../contexts/PointsContext';
 
 export const RegisterPurchase = () => {
   const [formData, setFormData] = useState({ 

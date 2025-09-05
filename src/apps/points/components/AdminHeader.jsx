@@ -3,7 +3,7 @@ import { NavLink } from "react-router-dom";
 import { useState } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 
-const Header = () => {
+const AdminHeader = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { logout, user } = useAuth();
 
@@ -36,7 +36,7 @@ const Header = () => {
           {/* Navegación para desktop */}
           <nav className="hidden md:flex space-x-2 lg:space-x-4">
             <NavLink
-              to="/points-admin"
+              to="/"
               className={({ isActive }) =>
                 `px-3 py-2 text-sm lg:px-4 lg:py-2 lg:text-base rounded-lg transition-all duration-200 ${
                   isActive
@@ -49,20 +49,7 @@ const Header = () => {
             </NavLink>
 
             <NavLink
-              to="/points-admin/registrar-cliente"
-              className={({ isActive }) =>
-                `px-3 py-2 text-sm lg:px-4 lg:py-2 lg:text-base rounded-lg transition-all duration-200 ${
-                  isActive
-                    ? 'bg-blue-500 text-white shadow-md'
-                    : 'text-gray-700 hover:text-blue-600 hover:bg-gray-100'
-                }`
-              }
-            >
-              Registrar Cliente
-            </NavLink>
-
-            <NavLink
-              to="/points-admin/registrar-compra"
+              to="/points-loyalty/registrar-compra"
               className={({ isActive }) =>
                 `px-3 py-2 text-sm lg:px-4 lg:py-2 lg:text-base rounded-lg transition-all duration-200 ${
                   isActive
@@ -159,7 +146,7 @@ const Header = () => {
                 logout();
                 setIsMenuOpen(false);
               }}
-              className="mt-4 w-full bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors duration-200"
+              className="mt-4 w-full bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors duration-200 hover:cursor-pointer"
             >
               Cerrar Sesión
             </button>
@@ -170,4 +157,4 @@ const Header = () => {
   );
 };
 
-export default Header;
+export default AdminHeader;

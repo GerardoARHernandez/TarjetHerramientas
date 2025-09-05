@@ -1,9 +1,9 @@
 
 import { useNavigate } from 'react-router-dom';
 import { Clock } from 'lucide-react';
-import Header from '../components/Header';
+import ClientHeader from '../../components/ClientHeader';
 
-const Points = () => {
+const PointsClient = () => {
   const userName = localStorage.getItem('userName') || 'Usuario';
   const navigate = useNavigate();
 
@@ -12,13 +12,13 @@ const Points = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header title="Recompensas" userName={userName} />
+      <ClientHeader title="Recompensas" userName={userName} />
       
       <div className="p-4 space-y-6">
         {/* Navigation */}
         <div className="flex space-x-4">
           <button
-            onClick={() => navigate('/client/stamps')}
+            onClick={() => navigate('/points-loyalty/stamps')}
             className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold"
           >
             Sellos
@@ -98,4 +98,4 @@ const Points = () => {
   );
 };
 
-export default Points;
+export default PointsClient;
