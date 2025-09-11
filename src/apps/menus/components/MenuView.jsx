@@ -1,14 +1,14 @@
 // src/menus/components/MenuView.jsx
-import ProductCard from './ProductCard';
+import ItemCard from './ItemCard';
 import { FiPrinter, FiDownload } from 'react-icons/fi';
 
-const MenuView = ({ categories, products, onEditProduct, onDeleteProduct, isAdmin = false }) => {
-  // Agrupar productos por categoría
-  const productsByCategory = {};
+const MenuView = ({ categories, items, onEditItem, onDeleteItem, isAdmin = false }) => {
+  // Agrupar elementos por categoría
+  const itemsByCategory = {};
   
   categories.forEach(category => {
-    productsByCategory[category.id] = products.filter(
-      product => String(product.categoryId) === String(category.id)
+    itemsByCategory[category.id] = items.filter(
+      item => String(item.categoryId) === String(category.id)
     );
   });
 
@@ -19,13 +19,13 @@ const MenuView = ({ categories, products, onEditProduct, onDeleteProduct, isAdmi
   const handleExport = () => {
     const menuData = {
       categories: categories,
-      products: products
+      items: items
     };
     
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(menuData, null, 2));
     const downloadAnchorNode = document.createElement('a');
     downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", "menu_data.json");
+    downloadAnchorNode.setAttribute("download", "catalogo_data.json");
     document.body.appendChild(downloadAnchorNode);
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
@@ -35,12 +35,12 @@ const MenuView = ({ categories, products, onEditProduct, onDeleteProduct, isAdmi
     <div className="p-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">Nuestro Menú</h1>
+          <h1 className="text-3xl font-bold text-gray-800">Nuestro Catálogo</h1>
+          <p className="text-gray-600 mt-1">Explora nuestra selección de productos y servicios</p>
         </div>
         
         {isAdmin && (
           <div className="flex space-x-3 mt-4 md:mt-0">
-            <p className="text-gray-600 mt-1">Vista previa de cómo verán los clientes tu menú</p>
             <button
               onClick={handlePrint}
               className="flex items-center bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
@@ -50,7 +50,7 @@ const MenuView = ({ categories, products, onEditProduct, onDeleteProduct, isAdmi
             </button>
             <button
               onClick={handleExport}
-              className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+              className="flex items-center bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
             >
               <FiDownload className="mr-2" />
               Exportar
@@ -61,7 +61,7 @@ const MenuView = ({ categories, products, onEditProduct, onDeleteProduct, isAdmi
       
       {categories.length === 0 ? (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
-          <p className="text-yellow-700">No hay categorías en el menú todavía.</p>
+          <p className="text-yellow-700">No hay categorías en el catálogo todavía.</p>
         </div>
       ) : (
         categories.map(category => (
@@ -71,23 +71,23 @@ const MenuView = ({ categories, products, onEditProduct, onDeleteProduct, isAdmi
                 {category.name}
               </h2>
               <span className="ml-3 text-sm text-gray-500">
-                ({productsByCategory[category.id]?.length || 0} productos)
+                ({itemsByCategory[category.id]?.length || 0} elementos)
               </span>
             </div>
             
-            {productsByCategory[category.id] && productsByCategory[category.id].length === 0 ? (
+            {itemsByCategory[category.id] && itemsByCategory[category.id].length === 0 ? (
               <div className="bg-gray-50 rounded-lg p-6 text-center">
-                <p className="text-gray-500 italic">No hay productos en esta categoría.</p>
+                <p className="text-gray-500 italic">No hay elementos en esta categoría.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {productsByCategory[category.id] && 
-                 productsByCategory[category.id].map(product => (
-                  <ProductCard 
-                    key={product.id} 
-                    product={product} 
-                    onEdit={onEditProduct}
-                    onDelete={onDeleteProduct}
+                {itemsByCategory[category.id] && 
+                 itemsByCategory[category.id].map(item => (
+                  <ItemCard 
+                    key={item.id} 
+                    item={item} 
+                    onEdit={onEditItem}
+                    onDelete={onDeleteItem}
                     isAdmin={isAdmin}
                   />
                 ))}

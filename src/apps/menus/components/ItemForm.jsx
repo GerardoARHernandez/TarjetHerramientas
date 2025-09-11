@@ -1,12 +1,13 @@
-// src/menus/components/ProductForm.jsx
+// src/menus/components/ItemForm.jsx
 import { useState } from 'react';
 import { FiPlus, FiUploadCloud } from 'react-icons/fi';
 
-const ProductForm = ({ categories, onAddProduct }) => {
-  const [productData, setProductData] = useState({
+const ItemForm = ({ categories, onAddItem }) => {
+  const [itemData, setItemData] = useState({
     name: '',
     description: '',
     price: '',
+    duration: '',
     categoryId: '',
     image: null
   });
@@ -15,8 +16,8 @@ const ProductForm = ({ categories, onAddProduct }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setProductData({
-      ...productData,
+    setItemData({
+      ...itemData,
       [name]: value
     });
   };
@@ -26,8 +27,8 @@ const ProductForm = ({ categories, onAddProduct }) => {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setProductData({
-          ...productData,
+        setItemData({
+          ...itemData,
           image: reader.result
         });
         setImagePreview(reader.result);
@@ -38,17 +39,19 @@ const ProductForm = ({ categories, onAddProduct }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (productData.name.trim() && productData.price && productData.categoryId) {
-      onAddProduct({
-        ...productData,
-        price: parseFloat(productData.price)
+    if (itemData.name.trim() && itemData.price && itemData.categoryId) {
+      onAddItem({
+        ...itemData,
+        price: parseFloat(itemData.price),
+        duration: itemData.duration ? parseInt(itemData.duration) : null
       });
       
       // Reiniciar el formulario
-      setProductData({
+      setItemData({
         name: '',
         description: '',
         price: '',
+        duration: '',
         categoryId: '',
         image: null
       });
@@ -64,22 +67,23 @@ const ProductForm = ({ categories, onAddProduct }) => {
 
   return (
     <div className="p-6">
-      <h2 className="text-xl font-semibold mb-6 text-gray-800">Crear Nuevo Producto</h2>
+      <h2 className="text-xl font-semibold mb-6 text-gray-800">Añadir Nuevo Elemento</h2>
       
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-gray-700 mb-2 font-medium" htmlFor="name">
-              Nombre del producto *
+              Nombre del elemento *
             </label>
             <input
               type="text"
               id="name"
               name="name"
-              value={productData.name}
+              value={itemData.name}
               onChange={handleChange}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
               required
+              placeholder="Ej: Producto destacado, Servicio especial..."
             />
           </div>
 
@@ -95,33 +99,34 @@ const ProductForm = ({ categories, onAddProduct }) => {
                 type="number"
                 id="price"
                 name="price"
-                value={productData.price}
+                value={itemData.price}
                 onChange={handleChange}
                 min="0"
                 step="0.01"
-                className="w-full pl-8 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                className="w-full pl-8 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
                 required
               />
             </div>
           </div>
         </div>
 
-        <div>
-          <label className="block text-gray-700 mb-2 font-medium" htmlFor="description">
-            Descripción
-          </label>
-          <textarea
-            id="description"
-            name="description"
-            value={productData.description}
-            onChange={handleChange}
-            rows="3"
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-            placeholder="Describe el producto de manera atractiva..."
-          ></textarea>
-        </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-gray-700 mb-2 font-medium" htmlFor="duration">
+              Duración (minutos, opcional)
+            </label>
+            <input
+              type="number"
+              id="duration"
+              name="duration"
+              value={itemData.duration}
+              onChange={handleChange}
+              min="0"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+              placeholder="Ej: 30, 60, 90..."
+            />
+          </div>
+
           <div>
             <label className="block text-gray-700 mb-2 font-medium" htmlFor="categoryId">
               Categoría *
@@ -129,9 +134,9 @@ const ProductForm = ({ categories, onAddProduct }) => {
             <select
               id="categoryId"
               name="categoryId"
-              value={productData.categoryId}
+              value={itemData.categoryId}
               onChange={handleChange}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
               required
             >
               <option value="">Seleccionar categoría</option>
@@ -142,24 +147,39 @@ const ProductForm = ({ categories, onAddProduct }) => {
               ))}
             </select>
           </div>
+        </div>
 
-          <div>
-            <label className="block text-gray-700 mb-2 font-medium" htmlFor="image">
-              Imagen (opcional)
-            </label>
-            <div className="relative border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors">
-              <input
-                type="file"
-                id="image"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              />
-              <FiUploadCloud className="mx-auto text-gray-400 mb-2" size={24} />
-              <p className="text-sm text-gray-600">
-                {imagePreview ? 'Imagen seleccionada' : 'Haz clic o arrastra una imagen aquí'}
-              </p>
-            </div>
+        <div>
+          <label className="block text-gray-700 mb-2 font-medium" htmlFor="description">
+            Descripción
+          </label>
+          <textarea
+            id="description"
+            name="description"
+            value={itemData.description}
+            onChange={handleChange}
+            rows="3"
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+            placeholder="Describe el elemento, sus características, beneficios..."
+          ></textarea>
+        </div>
+
+        <div>
+          <label className="block text-gray-700 mb-2 font-medium" htmlFor="image">
+            Imagen (opcional)
+          </label>
+          <div className="relative border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-indigo-400 transition-colors">
+            <input
+              type="file"
+              id="image"
+              accept="image/*"
+              onChange={handleImageChange}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            />
+            <FiUploadCloud className="mx-auto text-gray-400 mb-2" size={24} />
+            <p className="text-sm text-gray-600">
+              {imagePreview ? 'Imagen seleccionada' : 'Haz clic o arrastra una imagen aquí'}
+            </p>
           </div>
         </div>
 
@@ -181,14 +201,14 @@ const ProductForm = ({ categories, onAddProduct }) => {
           className="flex items-center justify-center bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors shadow-md hover:shadow-lg hover:cursor-pointer"
         >
           <FiPlus className="mr-2" />
-          Crear Producto
+          Añadir Elemento
         </button>
       </form>
 
       {showSuccess && (
         <div className="mt-6 animate-fade-in">
           <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg">
-            Producto agregado correctamente
+            Elemento agregado correctamente
           </div>
         </div>
       )}
@@ -196,4 +216,4 @@ const ProductForm = ({ categories, onAddProduct }) => {
   );
 };
 
-export default ProductForm;
+export default ItemForm;

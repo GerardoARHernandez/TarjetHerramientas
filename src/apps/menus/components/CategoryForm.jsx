@@ -44,7 +44,7 @@ const CategoryForm = ({ onAddCategory, categories, onDeleteCategory, onEditCateg
   };
 
   const handleDelete = (categoryId) => {
-    if (window.confirm('¿Estás seguro de que quieres eliminar esta categoría? Todos los productos asociados también se eliminarán.')) {
+    if (window.confirm('¿Estás seguro de que quieres eliminar esta categoría? Todos los elementos asociados también se eliminarán.')) {
       onDeleteCategory(categoryId);
       setSuccessMessage('Categoría eliminada con éxito');
       setShowSuccess(true);
@@ -58,8 +58,8 @@ const CategoryForm = ({ onAddCategory, categories, onDeleteCategory, onEditCateg
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Formulario para añadir/editar categorías */}
-        <div className="bg-blue-50 p-5 rounded-xl">
-          <h3 className="text-lg font-medium mb-4 text-blue-800">
+        <div className="bg-indigo-50 p-5 rounded-xl">
+          <h3 className="text-lg font-medium mb-4 text-indigo-800">
             {editingCategory ? 'Editar Categoría' : 'Crear Nueva Categoría'}
           </h3>
           <form onSubmit={handleSubmit}>
@@ -72,14 +72,14 @@ const CategoryForm = ({ onAddCategory, categories, onDeleteCategory, onEditCateg
                 id="categoryName"
                 value={categoryName}
                 onChange={(e) => setCategoryName(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                placeholder="Ej: Entradas, Platos Principales, Postres..."
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                placeholder="Ej: Productos, Servicios, Especialidades..."
               />
             </div>
             <div className="flex space-x-2">
               <button
                 type="submit"
-                className="flex items-center justify-center bg-blue-600 text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg hover:cursor-pointer"
+                className="flex items-center justify-center bg-indigo-600 text-white px-4 py-2.5 rounded-lg hover:bg-indigo-700 transition-colors shadow-md hover:shadow-lg hover:cursor-pointer"
               >
                 {editingCategory ? (
                   <>
@@ -123,12 +123,12 @@ const CategoryForm = ({ onAddCategory, categories, onDeleteCategory, onEditCateg
           ) : (
             <ul className="space-y-3">
               {categories.map(category => (
-                <li key={category.id} className={`bg-white border border-gray-200 rounded-lg p-4 flex justify-between items-center shadow-sm hover:shadow-md transition-shadow ${editingCategory?.id === category.id ? 'ring-2 ring-blue-500' : ''}`}>
+                <li key={category.id} className={`bg-white border border-gray-200 rounded-lg p-4 flex justify-between items-center shadow-sm hover:shadow-md transition-shadow ${editingCategory?.id === category.id ? 'ring-2 ring-indigo-500' : ''}`}>
                   <span className="font-medium text-gray-800">{category.name}</span>
                   <div className="flex space-x-2">
                     <button 
                       onClick={() => handleEdit(category)}
-                      className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-md transition-colors hover:cursor-pointer"
+                      className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors hover:cursor-pointer"
                       disabled={editingCategory?.id === category.id}
                     >
                       <FiEdit2 size={16} />

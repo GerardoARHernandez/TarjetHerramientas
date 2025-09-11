@@ -1,21 +1,21 @@
 // src/views/CustomerMenu.jsx
 import MenuView from '../components/MenuView';
-import { FiCoffee, FiHeart, FiPhone, FiMapPin } from 'react-icons/fi';
+import { FiStar, FiPhone, FiMapPin, FiClock } from 'react-icons/fi';
 
-const CustomerMenu = ({ categories, products }) => {
+const CustomerMenu = ({ categories, items, businessInfo }) => {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-gray-100">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-blue-800 to-blue-600 text-white">
+      <div className="bg-gradient-to-r from-indigo-800 to-indigo-600 text-white">
         <div className="container mx-auto px-4 py-12 text-center">
           <div className="flex justify-center mb-4">
             <div className="bg-white bg-opacity-20 p-4 rounded-full">
-              <FiCoffee size={40} />
+              <FiStar size={40} className='text-red-400'/>
             </div>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">Menú Digital</h1>
-          <p className="text-xl text-blue-100 max-w-2xl mx-auto">
-            Descubre nuestra exquisita selección de platos preparados con los mejores ingredientes
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">{businessInfo?.name || "Nuestro Catálogo"}</h1>
+          <p className="text-xl text-indigo-100 max-w-2xl mx-auto">
+            {businessInfo?.description || "Descubre nuestra selección de productos y servicios de calidad"}
           </p>
         </div>
       </div>
@@ -25,7 +25,7 @@ const CustomerMenu = ({ categories, products }) => {
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
           <MenuView 
             categories={categories} 
-            products={products} 
+            items={items} 
             isAdmin={false}
           />
         </div>
@@ -34,28 +34,28 @@ const CustomerMenu = ({ categories, products }) => {
       {/* Call to Action */}
       <div className="bg-white py-12">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold text-gray-800 mb-6">¿Listo para ordenar?</h2>
+          <h2 className="text-3xl font-bold text-gray-800 mb-6">¿Listo para contactarnos?</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
             <div className="text-center">
-              <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FiPhone className="text-blue-600 text-xl" />
+              <div className="bg-indigo-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FiPhone className="text-indigo-600 text-xl" />
               </div>
-              <h3 className="font-semibold text-gray-800 mb-2">Reserva por teléfono</h3>
-              <p className="text-gray-600">+1 (555) 123-4567</p>
+              <h3 className="font-semibold text-gray-800 mb-2">Contáctanos</h3>
+              <p className="text-gray-600">{businessInfo?.phone || "+1 (555) 123-4567"}</p>
             </div>
             <div className="text-center">
-              <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FiMapPin className="text-blue-600 text-xl" />
+              <div className="bg-indigo-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FiMapPin className="text-indigo-600 text-xl" />
               </div>
               <h3 className="font-semibold text-gray-800 mb-2">Visítanos</h3>
-              <p className="text-gray-600">Av. Principal #123, Ciudad</p>
+              <p className="text-gray-600">{businessInfo?.address || "Av. Principal #123, Ciudad"}</p>
             </div>
             <div className="text-center">
-              <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FiHeart className="text-blue-600 text-xl" />
+              <div className="bg-indigo-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FiClock className="text-indigo-600 text-xl" />
               </div>
               <h3 className="font-semibold text-gray-800 mb-2">Horarios</h3>
-              <p className="text-gray-600">Lun-Dom: 8:00 AM - 10:00 PM</p>
+              <p className="text-gray-600">{businessInfo?.hours || "Lun-Dom: 9:00 AM - 8:00 PM"}</p>
             </div>
           </div>
         </div>
@@ -66,11 +66,11 @@ const CustomerMenu = ({ categories, products }) => {
         <div className="container mx-auto px-4">
           <div className="text-center">
             <div className="flex justify-center mb-6">
-              <FiCoffee size={32} className="text-blue-400" />
+              <FiStar size={32} className="text-indigo-400" />
             </div>
-            <p className="text-2xl font-bold mb-4">Mi Restaurante</p>
+            <p className="text-2xl font-bold mb-4">{businessInfo?.name || "Mi Negocio"}</p>
             <p className="text-gray-400 max-w-2xl mx-auto mb-6">
-              Ofreciendo la mejor experiencia gastronómica con sabores auténticos y servicio excepcional.
+              {businessInfo?.footerDescription || "Ofreciendo productos y servicios de calidad con atención personalizada."}
             </p>
             <div className="flex justify-center space-x-4 mb-6">
               <a href="#" className="text-gray-400 hover:text-white transition-colors">
@@ -87,7 +87,7 @@ const CustomerMenu = ({ categories, products }) => {
               </a>
             </div>
             <div className="border-t border-gray-800 pt-6">
-              <p className="text-gray-400">© {new Date().getFullYear()} Mi Restaurante. Todos los derechos reservados.</p>
+              <p className="text-gray-400">© {new Date().getFullYear()} {businessInfo?.name || "Mi Negocio"}. Todos los derechos reservados.</p>
             </div>
           </div>
         </div>
