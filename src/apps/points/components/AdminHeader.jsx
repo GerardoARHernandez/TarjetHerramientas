@@ -1,5 +1,5 @@
 // src/apps/admin-puntos/components/Header.jsx
-import { NavLink } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { useState } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 
@@ -145,11 +145,13 @@ const AdminHeader = () => {
               onClick={() => {
                 logout();
                 setIsMenuOpen(false);
+                window.location.href = "/points-loyalty/login";
               }}
               className="mt-4 w-full bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors duration-200 hover:cursor-pointer"
             >
               Cerrar Sesión
             </button>
+            
           </div>
         )}
       </div>

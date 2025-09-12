@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Mail, Lock, Phone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -10,58 +10,39 @@ const Login = () => {
   const [message, setMessage] = useState('');
 
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, isAuthenticated, user } = useAuth();
+
+  // Redirigir si ya está autenticado
+  useEffect(() => {
+    if (isAuthenticated) {
+      if (user?.role === 'admin') {
+        navigate('/points');
+      } else {
+        navigate('/points-loyalty/points');
+      }
+    }
+  }, [isAuthenticated, user, navigate]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     
     if (!username || !password) {
       setMessage('Por favor completa todos los campos');
-
-      setTimeout(() => {
-        setMessage('');
-      }, 3000);
-
+      setTimeout(() => setMessage(''), 3000);
       return;
     }
 
     setIsLoading(true);
-
-    // Detectar si es administrador (usuario "admin")
-    if (username.toLowerCase() === 'admin') {
-      // Login para administradores usando el contexto de autenticación
-      const result = await login({ username, password });
-      
-      if (result.success) {
-        navigate('/points');
-      } else {
-        setMessage(result.error || 'Credenciales incorrectas');
-
-        setTimeout(() => {
-          setMessage('');
-        }, 3000);
-      }
+    const result = await login({ username, password });
+    
+    if (result.success) {
+      // La redirección se manejará en el useEffect anterior
+      // cuando isAuthenticated cambie a true
     } else {
-      // Login para clientes (número de teléfono o email)
-      // En una aplicación real, aquí harías una llamada a la API
-      // para verificar si es un teléfono o email registrado
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Simular validación (en producción esto vendría de la BD)
-      if (password === '123') {
-        localStorage.setItem('isAuthenticated', 'true');
-        localStorage.setItem('userName', 'Amelia García Suarez');
-        localStorage.setItem('userEmail', username);
-        navigate('/points-loyalty/points');
-      } else {
-        setMessage('Contraseña incorrecta. Use 123 para demo');
-
-        setTimeout(() => {
-          setMessage('');
-        }, 3000);
-      }
+      setMessage(result.error || 'Credenciales incorrectas');
+      setTimeout(() => setMessage(''), 3000);
     }
-
+    
     setIsLoading(false);
   };
 

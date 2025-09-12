@@ -4,44 +4,36 @@ import { useAuth } from '../../contexts/AuthContext';
 import { usePoints } from '../../contexts/PointsContext';
 
 import Login from './views/Login';
-
-// Importaciones de vistas de admin
-import RegisterClient from './views/RegisterClient'; // Registro desde admin
+import RegisterClient from './views/RegisterClient';
 import AdminPoints from './views/admin/AdminPoints';
 import {RegisterPurchase} from './views/admin/RegisterPurchase';
-
-// Importaciones de vistas de cliente
 import Stamps from './views/client/StampsClient';
 import PointsClient from './views/client/PointsClient';
-
-// Importaciones de componentes
 import AdminHeader from './components/AdminHeader';
 import ClientHeader from './components/ClientHeader';
 
 const PointsRoutes = () => {
   const { isAuthenticated, user } = useAuth();
   const { clients } = usePoints();
-
+  
   // Determinar si el usuario es admin basado en el rol
   const isAdmin = user?.role === 'admin';
   
-  // Para clientes, verificar autenticación en localStorage
-  const isClientAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
-
   return (
     <div className="min-h-screen bg-blue-100">
       {/* Mostrar header según el tipo de usuario */}
       {isAuthenticated && isAdmin && <AdminHeader />}
+      {isAuthenticated && user?.role === 'client' && (
+        <ClientHeader title="MIS PUNTOS" userName={user.name} />
+      )}
       
       <Routes>
         {/* Ruta principal - redirige según el tipo de usuario */}
         <Route 
           index 
           element={
-            isAuthenticated && isAdmin ? (
-              <AdminPoints />
-            ) : isClientAuthenticated || isAuthenticated ? (
-              <PointsClient />
+            isAuthenticated ? (
+              isAdmin ? <AdminPoints /> : <PointsClient />
             ) : (
               <Navigate to="/points-loyalty/login" replace /> 
             )
@@ -52,9 +44,9 @@ const PointsRoutes = () => {
         <Route 
           path="login" 
           element={
-            !isAuthenticated && !isClientAuthenticated ? (
+            !isAuthenticated ? (
               <Login />
-            ) : isAuthenticated && isAdmin ? (
+            ) : isAdmin ? (
               <Navigate to="/points-loyalty" replace />
             ) : (
               <Navigate to="/points-loyalty/points" replace />
@@ -62,11 +54,11 @@ const PointsRoutes = () => {
           } 
         />
         
-        {/* Registro de cliente (para clientes nuevos) */}
+        {/* Resto de rutas... */}
         <Route 
           path="registrar" 
           element={
-            !isClientAuthenticated && !isAuthenticated ? (
+            !isAuthenticated ? (
               <RegisterClient />
             ) : (
               <Navigate to="/points-loyalty" replace />
@@ -74,7 +66,6 @@ const PointsRoutes = () => {
           } 
         />
         
-        {/* Registro de compra (admin) */}
         <Route 
           path="/registrar-compra" 
           element={
@@ -86,11 +77,10 @@ const PointsRoutes = () => {
           } 
         />
         
-        {/* Página de sellos (cliente) */}
         <Route 
           path="stamps" 
           element={
-            isClientAuthenticated || isAuthenticated ? (
+            isAuthenticated && !isAdmin ? (
               <Stamps />
             ) : (
               <Navigate to="/points-loyalty/login" replace />
@@ -98,11 +88,10 @@ const PointsRoutes = () => {
           } 
         />
         
-        {/* Página de puntos (cliente) */}
         <Route 
           path="points" 
           element={
-            isClientAuthenticated || isAuthenticated ? (
+            isAuthenticated && !isAdmin ? (
               <PointsClient />
             ) : (
               <Navigate to="/points-loyalty/login" replace />
@@ -116,7 +105,7 @@ const PointsRoutes = () => {
           element={
             <Navigate to={
               isAuthenticated && isAdmin ? "/points-loyalty" : 
-              isClientAuthenticated || isAuthenticated ? "/points-loyalty/points" : 
+              isAuthenticated ? "/points-loyalty/points" : 
               "/points-loyalty/login"
             } replace /> 
           } 
