@@ -1,8 +1,12 @@
 // src/views/CustomerMenu.jsx
 import MenuView from '../components/MenuView';
 import { FiStar, FiPhone, FiMapPin, FiClock } from 'react-icons/fi';
+import { getAllCategories, getAllItems } from '../data';
 
-const CustomerMenu = ({ categories, items, businessInfo }) => {
+const CustomerMenu = ({ businessInfo }) => {
+  const categories = getAllCategories();
+  const items = getAllItems();
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
       {/* Hero Section */}
