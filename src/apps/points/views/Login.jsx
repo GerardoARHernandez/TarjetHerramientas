@@ -145,15 +145,7 @@ const Login = () => {
             </div>
           )}
 
-          <div className="mt-8 text-center">
-            <p className="text-sm text-gray-600">¿Aún no tiene cuenta?</p>
-            <button
-              onClick={() => navigate('/points-loyalty/registrar')}
-              className="mt-2 text-blue-600 hover:text-blue-700 font-semibold cursor-pointer"
-            >
-              REGÍSTRESE PARA RECIBIR NUESTRAS RECOMPENSAS
-            </button>
-          </div>
+          
         </div>
       </div>
     </div>
