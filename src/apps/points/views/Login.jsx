@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Mail, Lock, Phone } from 'lucide-react';
+import { Mail, Lock, Phone, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 
@@ -37,17 +37,22 @@ const Login = () => {
     
     if (result.success) {
       // La redirección se manejará en el useEffect anterior
-      // cuando isAuthenticated cambie a true
     } else {
-      setMessage(result.error || 'Credenciales incorrectas');
+      setMessage(result.error || 'Error al iniciar sesión');
       setTimeout(() => setMessage(''), 3000);
     }
     
     setIsLoading(false);
   };
 
-  // Detectar si el input parece un teléfono (solo números)
-  const isPhoneNumber = /^\d+$/.test(username);
+  // Determinar el tipo de input basado en el contenido
+  const getInputType = () => {
+    if (username.toLowerCase() === 'admin') return 'admin';
+    if (/^\d+$/.test(username)) return 'phone';
+    return 'email';
+  };
+
+  const inputType = getInputType();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-100 to-blue-300 px-4 py-8">
@@ -70,13 +75,13 @@ const Login = () => {
           <form onSubmit={handleLogin} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                {username.toLowerCase() === 'admin' ? 'Usuario' : 
-                 isPhoneNumber ? 'Teléfono' : 'Email o teléfono'}:
+                {inputType === 'admin' ? 'Usuario' : 
+                 inputType === 'phone' ? 'Teléfono' : 'Email o teléfono'}:
               </label>
               <div className="relative">
-                {username.toLowerCase() === 'admin' ? (
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                ) : isPhoneNumber ? (
+                {inputType === 'admin' ? (
+                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                ) : inputType === 'phone' ? (
                   <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 ) : (
                   <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -86,7 +91,7 @@ const Login = () => {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder={username.toLowerCase() === 'admin' ? 'Usuario administrador' : 
+                  placeholder={inputType === 'admin' ? 'Usuario administrador' : 
                               'Ingresa tu email o teléfono'}
                 />
               </div>
@@ -111,10 +116,10 @@ const Login = () => {
             <button
               type="submit"
               disabled={!username || !password || isLoading}
-              className={`w-full py-3 rounded-lg font-semibold text-white transition-colors hover:cursor-pointer ${
+              className={`w-full py-3 rounded-lg font-semibold text-white transition-colors ${
                 isLoading 
                   ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-blue-600 hover:bg-blue-700'
+                  : 'bg-blue-600 hover:bg-blue-700 cursor-pointer'
               }`}
             >
               {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
@@ -122,7 +127,7 @@ const Login = () => {
           </form>
 
           {message && (
-            <div className="mt-6 p-4 bg-red-100 border-l-4 border-red-500 text-red-700">
+            <div className="mt-6 p-4 bg-red-100 border-l-4 border-red-500 text-red-700 rounded">
               <p className="whitespace-pre-line">{message}</p>
             </div>
           )}
@@ -131,19 +136,10 @@ const Login = () => {
             <p className="text-sm text-gray-600">¿Aún no tiene cuenta?</p>
             <button
               onClick={() => navigate('/points-loyalty/registrar')}
-              className="mt-2 text-blue-600 hover:text-blue-700 font-semibold hover:cursor-pointer"
+              className="mt-2 text-blue-600 hover:text-blue-700 font-semibold cursor-pointer"
             >
               REGÍSTRESE PARA RECIBIR NUESTRAS RECOMPENSAS
             </button>
-          </div>
-
-          {/* Información de demo */}
-          <div className="mt-6 p-4 bg-gray-100 rounded-lg">
-            <p className="text-sm text-gray-600 font-semibold mb-2">Credenciales de demo:</p>
-            <ul className="text-sm text-gray-600 space-y-1">
-              <li>• Admin: <span className="font-mono">admin / 123</span></li>
-              <li>• Cliente: <span className="font-mono">cualquier email o teléfono / 123</span></li>
-            </ul>
           </div>
         </div>
       </div>

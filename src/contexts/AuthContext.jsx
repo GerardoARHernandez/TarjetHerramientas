@@ -1,4 +1,3 @@
-// src/contexts/AuthContext.jsx
 import { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext();
@@ -21,16 +20,17 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const checkAuth = () => {
       const storedAuth = localStorage.getItem('isAuthenticated');
-      const userName = localStorage.getItem('userName');
-      const userEmail = localStorage.getItem('userEmail');
+      const userData = localStorage.getItem('userData');
       
-      if (storedAuth === 'true' && userName && userEmail) {
-        setIsAuthenticated(true);
-        setUser({ 
-          username: userEmail, 
-          name: userName,
-          role: 'client'
-        });
+      if (storedAuth === 'true' && userData) {
+        try {
+          const parsedUser = JSON.parse(userData);
+          setIsAuthenticated(true);
+          setUser(parsedUser);
+        } catch (error) {
+          console.error('Error parsing user data:', error);
+          logout();
+        }
       }
     };
     
@@ -42,50 +42,53 @@ export const AuthProvider = ({ children }) => {
     setError('');
 
     try {
-      // Simular llamada a API
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      if (credentials.username.toLowerCase() === 'admin') {
-        // Login para administradores
-        if (credentials.password === '123') {
-          setIsAuthenticated(true);
-          setUser({ 
-            username: credentials.username, 
-            name: 'Administrador',
-            role: 'admin'
-          });
-          setError('');
-          return { success: true };
-        } else {
-          setError('Credenciales incorrectas');
-          return { success: false, error: 'Credenciales incorrectas' };
-        }
+      // Llamada a la API real
+      const response = await fetch('https://souvenir-site.com/WebPuntos/API1/Login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          Usuario: credentials.username,
+          Password: credentials.password
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.Mensaje || 'Error en la conexión');
+      }
+
+      if (data.Acceso) {
+        // Login exitoso
+        const userData = {
+          username: credentials.username,
+          name: data.nombre,
+          role: data.UsuRol.toLowerCase(),
+          rawData: data // Guardar todos los datos de la respuesta por si se necesitan
+        };
+        
+        setIsAuthenticated(true);
+        setUser(userData);
+        
+        // Guardar en localStorage
+        localStorage.setItem('isAuthenticated', 'true');
+        localStorage.setItem('userData', JSON.stringify(userData));
+        
+        return { success: true };
       } else {
-        // Login para clientes
-        if (credentials.password === '123') {
-          setIsAuthenticated(true);
-          const clientUser = {
-            username: credentials.username,
-            name: 'Amelia García Suarez',
-            role: 'client'
-          };
-          setUser(clientUser);
-          
-          // Guardar en localStorage
-          localStorage.setItem('isAuthenticated', 'true');
-          localStorage.setItem('userName', clientUser.name);
-          localStorage.setItem('userEmail', clientUser.username);
-          
-          setError('');
-          return { success: true };
-        } else {
-          setError('Contraseña incorrecta. Use 123 para demo');
-          return { success: false, error: 'Contraseña incorrecta' };
-        }
+        // Credenciales incorrectas
+        setError(data.Mensaje || 'Credenciales incorrectas');
+        return { 
+          success: false, 
+          error: data.Mensaje || 'Credenciales incorrectas' 
+        };
       }
     } catch (err) {
-      setError('Error de conexión. Intenta nuevamente.');
-      return { success: false, error: 'Error de conexión' };
+      const errorMessage = err.message || 'Error de conexión. Intenta nuevamente.';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
     } finally {
       setIsLoading(false);
     }
@@ -95,10 +98,9 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(false);
     setUser(null);
     
-    // Limpiar localStorage para clientes
+    // Limpiar localStorage
     localStorage.removeItem('isAuthenticated');
-    localStorage.removeItem('userName');
-    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userData');
     
     setError('');
   };
