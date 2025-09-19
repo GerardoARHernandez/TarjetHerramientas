@@ -56,7 +56,7 @@ const PointsRoutes = () => {
         
         {/* Resto de rutas... */}
         <Route 
-          path="registrar" 
+          path="registrar/:negocioId" 
           element={
             !isAuthenticated ? (
               <RegisterClient />
