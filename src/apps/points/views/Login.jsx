@@ -2,8 +2,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
-import AdminLogin from './components/AdminLogin';
-import ClientLogin from './components/ClientLogin';
+import AdminLogin from '../components/AdminLogin';
+import ClientLogin from '../components/ClientLogin';
 
 const Login = () => {
   const [loginType, setLoginType] = useState('client'); // 'client' o 'admin'
