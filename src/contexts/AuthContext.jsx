@@ -22,8 +22,18 @@ export const AuthProvider = ({ children }) => {
     const checkAuth = () => {
       const storedAuth = localStorage.getItem('isAuthenticated');
       const userData = localStorage.getItem('userData');
+      const userData = localStorage.getItem('userData');
       const storedUserType = localStorage.getItem('userType');
       
+      if (storedAuth === 'true' && userData) {
+        try {
+          const parsedUser = JSON.parse(userData);
+          setIsAuthenticated(true);
+          setUser(parsedUser);
+        } catch (error) {
+          console.error('Error parsing user data:', error);
+          logout();
+        }
       if (storedAuth === 'true' && userData && storedUserType) {
         try {
           const parsedUser = JSON.parse(userData);
@@ -45,6 +55,48 @@ export const AuthProvider = ({ children }) => {
     setError('');
 
     try {
+      // Llamada a la API real
+      const response = await fetch('https://souvenir-site.com/WebPuntos/API1/Login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          Usuario: credentials.username,
+          Password: credentials.password
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.Mensaje || 'Error en la conexión');
+      }
+
+      if (data.Acceso) {
+        // Login exitoso
+        const userData = {
+          username: credentials.username,
+          name: data.nombre,
+          role: data.UsuRol.toLowerCase(),
+          rawData: data // Guardar todos los datos de la respuesta por si se necesitan
+        };
+        
+        setIsAuthenticated(true);
+        setUser(userData);
+        
+        // Guardar en localStorage
+        localStorage.setItem('isAuthenticated', 'true');
+        localStorage.setItem('userData', JSON.stringify(userData));
+        
+        return { success: true };
+      } else {
+        // Credenciales incorrectas
+        setError(data.Mensaje || 'Credenciales incorrectas');
+        return { 
+          success: false, 
+          error: data.Mensaje || 'Credenciales incorrectas' 
+        };
       const response = await fetch('https://souvenir-site.com/WebPuntos/API1/Login', {
         method: 'POST',
         headers: {
@@ -148,6 +200,9 @@ export const AuthProvider = ({ children }) => {
       const errorMessage = err.message || 'Error de conexión. Intenta nuevamente.';
       setError(errorMessage);
       return { success: false, error: errorMessage };
+      const errorMessage = err.message || 'Error de conexión. Intenta nuevamente.';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
     } finally {
       setIsLoading(false);
     }
@@ -158,7 +213,9 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     setUserType('');
     
+    // Limpiar localStorage
     localStorage.removeItem('isAuthenticated');
+    localStorage.removeItem('userData');
     localStorage.removeItem('userData');
     localStorage.removeItem('userType');
     

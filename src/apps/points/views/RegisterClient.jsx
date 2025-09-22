@@ -1,6 +1,6 @@
 // src/apps/points/views/RegisterClient
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { User, Phone } from 'lucide-react';
 import { usePoints } from '../../../contexts/PointsContext';
 
@@ -13,6 +13,19 @@ const RegisterClient = () => {
   const navigate = useNavigate();
   const { addClient, clients } = usePoints();
   const [message, setMessage] = useState('');
+  const { negocioId } = useParams(); // Obtener negocioId de la URL
+
+  // Verificar si tenemos un negocioId válido
+  useEffect(() => {
+    if (!negocioId || isNaN(parseInt(negocioId))) {
+      setMessage('ID de negocio no válido. No se puede completar el registro.');
+      
+      setTimeout(() => {
+        setMessage('');
+        navigate('/points-loyalty/login');
+      }, 3000);
+    }
+  }, [negocioId, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -42,16 +55,44 @@ const RegisterClient = () => {
       setTimeout(() => {
         setMessage('');
         navigate('/points-loyalty/login');
-
       }, 3000);
       return;
     }
     
-
     setIsSubmitting(true);
 
-    // Simular registro
-    setTimeout(() => {
+    try {
+      // Dividir nombre en nombre y apellido
+      const nameParts = formData.name.split(' ');
+      const firstName = nameParts[0];
+      const lastName = nameParts.slice(1).join(' ') || ''; // Si no hay apellido, dejamos vacío
+
+      // Preparar datos para la API
+      const requestData = {
+        ListUsuario: {
+          NegocioId: parseInt(negocioId), // Usar el negocioId de la URL
+          UsuarioNombre: firstName,
+          UsuarioApellido: lastName,
+          UsuarioTelefono: formData.phone
+        }
+      };
+
+      // Llamar a la API
+      const response = await fetch('https://souvenir-site.com/WebPuntos/API1/RegistrarCliente', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData)
+      });
+
+      if (!response.ok) {
+        throw new Error('Error en el registro');
+      }
+
+      const result = await response.json();
+      
+      // Si la API responde con éxito, crear el cliente localmente
       const newClient = {
         id: Date.now(),
         name: formData.name,
@@ -61,17 +102,24 @@ const RegisterClient = () => {
       };
 
       addClient(newClient);
-      setIsSubmitting(false);
       
       setMessage(`¡Registro exitoso! Bienvenido ${formData.name}\n\nAhora puede iniciar sesión con su teléfono y contraseña 123`);
 
       setTimeout(() => {
         setMessage('');
+        navigate('/points-loyalty/login');
       }, 3000);
       
-      // Redirigir al login
-      navigate('/points-loyalty/login');
-    }, 1000);
+    } catch (error) {
+      console.error('Error al registrar:', error);
+      setMessage('Error en el registro. Por favor, intente nuevamente.');
+      
+      setTimeout(() => {
+        setMessage('');
+      }, 3000);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -90,6 +138,9 @@ const RegisterClient = () => {
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold text-gray-800 mb-2">REGISTRARSE</h1>
             <p className="text-gray-600">Únete a nuestro programa de fidelidad</p>
+            {negocioId && (
+              <p className="text-sm text-gray-500 mt-1">Negocio ID: {negocioId}</p>
+            )}
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
