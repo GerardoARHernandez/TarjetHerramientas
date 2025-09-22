@@ -1,4 +1,3 @@
-// src/contexts/AuthContext.jsx
 import { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext();
@@ -16,76 +15,139 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [userType, setUserType] = useState(''); // 'admin' o 'client'
 
   // Verificar autenticación al cargar
   useEffect(() => {
     const checkAuth = () => {
       const storedAuth = localStorage.getItem('isAuthenticated');
-      const userName = localStorage.getItem('userName');
-      const userEmail = localStorage.getItem('userEmail');
+      const userData = localStorage.getItem('userData');
+      const storedUserType = localStorage.getItem('userType');
       
-      if (storedAuth === 'true' && userName && userEmail) {
-        setIsAuthenticated(true);
-        setUser({ 
-          username: userEmail, 
-          name: userName,
-          role: 'client'
-        });
+      if (storedAuth === 'true' && userData && storedUserType) {
+        try {
+          const parsedUser = JSON.parse(userData);
+          setIsAuthenticated(true);
+          setUser(parsedUser);
+          setUserType(storedUserType);
+        } catch (error) {
+          console.error('Error parsing user data:', error);
+          logout();
+        }
       }
     };
     
     checkAuth();
   }, []);
 
-  const login = async (credentials) => {
+  const loginAdmin = async (credentials) => {
     setIsLoading(true);
     setError('');
 
     try {
-      // Simular llamada a API
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      if (credentials.username.toLowerCase() === 'admin') {
-        // Login para administradores
-        if (credentials.password === '123') {
-          setIsAuthenticated(true);
-          setUser({ 
-            username: credentials.username, 
-            name: 'Administrador',
-            role: 'admin'
-          });
-          setError('');
-          return { success: true };
-        } else {
-          setError('Credenciales incorrectas');
-          return { success: false, error: 'Credenciales incorrectas' };
-        }
+      const response = await fetch('https://souvenir-site.com/WebPuntos/API1/Login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          Usuario: credentials.username,
+          Password: credentials.password
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.Mensaje || 'Error en la conexión');
+      }
+
+      if (data.Acceso) {
+        const userData = {
+          username: credentials.username,
+          name: data.nombre,
+          role: data.UsuRol.toLowerCase(),
+          rawData: data
+        };
+        
+        setIsAuthenticated(true);
+        setUser(userData);
+        setUserType('admin');
+        
+        localStorage.setItem('isAuthenticated', 'true');
+        localStorage.setItem('userData', JSON.stringify(userData));
+        localStorage.setItem('userType', 'admin');
+        
+        return { success: true };
       } else {
-        // Login para clientes
-        if (credentials.password === '123') {
-          setIsAuthenticated(true);
-          const clientUser = {
-            username: credentials.username,
-            name: 'Amelia García Suarez',
-            role: 'client'
-          };
-          setUser(clientUser);
-          
-          // Guardar en localStorage
-          localStorage.setItem('isAuthenticated', 'true');
-          localStorage.setItem('userName', clientUser.name);
-          localStorage.setItem('userEmail', clientUser.username);
-          
-          setError('');
-          return { success: true };
-        } else {
-          setError('Contraseña incorrecta. Use 123 para demo');
-          return { success: false, error: 'Contraseña incorrecta' };
-        }
+        setError(data.Mensaje || 'Credenciales incorrectas');
+        return { 
+          success: false, 
+          error: data.Mensaje || 'Credenciales incorrectas' 
+        };
       }
     } catch (err) {
-      setError('Error de conexión. Intenta nuevamente.');
-      return { success: false, error: 'Error de conexión' };
+      const errorMessage = err.message || 'Error de conexión. Intenta nuevamente.';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loginClient = async (credentials) => {
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const payload = {};
+      
+      // Solo incluir los campos que están presentes
+      if (credentials.phone) payload.UsuarioTelefono = credentials.phone;
+      if (credentials.email) payload.UsuarioCorreo = credentials.email;
+
+      const response = await fetch('https://souvenir-site.com/WebPuntos/API1/LoginCliente', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.Mensaje || 'Error en la conexión');
+      }
+
+      if (data.Acceso) {
+        const userData = {
+          username: credentials.phone || credentials.email,
+          name: data.nombre || 'Cliente',
+          role: 'client',
+          rawData: data
+        };
+        
+        setIsAuthenticated(true);
+        setUser(userData);
+        setUserType('client');
+        
+        localStorage.setItem('isAuthenticated', 'true');
+        localStorage.setItem('userData', JSON.stringify(userData));
+        localStorage.setItem('userType', 'client');
+        
+        return { success: true };
+      } else {
+        setError(data.Mensaje || 'Credenciales incorrectas');
+        return { 
+          success: false, 
+          error: data.Mensaje || 'Credenciales incorrectas' 
+        };
+      }
+    } catch (err) {
+      const errorMessage = err.message || 'Error de conexión. Intenta nuevamente.';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
     } finally {
       setIsLoading(false);
     }
@@ -94,11 +156,11 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setIsAuthenticated(false);
     setUser(null);
+    setUserType('');
     
-    // Limpiar localStorage para clientes
     localStorage.removeItem('isAuthenticated');
-    localStorage.removeItem('userName');
-    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userData');
+    localStorage.removeItem('userType');
     
     setError('');
   };
@@ -106,9 +168,11 @@ export const AuthProvider = ({ children }) => {
   const value = {
     isAuthenticated,
     user,
+    userType,
     isLoading,
     error,
-    login,
+    loginAdmin,
+    loginClient,
     logout,
     clearError: () => setError('')
   };
