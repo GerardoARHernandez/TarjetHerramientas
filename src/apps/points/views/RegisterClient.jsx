@@ -1,13 +1,14 @@
 // src/apps/points/views/RegisterClient
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { User, Phone } from 'lucide-react';
+import { User, Phone, Mail } from 'lucide-react';
 import { usePoints } from '../../../contexts/PointsContext';
 
 const RegisterClient = () => {
   const [formData, setFormData] = useState({ 
     name: '', 
-    phone: '' 
+    phone: '',
+    email: '' 
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
@@ -30,7 +31,7 @@ const RegisterClient = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.phone) {
+    if (!formData.name || !formData.phone || !formData.email) {
       setMessage('Por favor completa todos los campos');
 
       setTimeout(() => {
@@ -48,10 +49,31 @@ const RegisterClient = () => {
       return;
     }
 
+    // Validar formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setMessage('Por favor ingresa un correo electrónico válido');
+      setTimeout(() => {
+        setMessage('');
+      }, 3000);
+      return;
+    }
+
     // Verificar si el teléfono ya está registrado
     const phoneExists = clients.some(client => client.phone === formData.phone);
     if (phoneExists) {
       setMessage('Este número de teléfono ya está registrado. Por favor inicie sesión.');
+      setTimeout(() => {
+        setMessage('');
+        navigate('/points-loyalty/login');
+      }, 3000);
+      return;
+    }
+
+    // Verificar si el email ya está registrado
+    const emailExists = clients.some(client => client.email === formData.email);
+    if (emailExists) {
+      setMessage('Este correo electrónico ya está registrado. Por favor inicie sesión.');
       setTimeout(() => {
         setMessage('');
         navigate('/points-loyalty/login');
@@ -67,13 +89,14 @@ const RegisterClient = () => {
       const firstName = nameParts[0];
       const lastName = nameParts.slice(1).join(' ') || ''; // Si no hay apellido, dejamos vacío
 
-      // Preparar datos para la API
+      // Preparar datos para la API según la nueva estructura
       const requestData = {
         ListUsuario: {
           NegocioId: parseInt(negocioId), // Usar el negocioId de la URL
           UsuarioNombre: firstName,
           UsuarioApellido: lastName,
-          UsuarioTelefono: formData.phone
+          UsuarioTelefono: formData.phone,
+          UsuarioCorreo: formData.email
         }
       };
 
@@ -97,6 +120,7 @@ const RegisterClient = () => {
         id: Date.now(),
         name: formData.name,
         phone: formData.phone,
+        email: formData.email,
         registrationDate: new Date().toLocaleDateString('es-MX'),
         points: 0
       };
@@ -176,6 +200,22 @@ const RegisterClient = () => {
                 />
               </div>
               <p className="text-sm text-gray-500 mt-1">Ejemplo: 5512345678</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Correo Electrónico
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  placeholder="correo@ejemplo.com"
+                />
+              </div>
             </div>
 
             <button

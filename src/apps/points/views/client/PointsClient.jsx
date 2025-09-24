@@ -11,9 +11,7 @@ const PointsClient = () => {
   const exchangeRate = 100; // 100 puntos = 100 pesos
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <ClientHeader title="Recompensas" userName={userName} />
-      
+    <div className="min-h-screen bg-gray-50">      
       <div className="p-4 space-y-6">
         {/* Navigation */}
         <div className="flex space-x-4">
