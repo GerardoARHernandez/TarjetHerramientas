@@ -109,15 +109,36 @@ const RegisterClient = () => {
         body: JSON.stringify(requestData)
       });
 
+      const result = await response.json();
+
+      // Validar respuesta del servidor
       if (!response.ok) {
         throw new Error('Error en el registro');
       }
 
-      const result = await response.json();
-      
+      // Verificar si la respuesta contiene un error del servidor
+      if (result.error) {
+        setMessage(result.Mensaje || 'Error en el registro. Por favor, intente nuevamente.');
+        
+        setTimeout(() => {
+          setMessage('');
+        }, 5000); // Más tiempo para mensajes largos del servidor
+        return;
+      }
+
+      // Verificar si el usuarioId es 0 (indicando error)
+      if (result.usuarioId === 0) {
+        setMessage(result.Mensaje || 'Error en el registro. Por favor, intente nuevamente.');
+        
+        setTimeout(() => {
+          setMessage('');
+        }, 5000);
+        return;
+      }
+
       // Si la API responde con éxito, crear el cliente localmente
       const newClient = {
-        id: Date.now(),
+        id: result.usuarioId || Date.now(), // Usar el ID del servidor si está disponible
         name: formData.name,
         phone: formData.phone,
         email: formData.email,
@@ -232,7 +253,11 @@ const RegisterClient = () => {
           </form>
 
           {message && (
-            <div className="mt-6 p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700">
+            <div className={`mt-6 p-4 border-l-4 ${
+              message.includes('¡Registro exitoso!') 
+                ? 'bg-green-100 border-green-500 text-green-700'
+                : 'bg-yellow-100 border-yellow-500 text-yellow-700'
+            }`}>
               <p className="whitespace-pre-line">{message}</p>
             </div>
           )}
