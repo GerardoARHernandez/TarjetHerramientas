@@ -1,7 +1,7 @@
-// src/apps/admin-puntos/components/Header.jsx
+// src/apps/admin-puntos/components/admin/AdminHeader.jsx
 import { Link, NavLink } from "react-router-dom";
 import { useState } from 'react';
-import { useAuth } from '../../../contexts/AuthContext';
+import { useAuth } from '../../../../contexts/AuthContext';
 
 const AdminHeader = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -61,6 +61,19 @@ const AdminHeader = () => {
               Registrar Compra
             </NavLink>
 
+            <NavLink
+              to="/points-loyalty/crear-promocion"
+              className={({ isActive }) =>
+                `px-3 py-2 text-sm lg:px-4 lg:py-2 lg:text-base rounded-lg transition-all duration-200 ${
+                  isActive
+                    ? 'bg-blue-500 text-white shadow-md'
+                    : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50'
+                }`
+              }
+            >
+              Crear Promoción
+            </NavLink>
+
             <a
               href='https://www.tarjet.site/directorio-tarjet'
               target="_blank"
@@ -89,7 +102,7 @@ const AdminHeader = () => {
             
             <nav className="flex flex-col space-y-2">
               <NavLink
-                to="/points-admin"
+                to="/points-loyalty"
                 onClick={() => setIsMenuOpen(false)}
                 className={({ isActive }) =>
                   `px-4 py-2 rounded-lg transition-all duration-200 ${
@@ -103,21 +116,7 @@ const AdminHeader = () => {
               </NavLink>
 
               <NavLink
-                to="/points-admin/registrar-cliente"
-                onClick={() => setIsMenuOpen(false)}
-                className={({ isActive }) =>
-                  `px-4 py-2 rounded-lg transition-all duration-200 ${
-                    isActive
-                      ? 'bg-blue-500 text-white shadow-md'
-                      : 'text-gray-700 hover:text-blue-600 hover:bg-gray-100'
-                  }`
-                }
-              >
-                Registrar Cliente
-              </NavLink>
-
-              <NavLink
-                to="/points-admin/registrar-compra"
+                to="/points-loyalty/registrar-compra"
                 onClick={() => setIsMenuOpen(false)}
                 className={({ isActive }) =>
                   `px-4 py-2 rounded-lg transition-all duration-200 ${
@@ -128,6 +127,20 @@ const AdminHeader = () => {
                 }
               >
                 Registrar Compra
+              </NavLink>
+
+              <NavLink
+                to="/points-loyalty/crear-promocion"
+                onClick={() => setIsMenuOpen(false)}
+                className={({ isActive }) =>
+                  `px-4 py-2 rounded-lg transition-all duration-200 ${
+                    isActive
+                      ? 'bg-blue-500 text-white shadow-md'
+                      : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50'
+                  }`
+                }
+              >
+                Crear Promoción
               </NavLink>
 
               <a

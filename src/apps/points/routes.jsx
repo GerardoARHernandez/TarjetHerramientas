@@ -2,15 +2,15 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePoints } from '../../contexts/PointsContext';
-
 import Login from './views/Login';
 import RegisterClient from './views/RegisterClient';
 import AdminPoints from './views/admin/AdminPoints';
 import {RegisterPurchase} from './views/admin/RegisterPurchase';
 import Stamps from './views/client/StampsClient';
 import PointsClient from './views/client/PointsClient';
-import AdminHeader from './components/AdminHeader';
+import AdminHeader from './components/admin/AdminHeader';
 import ClientHeader from './components/ClientHeader';
+import RegisterPromotion from './views/admin/RegisterPromotion';
 
 const PointsRoutes = () => {
   const { isAuthenticated, user } = useAuth();
@@ -19,13 +19,12 @@ const PointsRoutes = () => {
   // Determinar si el usuario es admin basado en el rol
   const isAdmin = user?.role === 'admin';
   
+  console.log('Auth state:', { isAuthenticated, user, isAdmin }); // Debug
+  
   return (
     <div className="min-h-screen bg-blue-100">
-      {/* Mostrar header según el tipo de usuario */}
+      {/* Solo mostrar AdminHeader para admins - los componentes cliente manejan su propio header */}
       {isAuthenticated && isAdmin && <AdminHeader />}
-      {isAuthenticated && user?.role === 'client' && (
-        <ClientHeader title="MIS PUNTOS" userName={user.name} />
-      )}
       
       <Routes>
         {/* Ruta principal - redirige según el tipo de usuario */}
@@ -33,7 +32,7 @@ const PointsRoutes = () => {
           index 
           element={
             isAuthenticated ? (
-              isAdmin ? <AdminPoints /> : <PointsClient />
+              isAdmin ? <AdminPoints /> : <Navigate to="/points-loyalty/points" replace />
             ) : (
               <Navigate to="/points-loyalty/login" replace /> 
             )
@@ -54,7 +53,7 @@ const PointsRoutes = () => {
           } 
         />
         
-        {/* Resto de rutas... */}
+        {/* Registro de cliente */}
         <Route 
           path="registrar/:negocioId" 
           element={
@@ -66,8 +65,9 @@ const PointsRoutes = () => {
           } 
         />
         
+        {/* Rutas de admin */}
         <Route 
-          path="/registrar-compra" 
+          path="registrar-compra" 
           element={
             isAuthenticated && isAdmin ? (
               <RegisterPurchase />
@@ -77,6 +77,18 @@ const PointsRoutes = () => {
           } 
         />
         
+        <Route 
+          path="crear-promocion" 
+          element={
+            isAuthenticated && isAdmin ? (
+              <RegisterPromotion />
+            ) : (
+              <Navigate to="/points-loyalty/login" replace />
+            )
+          } 
+        />
+        
+        {/* Rutas de cliente */}
         <Route 
           path="stamps" 
           element={

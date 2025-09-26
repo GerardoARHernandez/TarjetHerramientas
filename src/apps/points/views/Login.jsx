@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
-import AdminLogin from '../components/AdminLogin';
+import AdminLogin from '../components/admin/AdminLogin';
 import ClientLogin from '../components/ClientLogin';
 
 const Login = () => {

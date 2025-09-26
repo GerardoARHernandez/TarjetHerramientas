@@ -1,19 +1,18 @@
 import { useNavigate } from 'react-router-dom';
 import { Star, Clock, Gift, Coins, Award } from 'lucide-react';
+import { useAuth } from '../../../../contexts/AuthContext';
+import ClientHeader from '../../components/ClientHeader';
 
 const Stamps = () => {
-  // const userName = localStorage.getItem('userName') || 'Usuario';
+  const { user } = useAuth();
+  const userName = user?.name || 'Usuario';
   const navigate = useNavigate();
 
   // Datos simulados
-  const stamps = Array(8).fill(true).concat(Array(2).fill(false));
+  const stamps = Array(6).fill(true).concat(Array(4).fill(false));
   const completedStamps = stamps.filter(Boolean).length;
   const totalStamps = stamps.length;
-  
-  const rewards = [
-    { id: 1, name: '1 Hamburguesa Sencilla', stamps: 10, available: false, expiry: '24/12/2025' },
-    { id: 2, name: 'Papas Fritas', stamps: 5, available: true, expiry: '24/12/2025' }
-  ];
+
 
   const history = [
     { date: '14/02/2025', action: '+ 1 Sello', type: 'gain' },
@@ -25,6 +24,7 @@ const Stamps = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50">
+      <ClientHeader title="Sellos & Recompensas" userName={userName} />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -90,7 +90,7 @@ const Stamps = () => {
               </div>
               
               <div className="bg-amber-50 rounded-2xl p-4 text-sm text-amber-800 border border-amber-200">
-                <p>¡Obtén más sellos comprando en nuestro establecimiento!</p>
+                <p>✨ ¡Obtén más sellos comprando en nuestro establecimiento!</p>
               </div>
             </div>
 
@@ -101,42 +101,69 @@ const Stamps = () => {
                 Recompensas Disponibles
               </h3>
               
-              {rewards.map(reward => (
-                <div key={reward.id} className="bg-white rounded-3xl p-6 shadow-lg border border-orange-100">
-                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="bg-orange-100 rounded-full p-2">
-                          <Star className="w-5 h-5 text-orange-500" />
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-lg text-gray-800">{reward.name}</h4>
-                          <p className="text-orange-600 font-semibold">{reward.stamps} sellos requeridos</p>
-                        </div>
-                      </div>
-                      <p className="text-sm text-gray-600">Vigencia: {reward.expiry}</p>
-                    </div>
-                    
-                    <button
-                      disabled={!reward.available}
-                      className={`px-6 py-3 rounded-2xl font-semibold transition-all duration-200
-                        ${reward.available 
-                          ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5' 
-                          : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                        }`}
-                    >
-                      {reward.available ? 'Canjear' : 'No Disponible'}
-                    </button>
+              {/* Promociones activas con formato igual al preview */}
+              <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl p-6 border-2 border-orange-200">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="bg-orange-500 p-2 rounded-xl">
+                    <Gift className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-lg text-gray-800">PAPAS A LA FRANCESA</h4>
+                    <p className="text-xs text-orange-600 font-medium">15 días restantes</p>
                   </div>
                 </div>
-              ))}
+
+                <div className="mb-4">
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    RECIBE UNAS PAPAS GRATIS AL JUNTAR 10 SELLOS
+                  </p>
+                </div>
+
+                <div className="bg-white/60 rounded-xl p-4 mb-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-700">Sellos necesarios:</span>
+                    <div className="flex items-center gap-1">
+                      <Star className="w-4 h-4 text-amber-500" />
+                      <span className="font-bold text-amber-600">10</span>
+                    </div>
+                  </div>
+                  
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="bg-gradient-to-r from-orange-400 to-orange-500 h-2 rounded-full w-4/5"></div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Progreso actual: {completedStamps}/10 sellos</p>
+                </div>
+
+                <div className="bg-green-50 rounded-xl p-4 border border-green-200 mb-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Award className="w-4 h-4 text-green-600" />
+                    <span className="text-sm font-medium text-green-700">Tu recompensa:</span>
+                  </div>
+                  <p className="font-bold text-green-800">PAPAS Gratis</p>
+                </div>
+
+                <div className="flex items-center justify-center">
+                  <button
+                    disabled={completedStamps < 10}
+                    className={`px-6 py-3 rounded-2xl font-semibold transition-all duration-200
+                      ${completedStamps >= 10
+                        ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5' 
+                        : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                      }`}
+                  >
+                    {completedStamps >= 10 ? 'Canjear Ahora' : `Necesitas ${10 - completedStamps} sellos más`}
+                  </button>
+                </div>
+              </div>
+              
+              
             </div>
           </div>
 
           {/* Sidebar - Historial */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-3xl p-6 shadow-lg border border-orange-100 sticky top-8">
-              <h3 className="text-xl font-bold mb-6 text-shadow-gray-900 flex items-center gap-2">
+              <h3 className="text-xl font-bold mb-6 text-gray-800 flex items-center gap-2">
                 <Clock className="w-6 h-6 text-orange-500" />
                 Actividad Reciente
               </h3>
