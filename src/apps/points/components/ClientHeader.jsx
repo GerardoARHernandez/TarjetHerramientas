@@ -11,33 +11,38 @@ const ClientHeader = ({ title, userName }) => {
     // Limpiar localStorage para cliente
     localStorage.removeItem('isAuthenticated');
     localStorage.removeItem('userName');
-    
+   
     // Si estaba autenticado en el contexto también, cerrar sesión
     logout();
-    
+   
     navigate('/points-loyalty/login');
   };
 
   return (
-    <div className="bg-gradient-to-r from-red-600 to-red-700 text-white p-4">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-xl font-bold">{title}</h1>
-        <button
-          onClick={handleLogout}
-          className="text-sm bg-red-800 px-3 py-1 rounded hover:bg-red-900 hover:cursor-pointer transition-colors duration-200"
-        >
-          Salir
-        </button>
-      </div>
-      
-      {/* User Card */}
-      <div className="bg-white/10 backdrop-blur rounded-lg p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm opacity-90">MIS TARJETA DE SELLOS</p>
-            <p className="font-bold text-lg">{userName}</p>
+    <div className="bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 text-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Header con logout */}
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{title}</h1>
+          <button
+            onClick={handleLogout}
+            className="text-sm bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full hover:bg-white/30 transition-all duration-200 font-medium border border-white/30"
+          >
+            Salir
+          </button>
+        </div>
+       
+        {/* User Card */}
+        <div className="bg-white/15 backdrop-blur-md rounded-2xl p-6 border border-white/20 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-sm opacity-90 font-medium tracking-wide uppercase">Mi Tarjeta de Sellos</p>
+              <p className="font-bold text-xl sm:text-2xl">{userName}</p>
+            </div>
+            <div className="bg-white/20 p-3 rounded-xl">
+              <Gift className="w-8 h-8" />
+            </div>
           </div>
-          <Gift className="w-8 h-8 opacity-80" />
         </div>
       </div>
     </div>
