@@ -16,13 +16,15 @@ export const AuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [userType, setUserType] = useState(''); // 'admin' o 'client'
+  const [business, setBusiness] = useState(null); // Información del negocio
 
   // Verificar autenticación al cargar
   useEffect(() => {
-    const checkAuth = () => {
+    const checkAuth = async () => {
       const storedAuth = localStorage.getItem('isAuthenticated');
       const userData = localStorage.getItem('userData');
       const storedUserType = localStorage.getItem('userType');
+      const storedBusiness = localStorage.getItem('businessData');
       
       if (storedAuth === 'true' && userData && storedUserType) {
         try {
@@ -30,8 +32,16 @@ export const AuthProvider = ({ children }) => {
           setIsAuthenticated(true);
           setUser(parsedUser);
           setUserType(storedUserType);
+          
+          // Si hay datos del negocio almacenados, cargarlos
+          if (storedBusiness) {
+            setBusiness(JSON.parse(storedBusiness));
+          } else if (storedUserType === 'admin' && parsedUser.rawData?.NegocioId) {
+            // Si es admin y no hay datos del negocio pero sí un NegocioId, cargarlos
+            await fetchBusinessData(parsedUser.rawData.NegocioId);
+          }
         } catch (error) {
-          console.error('Error parsing user data:', error);
+          console.error('Error parsing stored data:', error);
           logout();
         }
       }
@@ -39,6 +49,29 @@ export const AuthProvider = ({ children }) => {
     
     checkAuth();
   }, []);
+
+  // Función para obtener datos del negocio
+  const fetchBusinessData = async (businessId) => {
+    try {
+      const response = await fetch(`https://souvenir-site.com/WebPuntos/API1/Negocio/${businessId}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.Mensaje || 'Error al obtener datos del negocio');
+      }
+
+      if (data.listNegocio && !data.error) {
+        setBusiness(data.listNegocio);
+        localStorage.setItem('businessData', JSON.stringify(data.listNegocio));
+        return data.listNegocio;
+      } else {
+        throw new Error(data.Mensaje || 'Error en los datos del negocio');
+      }
+    } catch (err) {
+      console.error('Error fetching business data:', err);
+      return null;
+    }
+  };
 
   const loginAdmin = async (credentials) => {
     setIsLoading(true);
@@ -77,6 +110,14 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('isAuthenticated', 'true');
         localStorage.setItem('userData', JSON.stringify(userData));
         localStorage.setItem('userType', 'admin');
+        
+        // Obtener datos del negocio si está disponible el NegocioId
+        if (data.NegocioId) {
+          const businessData = await fetchBusinessData(data.NegocioId);
+          if (!businessData) {
+            console.warn('No se pudieron obtener los datos del negocio');
+          }
+        }
         
         return { success: true };
       } else {
@@ -157,10 +198,12 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(false);
     setUser(null);
     setUserType('');
+    setBusiness(null);
     
     localStorage.removeItem('isAuthenticated');
     localStorage.removeItem('userData');
     localStorage.removeItem('userType');
+    localStorage.removeItem('businessData');
     
     setError('');
   };
@@ -169,12 +212,19 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated,
     user,
     userType,
+    business, // Añadir business al contexto
     isLoading,
     error,
     loginAdmin,
     loginClient,
     logout,
-    clearError: () => setError('')
+    clearError: () => setError(''),
+    refreshBusinessData: () => {
+      if (user?.rawData?.NegocioId) {
+        return fetchBusinessData(user.rawData.NegocioId);
+      }
+      return Promise.resolve(null);
+    }
   };
 
   return (
