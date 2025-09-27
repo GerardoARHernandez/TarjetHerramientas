@@ -53,7 +53,7 @@ const BusinessInfoSidebar = ({ business, showPreview }) => {
           
           <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
             <p className="font-medium text-blue-800 mb-2">Cantidad de {business?.NegocioTipoPS === 'P' ? 'Puntos' : 'Sellos'}</p>
-            <p className="text-blue-700">Entre 5-15 {business?.NegocioTipoPS === 'P' ? 'puntos' : 'sellos'} es lo ideal</p>
+            <p className="text-blue-700">Entre {business?.NegocioTipoPS === 'P' ? ' 80-120 puntos' : ' 5-15 sellos'}{' '}es lo ideal</p>
           </div>
           
           <div className="bg-green-50 rounded-xl p-4 border border-green-100">
