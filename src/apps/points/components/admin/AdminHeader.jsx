@@ -14,7 +14,7 @@ const AdminHeader = () => {
           {/* Logo y botón móvil */}
           <div className="flex items-center justify-between w-full md:w-auto">
             <div className="flex items-center">
-              <h1 className="text-xl md:text-2xl font-bold text-gray-900">Sistema de Puntos</h1>
+              <h1 className="text-xl md:text-2xl font-bold text-green-950">Tarjet Recompensas</h1>
             </div>
             
             {/* Botón hamburguesa para móvil */}
@@ -102,7 +102,7 @@ const AdminHeader = () => {
             
             <nav className="flex flex-col space-y-2">
               <NavLink
-                to="/points-loyalty"
+                to="/"
                 onClick={() => setIsMenuOpen(false)}
                 className={({ isActive }) =>
                   `px-4 py-2 rounded-lg transition-all duration-200 ${
