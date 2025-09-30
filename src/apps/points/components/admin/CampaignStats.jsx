@@ -1,13 +1,12 @@
 // src/apps/points-loyalty/views/admin/RegisterPromotion/components/admin/CampaignStats.jsx
-import { Star, Eye, RefreshCw } from 'lucide-react';
+import { Star, Eye, RefreshCw, Target } from 'lucide-react';
 
 const CampaignStats = ({ campaigns, business }) => {
-  const formatDate = (dateString) => {
-    if (!dateString) return 'No definida';
-    return new Date(dateString).toLocaleDateString('es-MX');
-  };
-
+  // Función para determinar si una campaña está activa
   const isCampaignActive = (campaign) => {
+    if (campaign.CampaActiva === 'N') return false;
+    if (campaign.CampaActiva === 'S') return true;
+    
     const today = new Date();
     const startDate = new Date(campaign.CampaVigeInico);
     const endDate = new Date(campaign.CampaVigeFin);
@@ -15,16 +14,19 @@ const CampaignStats = ({ campaigns, business }) => {
   };
 
   const activeCampaigns = campaigns.filter(campaign => isCampaignActive(campaign));
+  const inactiveCampaigns = campaigns.filter(campaign => !isCampaignActive(campaign));
+  const manuallyActivated = campaigns.filter(campaign => campaign.CampaActiva === 'S').length;
+  const manuallyDeactivated = campaigns.filter(campaign => campaign.CampaActiva === 'N').length;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
       <div className="bg-white rounded-2xl p-6 shadow-lg border border-blue-100">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-gray-600">Total de Campañas</p>
             <p className="text-2xl font-bold text-blue-600">{campaigns.length}</p>
           </div>
-          <Star className="w-8 h-8 text-blue-400" />
+          <Target className="w-8 h-8 text-blue-400" />
         </div>
       </div>
       
@@ -41,12 +43,22 @@ const CampaignStats = ({ campaigns, business }) => {
       <div className="bg-white rounded-2xl p-6 shadow-lg border border-purple-100">
         <div className="flex items-center justify-between">
           <div>
+            <p className="text-sm text-gray-600">Activadas Manual</p>
+            <p className="text-lg font-bold text-purple-600">{manuallyActivated}</p>
+          </div>
+          <Star className="w-8 h-8 text-purple-400" />
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl p-6 shadow-lg border border-orange-100">
+        <div className="flex items-center justify-between">
+          <div>
             <p className="text-sm text-gray-600">Tipo de Programa</p>
-            <p className="text-lg font-bold text-purple-600">
+            <p className="text-lg font-bold text-orange-600">
               {business?.NegocioTipoPS === 'P' ? 'Puntos' : 'Sellos'}
             </p>
           </div>
-          <RefreshCw className="w-8 h-8 text-purple-400" />
+          <RefreshCw className="w-8 h-8 text-orange-400" />
         </div>
       </div>
     </div>

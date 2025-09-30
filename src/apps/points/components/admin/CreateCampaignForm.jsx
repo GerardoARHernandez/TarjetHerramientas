@@ -130,6 +130,7 @@ const CreateCampaignForm = ({ business, onCampaignCreated, showPreview, onToggle
       )}
 
       <PromotionForm 
+        business={business}
         formData={formData} 
         onChange={handleInputChange}
         onSubmit={handleSubmit}

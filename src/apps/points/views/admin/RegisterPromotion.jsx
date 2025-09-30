@@ -22,15 +22,16 @@ const RegisterPromotion = () => {
     setCampaignsError('');
     
     try {
-      const response = await fetch(`https://souvenir-site.com/WebPuntos/API1/Campanias/negocio/${business.NegocioId}`);
+      const response = await fetch(`https://souvenir-site.com/WebPuntos/API1/Campanias/negocioid/${business.NegocioId}`);
       const data = await response.json();
 
       if (!response.ok) {
         throw new Error(data.Mensaje || 'Error al cargar las campañas');
       }
 
-      if (data.listNegocio && !data.error) {
-        setCampaigns(Array.isArray(data.listNegocio) ? data.listNegocio : [data.listNegocio]);
+      // Actualizar para usar la nueva estructura de respuesta
+      if (data.ListCampanias && !data.error) {
+        setCampaigns(Array.isArray(data.ListCampanias) ? data.ListCampanias : []);
       } else {
         setCampaigns([]);
       }

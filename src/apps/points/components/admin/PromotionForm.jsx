@@ -1,7 +1,7 @@
 // src/apps/points-loyalty/components/admin/PromotionForm.jsx
 import { Save, Calendar, Gift, FileText, Star, Award } from 'lucide-react';
 
-const PromotionForm = ({ formData, onChange, onSubmit, isSubmitting, isValid }) => {
+const PromotionForm = ({business, formData, onChange, onSubmit, isSubmitting, isValid }) => {
   
   const today = new Date().toISOString().split('T')[0];
 
@@ -84,12 +84,12 @@ const PromotionForm = ({ formData, onChange, onSubmit, isSubmitting, isValid }) 
         </div>
       </div>
 
-      {/* Cantidad de Sellos y Recompensa */}
+      {/* Cantidad de Sellos/Puntos y Recompensa */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
             <Star className="w-4 h-4 text-cyan-500" />
-            Sellos Requeridos
+            {business?.NegocioTipoPS === 'P' ? 'Puntos' : 'Sellos'} Requeridos
           </label>
           <input
             type="number"
@@ -102,7 +102,7 @@ const PromotionForm = ({ formData, onChange, onSubmit, isSubmitting, isValid }) 
             className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
             required
           />
-          <p className="text-xs text-gray-500">Entre 5-15 sellos es lo recomendado</p>
+          <p className="text-xs text-gray-500">Entre {business?.NegocioTipoPS === 'P' ? ' 80-120 puntos' : ' 5-15 sellos'}{' '} es lo recomendado</p>
         </div>
 
         <div className="space-y-2">
