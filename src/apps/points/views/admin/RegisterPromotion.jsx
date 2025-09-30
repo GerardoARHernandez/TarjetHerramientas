@@ -75,22 +75,14 @@ const RegisterPromotion = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           
-          {/* Columna principal - Formulario y Lista */}
+          {/* Columna principal - Formulario */}
           <div className="md:col-span-2">
             <CreateCampaignForm 
               business={business}
               onCampaignCreated={fetchCampaigns}
               showPreview={showPreview}
               onTogglePreview={() => setShowPreview(!showPreview)}
-            />
-            
-            <CampaignList 
-              campaigns={campaigns}
-              isLoading={isLoadingCampaigns}
-              error={campaignsError}
-              business={business}
-              onRefresh={fetchCampaigns}
-            />
+            />            
           </div>
 
           {/* Sidebar */}
@@ -101,6 +93,18 @@ const RegisterPromotion = () => {
             />
           </div>
         </div>
+        
+        {/* Lista Campañas */}
+        <div className="mt-8 md:mt-1">
+          <CampaignList 
+            campaigns={campaigns} 
+            business={business} 
+            isLoading={isLoadingCampaigns}
+            error={campaignsError}
+            onRefresh={fetchCampaigns}
+          />
+        </div>
+
       </div>
     </div>
   );

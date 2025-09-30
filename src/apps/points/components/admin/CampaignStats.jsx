@@ -19,7 +19,7 @@ const CampaignStats = ({ campaigns, business }) => {
   const manuallyDeactivated = campaigns.filter(campaign => campaign.CampaActiva === 'N').length;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
       <div className="bg-white rounded-2xl p-6 shadow-lg border border-blue-100">
         <div className="flex items-center justify-between">
           <div>
@@ -40,15 +40,6 @@ const CampaignStats = ({ campaigns, business }) => {
         </div>
       </div>
       
-      <div className="bg-white rounded-2xl p-6 shadow-lg border border-purple-100">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-gray-600">Activadas Manual</p>
-            <p className="text-lg font-bold text-purple-600">{manuallyActivated}</p>
-          </div>
-          <Star className="w-8 h-8 text-purple-400" />
-        </div>
-      </div>
 
       <div className="bg-white rounded-2xl p-6 shadow-lg border border-orange-100">
         <div className="flex items-center justify-between">
