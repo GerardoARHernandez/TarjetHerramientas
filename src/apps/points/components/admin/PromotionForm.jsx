@@ -41,7 +41,7 @@ const PromotionForm = ({business, formData, onChange, onSubmit, isSubmitting, is
           name="CampaDesc"
           value={formData.CampaDesc}
           onChange={handleChange}
-          placeholder="ej. RECIBE UNAS PAPAS GRATIS AL JUNTAR 10 SELLOS"
+          placeholder={`ej. RECIBE UNAS PAPAS GRATIS AL JUNTAR ${business?.NegocioTipoPS === 'P' ? '80 Puntos' : '10 Sellos'}`}
           rows="3"
           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 resize-none"
           required
@@ -96,9 +96,9 @@ const PromotionForm = ({business, formData, onChange, onSubmit, isSubmitting, is
             name="CampaCantPSCanje"
             value={formData.CampaCantPSCanje}
             onChange={handleChange}
-            placeholder="10"
+            placeholder={`${business?.NegocioTipoPS === 'P' ? '80' : '10'}`}
             min="1"
-            max="50"
+            max="200"
             className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
             required
           />

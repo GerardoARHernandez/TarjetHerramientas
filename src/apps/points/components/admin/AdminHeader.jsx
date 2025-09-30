@@ -8,7 +8,7 @@ const AdminHeader = () => {
   const { logout, user } = useAuth();
 
   return (
-    <header className="bg-gray-50 shadow-lg border-b">
+    <header className="bg-gray-100 shadow-lg border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4 md:py-6">
           {/* Logo y botón móvil */}

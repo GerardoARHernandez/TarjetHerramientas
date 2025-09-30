@@ -1,7 +1,7 @@
 // src/apps/points-loyalty/components/admin/PromotionPreview.jsx
 import { Star, Calendar, Gift, Award } from 'lucide-react';
 
-const PromotionPreview = ({ formData }) => {
+const PromotionPreview = ({ formData, business }) => {
   const formatDate = (dateString) => {
     if (!dateString) return '--';
     const date = new Date(dateString);
@@ -59,10 +59,10 @@ const PromotionPreview = ({ formData }) => {
           </p>
         </div>
 
-        {/* Información de sellos */}
+        {/* Información de sellos/puntos */}
         <div className="bg-white/60 rounded-xl p-4 mb-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-700">Sellos necesarios:</span>
+            <span className="text-sm font-medium text-gray-700">{business?.NegocioTipoPS === 'P' ? 'Puntos' : 'Sellos'} necesarios:</span>
             <div className="flex items-center gap-1">
               <Star className="w-4 h-4 text-cyan-500" />
               <span className="font-bold text-cyan-600">
@@ -75,7 +75,7 @@ const PromotionPreview = ({ formData }) => {
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div className="bg-gradient-to-r from-blue-400 to-blue-500 h-2 rounded-full w-3/5"></div>
           </div>
-          <p className="text-xs text-gray-500 mt-1">Progreso ejemplo: 6/10 sellos</p>
+          <p className="text-xs text-gray-500 mt-1">Progreso ejemplo: {business?.NegocioTipoPS === 'P' ? '60 Puntos de 100' : '6/10 Sellos'}</p>
         </div>
 
         {/* Recompensa */}

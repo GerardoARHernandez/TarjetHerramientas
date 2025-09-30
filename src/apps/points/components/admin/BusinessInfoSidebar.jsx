@@ -1,25 +1,16 @@
 // src/apps/points-loyalty/views/admin/RegisterPromotion/components/admin/BusinessInfoSidebar.jsx
-import PromotionPreview from '../../components/admin/PromotionPreview';
 
 const BusinessInfoSidebar = ({ business, showPreview }) => {
   const formatDate = (dateString) => {
     if (!dateString) return 'No definida';
     return new Date(dateString).toLocaleDateString('es-MX');
   };
-
-  if (showPreview) {
-    return (
-      <div className="sticky top-8">
-        <PromotionPreview formData={{}} />
-      </div>
-    );
-  }
-
+  
   return (
     <div className="space-y-6">
       {business && (
         <div className="bg-white rounded-3xl p-6 shadow-lg border border-blue-100">
-          <h3 className="text-lg font-bold text-gray-800 mb-4">🏢 Información del Negocio</h3>
+          <h3 className="text-lg font-bold text-gray-800 mb-4">Información del Negocio</h3>
           <div className="space-y-3 text-sm">
             <div>
               <p className="text-gray-500">Nombre</p>
@@ -53,7 +44,7 @@ const BusinessInfoSidebar = ({ business, showPreview }) => {
           
           <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
             <p className="font-medium text-blue-800 mb-2">Cantidad de {business?.NegocioTipoPS === 'P' ? 'Puntos' : 'Sellos'}</p>
-            <p className="text-blue-700">Entre {business?.NegocioTipoPS === 'P' ? ' 80-120 puntos' : ' 5-15 sellos'}{' '}es lo ideal</p>
+            <p className="text-blue-700">Entre {business?.NegocioTipoPS === 'P' ? ' 80-120 puntos' : ' 5-15 sellos'}{' '}es lo ideal.</p>
           </div>
           
           <div className="bg-green-50 rounded-xl p-4 border border-green-100">

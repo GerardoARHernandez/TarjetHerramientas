@@ -125,7 +125,7 @@ const CreateCampaignForm = ({ business, onCampaignCreated, showPreview, onToggle
 
       {showPreview && (
         <div className="mb-6">
-          <PromotionPreview formData={formData} />
+          <PromotionPreview formData={formData} business={business} />
         </div>
       )}
 

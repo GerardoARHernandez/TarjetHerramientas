@@ -84,7 +84,7 @@ const CampaignList = ({ campaigns, isLoading, error, business, onRefresh }) => {
 };
 
 const CampaignCard = ({ campaign, business, isActive }) => (
-    <div className="border border-gray-200 rounded-2xl p-6 hover:shadow-md transition-shadow duration-200">
+    <div className="border border-gray-300 rounded-2xl p-6 hover:shadow-lg transition-shadow duration-200">
         <div className="flex items-start justify-between mb-3">
             <div>
                 <h3 className="text-lg font-bold text-gray-900">{campaign.CampaNombre || 'Sin nombre'}</h3>
@@ -92,11 +92,6 @@ const CampaignCard = ({ campaign, business, isActive }) => (
                 <p className="text-xs text-gray-500 mt-1">ID: {campaign.CampaId}</p>
             </div>
             <div className="flex flex-col items-end gap-2">
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                }`}>
-                    {isActive ? 'Activa' : 'Inactiva'}
-                </span>
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                     campaign.CampaActiva === 'S' 
                         ? 'bg-blue-100 text-blue-800' 
