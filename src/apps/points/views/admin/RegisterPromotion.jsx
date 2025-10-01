@@ -22,7 +22,8 @@ const RegisterPromotion = () => {
     setCampaignsError('');
     
     try {
-      const response = await fetch(`https://souvenir-site.com/WebPuntos/API1/Campanias/negocioid/${business.NegocioId}`);
+      const timestamp = Date.now();
+      const response = await fetch(`https://souvenir-site.com/WebPuntos/API1/Campanias/negocioid/${business.NegocioId}?t=${timestamp}`);
       const data = await response.json();
 
       if (!response.ok) {
@@ -102,6 +103,7 @@ const RegisterPromotion = () => {
             isLoading={isLoadingCampaigns}
             error={campaignsError}
             onRefresh={fetchCampaigns}
+            onCampaignUpdated={fetchCampaigns}
           />
         </div>
 
