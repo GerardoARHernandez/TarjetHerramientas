@@ -1,8 +1,11 @@
 import { useNavigate } from 'react-router-dom';
 import { Clock, Coins, TrendingUp, Gift } from 'lucide-react';
+import { useAuth } from '../../../../contexts/AuthContext';
+import ClientHeader from '../../components/ClientHeader';
 
 const PointsClient = () => {
-  // const userName = localStorage.getItem('userName') || 'Usuario';
+  const { user } = useAuth();
+  const userName = user?.name || 'Usuario';
   const navigate = useNavigate();
 
   const currentPoints = 120;
@@ -10,6 +13,8 @@ const PointsClient = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50">
+      <ClientHeader title="Puntos & Recompensas" userName={userName} />
+      
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">

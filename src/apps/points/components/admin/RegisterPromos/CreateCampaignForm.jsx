@@ -1,9 +1,9 @@
 // src/apps/points-loyalty/views/admin/RegisterPromotion/components/admin/CreateCampaignForm.jsx
 import { useState } from 'react';
 import { RefreshCw } from 'lucide-react';
-import PromotionForm from '../../components/admin/PromotionForm';
-import PromotionPreview from '../../components/admin/PromotionPreview';
-import LoadingSpinner from '../../components/LoadingSpinner';
+import PromotionForm from './PromotionForm';
+import PromotionPreview from './PromotionPreview';
+import LoadingSpinner from '../../LoadingSpinner';
 import { AlertCircle, Save } from 'lucide-react';
 
 const CreateCampaignForm = ({ business, onCampaignCreated, showPreview, onTogglePreview }) => {

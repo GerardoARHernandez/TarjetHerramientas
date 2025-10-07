@@ -1,7 +1,7 @@
 // src/apps/points-loyalty/views/admin/RegisterPromotion/components/admin/CampaignList.jsx
 import { useState } from 'react';
 import { Gift, AlertCircle, Edit, Trash2, Power, Loader } from 'lucide-react';
-import LoadingSpinner from '../LoadingSpinner';
+import LoadingSpinner from '../../LoadingSpinner';
 import EditCampaignModal from './EditCampaignModal';
 
 

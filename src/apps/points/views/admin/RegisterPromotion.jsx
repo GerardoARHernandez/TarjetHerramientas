@@ -2,10 +2,10 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { Gift } from 'lucide-react';
-import CampaignStats from '../../components/admin/CampaignStats';
-import CampaignList from '../../components/admin/CampaignList';
-import CreateCampaignForm from '../../components/admin/CreateCampaignForm';
-import BusinessInfoSidebar from '../../components/admin/BusinessInfoSidebar';
+import CampaignStats from '../../components/admin/RegisterPromos/CampaignStats';
+import CampaignList from '../../components/admin/RegisterPromos/CampaignList';
+import CreateCampaignForm from '../../components/admin/RegisterPromos/CreateCampaignForm';
+import BusinessInfoSidebar from '../../components/admin/RegisterPromos/BusinessInfoSidebar';
 
 const RegisterPromotion = () => {
   const { business } = useAuth();
