@@ -58,7 +58,7 @@ const PointsClient = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-400 mx-auto"></div>
           <p className="mt-4 text-gray-600">Cargando información...</p>
         </div>
       </div>
@@ -82,7 +82,7 @@ const PointsClient = () => {
             {/* Navigation */}
             <div className="bg-white rounded-2xl p-2 shadow-sm border border-orange-100">
               <div className="flex space-x-2">                
-                <button className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 text-white py-3 px-4 rounded-xl font-semibold shadow-md flex items-center justify-center gap-2">
+                <button className="flex-1 bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 text-white py-3 px-4 rounded-xl font-semibold shadow-md flex items-center justify-center gap-2">
                   <Coins className="w-4 h-4" />
                   Puntos
                 </button>
@@ -93,15 +93,15 @@ const PointsClient = () => {
             <div className="bg-white rounded-3xl p-8 shadow-lg border border-orange-100">
               <div className="text-center">
                 <h3 className="text-xl font-bold mb-6 text-gray-800 flex items-center justify-center gap-2">
-                  <TrendingUp className="w-6 h-6 text-orange-500" />
+                  <TrendingUp className="w-6 h-6 text-orange-400" />
                   MIS PUNTOS OBTENIDOS
                 </h3>
-                <div className="bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 text-white rounded-3xl p-10 mb-6 shadow-xl">
+                <div className="bg-gradient-to-br from-amber-400 via-orange-400 to-amber-500 text-white rounded-3xl p-10 mb-6 shadow-xl">
                   <div className="text-6xl font-bold mb-3">{userPoints}</div>
                   <div className="text-xl opacity-90">Puntos disponibles</div>
                 </div>
                 <div className="bg-orange-50 rounded-2xl p-4 inline-block">
-                  <p className="text-sm text-orange-700 font-medium">
+                  <p className="text-sm text-orange-600 font-medium">
                     Sistema de puntos de {business?.NegocioDesc}
                   </p>
                 </div>
@@ -112,7 +112,7 @@ const PointsClient = () => {
             {pointsCampaigns.length > 0 && (
               <div className="bg-white rounded-3xl p-8 shadow-lg border border-orange-100">
                 <h3 className="text-xl font-bold mb-6 text-gray-800 flex items-center gap-2">
-                  <Coins className="w-6 h-6 text-orange-500" />
+                  <Coins className="w-6 h-6 text-orange-400" />
                   Promociones Activas
                 </h3>
                 
@@ -122,11 +122,11 @@ const PointsClient = () => {
                       <div className="flex justify-between items-start mb-3">
                         <div>
                           <h4 className="font-bold text-lg text-gray-800">{campaign.CampaNombre}</h4>
-                          <p className="text-sm text-orange-600 font-medium">
+                          <p className="text-sm text-orange-500 font-medium">
                             Válida hasta: {new Date(campaign.CampaVigeFin).toLocaleDateString()}
                           </p>
                         </div>
-                        <span className="text-orange-600 font-bold text-xl">
+                        <span className="text-orange-500 font-bold text-xl">
                           {campaign.CampaCantPSCanje} pts
                         </span>
                       </div>
@@ -139,14 +139,14 @@ const PointsClient = () => {
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-sm font-medium text-gray-700">Puntos necesarios:</span>
                           <div className="flex items-center gap-1">
-                            <Coins className="w-4 h-4 text-amber-500" />
-                            <span className="font-bold text-amber-600">{campaign.CampaCantPSCanje}</span>
+                            <Coins className="w-4 h-4 text-amber-400" />
+                            <span className="font-bold text-amber-500">{campaign.CampaCantPSCanje}</span>
                           </div>
                         </div>
                         
                         <div className="w-full bg-gray-200 rounded-full h-2">
                           <div 
-                            className="bg-gradient-to-r from-orange-400 to-orange-500 h-2 rounded-full transition-all duration-500"
+                            className="bg-gradient-to-r from-orange-300 to-orange-400 h-2 rounded-full transition-all duration-500"
                             style={{ width: `${Math.min((userPoints / campaign.CampaCantPSCanje) * 100, 100)}%` }}
                           ></div>
                         </div>
@@ -167,7 +167,7 @@ const PointsClient = () => {
                         disabled={userPoints < campaign.CampaCantPSCanje}
                         className={`w-full py-4 rounded-2xl font-semibold text-lg transition-all duration-200
                           ${userPoints >= campaign.CampaCantPSCanje 
-                            ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5' 
+                            ? 'bg-gradient-to-r from-orange-400 to-orange-500 text-white hover:from-orange-600 hover:to-orange-600 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5' 
                             : 'bg-gray-200 text-gray-500 cursor-not-allowed'
                           }`}
                       >
@@ -185,7 +185,7 @@ const PointsClient = () => {
             {/* Exchange Section */}
             <div className="bg-white rounded-3xl p-8 shadow-lg border border-orange-100">
               <h3 className="text-xl font-bold mb-6 text-gray-800 flex items-center gap-2">
-                <Coins className="w-6 h-6 text-orange-500" />
+                <Coins className="w-6 h-6 text-orange-400" />
                 Canjear mis Puntos
               </h3>
               
@@ -199,7 +199,7 @@ const PointsClient = () => {
                 )}
               </div>
 
-              <div className="mt-6 bg-amber-50 rounded-2xl p-4 text-sm text-amber-800 border border-amber-200">
+              <div className="mt-6 bg-amber-50 rounded-2xl p-4 text-sm text-amber-700 border border-amber-200">
                 <p className="mb-2">📋 <strong>Proceso de canje:</strong></p>
                 <p className="mb-2">• Se envía el status de canje a la interfaz del negocio para aprobación</p>
                 <p>• Recibirás una notificación una vez confirmado el canje</p>
@@ -238,7 +238,7 @@ const PointsClient = () => {
               </div>
               
               <div className="mt-6 text-center">
-                <button className="text-orange-600 hover:text-orange-700 font-medium text-sm hover:bg-orange-50 px-4 py-2 rounded-xl transition-colors duration-200">
+                <button className="text-orange-500 hover:text-orange-600 font-medium text-sm hover:bg-orange-50 px-4 py-2 rounded-xl transition-colors duration-200">
                   Ver historial completo →
                 </button>
               </div>
