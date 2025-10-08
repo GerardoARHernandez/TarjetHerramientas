@@ -1,6 +1,6 @@
 // src/contexts/PointsContext.jsx
 import { createContext, useContext, useState, useEffect } from 'react';
-import { useAuth } from './AuthContext'; // Asegúrate de importar useAuth
+import { useAuth } from './AuthContext';
 
 const PointsContext = createContext();
 
@@ -14,15 +14,18 @@ export const usePoints = () => {
 
 export const PointsProvider = ({ children }) => {
   const [transactions, setTransactions] = useState([]);
+  const [stampTransactions, setStampTransactions] = useState([]);
   const [clients, setClients] = useState([]);
   const [businessStats, setBusinessStats] = useState({
     totalClients: 0,
     totalTransactions: 0,
+    totalStampTransactions: 0,
     businessName: '',
-    businessStatus: ''
+    businessStatus: '',
+    businessType: ''
   });
 
-  const { business, userType } = useAuth(); // Obtener business del AuthContext
+  const { business, userType } = useAuth();
 
   // Actualizar estadísticas cuando cambien los datos del negocio
   useEffect(() => {
@@ -30,7 +33,8 @@ export const PointsProvider = ({ children }) => {
       setBusinessStats(prev => ({
         ...prev,
         businessName: business.NegocioDesc || business.NegocioNombre || 'Negocio',
-        businessStatus: business.NegocioActivo === 1 ? 'Activo' : 'Inactivo'
+        businessStatus: business.NegocioActivo === 1 ? 'Activo' : 'Inactivo',
+        businessType: business.NegocioTipoPS === 'P' ? 'Puntos' : 'Sellos'
       }));
     }
   }, [business, userType]);
@@ -40,6 +44,14 @@ export const PointsProvider = ({ children }) => {
     setBusinessStats(prev => ({
       ...prev,
       totalTransactions: prev.totalTransactions + 1
+    }));
+  };
+
+  const addStamp = (stampTransaction) => {
+    setStampTransactions(prev => [stampTransaction, ...prev]);
+    setBusinessStats(prev => ({
+      ...prev,
+      totalStampTransactions: prev.totalStampTransactions + 1
     }));
   };
 
@@ -53,10 +65,12 @@ export const PointsProvider = ({ children }) => {
 
   const value = {
     transactions,
+    stampTransactions,
     clients,
-    businessStats, // Añadir estadísticas del negocio
-    business, // Pasar la información del negocio
+    businessStats,
+    business,
     addTransaction,
+    addStamp,
     addClient,
     updateBusinessStats: setBusinessStats
   };

@@ -1,75 +1,50 @@
 // src/apps/admin-puntos/views/RegisterPurchase.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { usePoints } from '../../../../contexts/PointsContext';
+import { useAuth } from '../../../../contexts/AuthContext';
+import { Coins, Stamp } from 'lucide-react';
+import PointsForm from '../../components/admin/RegisterPurchase/PointsForm';
+import StampsForm from '../../components/admin/RegisterPurchase/StampsForm';
+import ClientSearch from '../../components/admin/RegisterPurchase/ClientSearch';
+import BusinessStats from '../../components/admin/RegisterPurchase/BusinessStats';
 
 export const RegisterPurchase = () => {
   const [formData, setFormData] = useState({ 
     clientId: '',
     amount: '',
-    phone: ''
+    stamps: 1
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [filteredClients, setFilteredClients] = useState([]);
+  const [clients, setClients] = useState([]);
   
-  const { clients, addTransaction } = usePoints();
+  const { addTransaction, addStamp } = usePoints();
+  const { business } = useAuth();
 
-  // Filtrar clientes cuando cambia el teléfono
-  useEffect(() => {
-    if (formData.phone.length >= 3) {
-      const filtered = clients.filter(client => 
-        client.phone.includes(formData.phone)
-      );
-      setFilteredClients(filtered);
-      
-      // Si solo hay un cliente coincidente, seleccionarlo automáticamente
-      if (filtered.length === 1) {
-        setFormData(prev => ({
-          ...prev,
-          clientId: filtered[0].id.toString()
-        }));
-      }
-    } else {
-      setFilteredClients(clients);
-    }
-  }, [formData.phone, clients]);
+  // Determinar el tipo de sistema del negocio
+  const businessType = business?.NegocioTipoPS; // 'P' para puntos, 'S' para sellos
+  const isPointsSystem = businessType === 'P';
+  const isStampsSystem = businessType === 'S';
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  // Usar useCallback para estabilizar la función
+  const handleClientsUpdate = useCallback((clientsList) => {
+    setClients(clientsList);
+  }, []);
+
+  // Usar useCallback para estabilizar la función
+  const handleClientSelect = useCallback((clientId) => {
+    setFormData(prev => ({ ...prev, clientId }));
+  }, []);
+
+  // Obtener el cliente seleccionado
+  const selectedClient = clients.find(client => client.id.toString() === formData.clientId);
+
+  const handlePointsSubmit = async (amount) => {
+    if (!selectedClient) return;
     
-    // Validaciones
-    if (!formData.clientId) {
-      alert('Por favor selecciona un cliente');
-      return;
-    }
-
-    if (!formData.amount) {
-      alert('Por favor ingresa el monto de la compra');
-      return;
-    }
-
-    const amount = parseFloat(formData.amount);
-    if (isNaN(amount)) {
-      alert('El monto debe ser un número válido');
-      return;
-    }
-
-    if (amount <= 0) {
-      alert('El monto debe ser mayor a 0');
-      return;
-    }
-
-    const selectedClient = clients.find(c => c.id.toString() === formData.clientId);
-    if (!selectedClient) {
-      alert('Cliente no encontrado. Por favor verifica la selección');
-      return;
-    }
-
     setIsSubmitting(true);
 
-    // Calcular puntos (10% del monto, redondeado hacia abajo)
     const points = Math.floor(amount * 0.1);
     
-    // Crear objeto de transacción
     const transaction = {
       id: Date.now(),
       clientId: selectedClient.id,
@@ -77,140 +52,135 @@ export const RegisterPurchase = () => {
       phone: selectedClient.phone,
       amount: amount,
       points: points,
+      type: 'points',
       date: new Date().toLocaleString('es-MX', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
         hour: '2-digit',
         minute: '2-digit'
-      })
+      }),
+      businessId: business?.NegocioId
     };
 
-    // Simular tiempo de procesamiento
     setTimeout(() => {
       addTransaction(transaction);
-      setFormData({ clientId: '', amount: '', phone: '' });
+      setFormData({ clientId: '', amount: '', stamps: 1 });
       setIsSubmitting(false);
       
-      // Mostrar confirmación detallada
-      alert(`✅ Compra registrada exitosamente
-      
-Cliente: ${selectedClient.name}
-Teléfono: ${selectedClient.phone}
-Monto: $${amount.toFixed(2)}
-Puntos otorgados: ${points}`);
+      alert(`✅ Compra registrada exitosamente\n\nCliente: ${selectedClient.name}\nTeléfono: ${selectedClient.phone}\nMonto: $${amount.toFixed(2)}\nPuntos otorgados: ${points}`);
     }, 800);
   };
 
+  const handleStampsSubmit = async (stamps) => {
+    if (!selectedClient) return;
+    
+    setIsSubmitting(true);
+
+    const stampTransaction = {
+      id: Date.now(),
+      clientId: selectedClient.id,
+      clientName: selectedClient.name,
+      phone: selectedClient.phone,
+      stamps: parseInt(stamps),
+      type: 'stamps',
+      date: new Date().toLocaleString('es-MX', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }),
+      businessId: business?.NegocioId
+    };
+
+    setTimeout(() => {
+      addStamp(stampTransaction);
+      setFormData({ clientId: '', amount: '', stamps: 1 });
+      setIsSubmitting(false);
+      
+      alert(`✅ Sellos asignados exitosamente\n\nCliente: ${selectedClient.name}\nTeléfono: ${selectedClient.phone}\nSellos otorgados: ${stamps}`);
+    }, 800);
+  };
+
+  // Determinar el icono y color según el sistema
+  const systemConfig = {
+    points: {
+      icon: Coins,
+      color: 'blue',
+      title: 'Sistema de Puntos',
+      description: 'Registra compras para tus clientes y otorga puntos'
+    },
+    stamps: {
+      icon: Stamp,
+      color: 'orange',
+      title: 'Sistema de Sellos', 
+      description: 'Asigna sellos a los clientes'
+    }
+  };
+
+  const currentSystem = isPointsSystem ? systemConfig.points : systemConfig.stamps;
+  const SystemIcon = currentSystem.icon;
+
   return (
-    <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="bg-white rounded-lg shadow-xl p-8">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-900">Registrar Compra</h2>
-          <p className="text-gray-600 mt-2">Registra compras para acumular puntos</p>
+    <div className="max-w-3xl mx-auto px-2 py-8">
+      {/* Header informativo */}
+      <div className="text-center mb-8">
+        <div className={`inline-flex items-center gap-16 bg-${currentSystem.color}-50 px-12 py-3 rounded-2xl border border-${currentSystem.color}-200 mb-4`}>
+          <div className={`p-2 bg-${currentSystem.color}-100 rounded-lg`}>
+            <SystemIcon className={`w-6 h-6 text-${currentSystem.color}-600`} />
+          </div>
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-950">{currentSystem.title}</h2>
+            <p className="text-gray-600 text-sm">{currentSystem.description}</p>
+          </div>
         </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Buscador de cliente por teléfono */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Buscar Cliente por Teléfono
-            </label>
-            <input
-              type="tel"
-              value={formData.phone}
-              onChange={(e) => setFormData({
-                ...formData, 
-                phone: e.target.value.replace(/\D/g, ''),
-                clientId: '' // Resetear selección al cambiar teléfono
-              })}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-              placeholder="Ingresa los primeros dígitos"
-              maxLength="10"
-            />
-            <p className="text-sm text-gray-500 mt-1">Ingresa al menos 3 dígitos para buscar</p>
-          </div>
-
-          {/* Selector de cliente */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Seleccionar Cliente
-            </label>
-            <select
-              value={formData.clientId}
-              onChange={(e) => setFormData({...formData, clientId: e.target.value})}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-              required
-              disabled={filteredClients.length === 0}
-            >
-              <option value="">{filteredClients.length === 0 ? 'No hay clientes disponibles' : 'Selecciona un cliente'}</option>
-              {filteredClients.map(client => (
-                <option key={client.id} value={client.id}>
-                  {client.name} - {client.phone} 
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Monto de la compra */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Monto de la Compra (MXN)
-            </label>
-            <div className="relative">
-              <span className="absolute left-3 top-3 text-gray-500">$</span>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.amount}
-                onChange={(e) => setFormData({...formData, amount: e.target.value})}
-                className="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                placeholder="0.00"
-              />
-            </div>
-          </div>
-
-          {/* Resumen de puntos */}
-          {formData.amount > 0 && (
-            <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
-              <div className="flex justify-between items-center">
-                <span className="font-medium text-blue-800">Puntos a otorgar:</span>
-                <span className="text-xl font-bold text-blue-900">
-                  {Math.floor(formData.amount * 0.1)} pts
-                </span>
-              </div>
-              <div className="mt-2 text-sm text-blue-600">
-                <p>Cálculo: 10% del monto (${formData.amount}) = {formData.amount * 0.1} pts</p>
-                <p className="mt-1">* Se redondea hacia abajo al número entero más cercano</p>
-              </div>
-            </div>
-          )}
-
-          {/* Botón de submit */}
-          <button
-            type="submit"
-            disabled={isSubmitting || !formData.clientId || !formData.amount}
-            className={`w-full py-3 px-4 rounded-lg font-semibold text-white transition-all ${
-              isSubmitting || !formData.clientId || !formData.amount
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 shadow-md'
-            }`}
-          >
-            {isSubmitting ? (
-              <span className="flex items-center justify-center">
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Procesando...
-              </span>
-            ) : (
-              'Registrar Compra'
-            )}
-          </button>
-        </form>
+        
+        {business?.NegocioDesc && (
+          <p className="text-sm text-gray-500">
+            Negocio: {business.NegocioDesc}
+          </p>
+        )}
       </div>
+
+      <div className="bg-white rounded-xl shadow-xl p-8">
+        {/* Componente de búsqueda de cliente */}
+        <ClientSearch
+          selectedClientId={formData.clientId}
+          onClientSelect={handleClientSelect}
+          onClientsUpdate={handleClientsUpdate}
+        />
+
+        {/* Mostrar solo el formulario correspondiente al sistema */}
+        {isPointsSystem ? (
+          <PointsForm
+            formData={formData}
+            onFormDataChange={setFormData}
+            selectedClient={selectedClient}
+            isSubmitting={isSubmitting}
+            onSubmit={handlePointsSubmit}
+          />
+        ) : isStampsSystem ? (
+          <StampsForm
+            formData={formData}
+            onFormDataChange={setFormData}
+            selectedClient={selectedClient}
+            isSubmitting={isSubmitting}
+            onSubmit={handleStampsSubmit}
+          />
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-gray-500">No se ha configurado el sistema de fidelidad para este negocio.</p>
+          </div>
+        )}
+      </div>
+
+      {/* Estadísticas rápidas */}
+      <BusinessStats 
+        clients={clients}
+        businessType={businessType}
+        business={business}
+      />
     </div>
   );
 };
