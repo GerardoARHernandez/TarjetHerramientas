@@ -9,7 +9,6 @@ import {RegisterPurchase} from './views/admin/RegisterPurchase';
 import Stamps from './views/client/StampsClient';
 import PointsClient from './views/client/PointsClient';
 import AdminHeader from './components/admin/AdminHeader';
-import ClientHeader from './components/ClientHeader';
 import RegisterPromotion from './views/admin/RegisterPromotion';
 
 const PointsRoutes = () => {
