@@ -38,38 +38,85 @@ export const RegisterPurchase = () => {
   // Obtener el cliente seleccionado
   const selectedClient = clients.find(client => client.id.toString() === formData.clientId);
 
-  const handlePointsSubmit = async (amount) => {
-    if (!selectedClient) return;
+  // Función para generar un folio único
+  const generateFolio = () => {
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+    return `FOL-${timestamp}-${random}`;
+  };
+
+  const handlePointsSubmit = async (amount, client) => {
+    if (!client) return;
     
     setIsSubmitting(true);
 
-    const points = Math.floor(amount * 0.1);
-    
-    const transaction = {
-      id: Date.now(),
-      clientId: selectedClient.id,
-      clientName: selectedClient.name,
-      phone: selectedClient.phone,
-      amount: amount,
-      points: points,
-      type: 'points',
-      date: new Date().toLocaleString('es-MX', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      }),
-      businessId: business?.NegocioId
-    };
+    try {
+      const points = Math.floor(amount * 0.1);
+      const folio = generateFolio();
 
-    setTimeout(() => {
-      addTransaction(transaction);
-      setFormData({ clientId: '', amount: '', stamps: 1 });
+      // Preparar datos para la API
+      const transactionData = {
+        ListTransaccion: {
+          UsuarioId: parseInt(client.id), // Usar el UsuarioId real
+          TransaccionCant: points, // 10% del monto
+          TransaccionImporte: parseFloat(amount),
+          TransaccionNoReferen: folio // Folio único
+        }
+      };
+
+      console.log('Enviando datos a la API:', transactionData);
+
+      // Llamar a la API real
+      const response = await fetch('https://souvenir-site.com/WebPuntos/API1/AbonoPuntos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(transactionData)
+      });
+
+      const result = await response.json();
+
+      console.log('Respuesta de la API:', result);
+
+      // Verificar si la respuesta indica éxito
+      if (result.Mensaje && result.Mensaje.includes("registro correctamente") && result.TransaccionId) {
+        // Éxito - crear transacción local para el contexto
+        const transaction = {
+          id: result.TransaccionId, // Usar el ID de la transacción de la API
+          clientId: client.id,
+          clientName: client.name,
+          phone: client.phone,
+          amount: amount,
+          points: points,
+          type: 'points',
+          date: new Date().toLocaleString('es-MX', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          }),
+          businessId: business?.NegocioId,
+          folio: folio,
+          apiResponse: result
+        };
+
+        addTransaction(transaction);
+        setFormData({ clientId: '', amount: '', stamps: 1 });
+        
+        alert(`✅ ${result.Mensaje}\n\nCliente: ${client.name}\nTeléfono: ${client.phone}\nMonto: $${amount.toFixed(2)}\nPuntos otorgados: ${points}\nFolio: ${folio}\nTransacción ID: ${result.TransaccionId}`);
+      } else {
+        // Error - la API respondió con error: true o mensaje de error
+        throw new Error(result.Mensaje || 'Error desconocido al registrar la transacción');
+      }
+
+    } catch (error) {
+      console.error('Error al registrar puntos:', error);
+      alert(`❌ Error al registrar la compra: ${error.message}`);
+    } finally {
       setIsSubmitting(false);
-      
-      alert(`✅ Compra registrada exitosamente\n\nCliente: ${selectedClient.name}\nTeléfono: ${selectedClient.phone}\nMonto: $${amount.toFixed(2)}\nPuntos otorgados: ${points}`);
-    }, 800);
+    }
   };
 
   const handleStampsSubmit = async (stamps) => {
@@ -77,30 +124,71 @@ export const RegisterPurchase = () => {
     
     setIsSubmitting(true);
 
-    const stampTransaction = {
-      id: Date.now(),
-      clientId: selectedClient.id,
-      clientName: selectedClient.name,
-      phone: selectedClient.phone,
-      stamps: parseInt(stamps),
-      type: 'stamps',
-      date: new Date().toLocaleString('es-MX', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      }),
-      businessId: business?.NegocioId
-    };
+    try {
+      const folio = generateFolio();
 
-    setTimeout(() => {
-      addStamp(stampTransaction);
-      setFormData({ clientId: '', amount: '', stamps: 1 });
+      // Para sellos, usamos la misma API pero con cantidad 1
+      const transactionData = {
+        ListTransaccion: {
+          UsuarioId: parseInt(selectedClient.id), // Usar el UsuarioId real
+          TransaccionCant: 1, // Siempre 1 sello por transacción
+          TransaccionImporte: 0, // Para sellos, el importe puede ser 0 o el monto real
+          TransaccionNoReferen: folio
+        }
+      };
+
+      console.log('Enviando datos de sellos a la API:', transactionData);
+
+      // Llamar a la API real
+      const response = await fetch('https://souvenir-site.com/WebPuntos/API1/AbonoPuntos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(transactionData)
+      });
+
+      const result = await response.json();
+
+      console.log('Respuesta de la API para sellos:', result);
+
+      // Verificar si la respuesta indica éxito
+      if (result.Mensaje && result.Mensaje.includes("registro correctamente") && result.TransaccionId) {
+        // Éxito - crear transacción local para el contexto
+        const stampTransaction = {
+          id: result.TransaccionId, // Usar el ID de la transacción de la API
+          clientId: selectedClient.id,
+          clientName: selectedClient.name,
+          phone: selectedClient.phone,
+          stamps: parseInt(stamps),
+          type: 'stamps',
+          date: new Date().toLocaleString('es-MX', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          }),
+          businessId: business?.NegocioId,
+          folio: folio,
+          apiResponse: result
+        };
+
+        addStamp(stampTransaction);
+        setFormData({ clientId: '', amount: '', stamps: 1 });
+        
+        alert(`✅ ${result.Mensaje}\n\nCliente: ${selectedClient.name}\nTeléfono: ${selectedClient.phone}\nSellos otorgados: ${stamps}\nFolio: ${folio}\nTransacción ID: ${result.TransaccionId}`);
+      } else {
+        // Error - la API respondió con error: true o mensaje de error
+        throw new Error(result.Mensaje || 'Error desconocido al registrar los sellos');
+      }
+
+    } catch (error) {
+      console.error('Error al registrar sellos:', error);
+      alert(`❌ Error al asignar sellos: ${error.message}`);
+    } finally {
       setIsSubmitting(false);
-      
-      alert(`✅ Sellos asignados exitosamente\n\nCliente: ${selectedClient.name}\nTeléfono: ${selectedClient.phone}\nSellos otorgados: ${stamps}`);
-    }, 800);
+    }
   };
 
   // Determinar el icono y color según el sistema

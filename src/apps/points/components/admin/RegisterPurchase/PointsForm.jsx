@@ -5,7 +5,7 @@ import { useState } from 'react';
 const PointsForm = ({ 
   formData, 
   onFormDataChange, 
-  selectedClient, // ← Recibir selectedClient (objeto completo)
+  selectedClient,
   isSubmitting, 
   onSubmit 
 }) => {
@@ -33,13 +33,13 @@ const PointsForm = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!validateForm()) return;
 
     const amount = parseFloat(formData.amount);
-    onSubmit(amount); // ← Solo pasar amount, selectedClient ya está disponible
+    await onSubmit(amount, selectedClient);
   };
 
   const points = formData.amount > 0 ? Math.floor(formData.amount * 0.1) : 0;

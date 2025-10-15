@@ -33,13 +33,13 @@ const ClientSearch = ({
         
         const data = await response.json();
         
-        // Mapear la respuesta de la API al formato esperado
-        const formattedClients = data.map((client, index) => ({
-          id: index + 1,
+        // Mapear la respuesta de la API usando UsuarioId real
+        const formattedClients = data.map(client => ({
+          id: client.UsuarioId, // Usar UsuarioId real en lugar de índice
           name: `${client.UsuarioNombre} ${client.UsuarioApellido}`.trim(),
           phone: client.UsuarioTelefono,
           email: client.UsuarioCorreo,
-          rawData: client
+          rawData: client // Mantener todos los datos originales
         }));
         
         setClients(formattedClients);
@@ -94,7 +94,7 @@ const ClientSearch = ({
   };
 
   const handleClientSelectFromSearch = (client) => {
-    onClientSelect(client.id.toString());
+    onClientSelect(client.id.toString()); // Usar UsuarioId real
     setSearchTerm(''); // Limpiar búsqueda al seleccionar
     setShowSuggestions(false);
   };
@@ -288,6 +288,11 @@ const ClientSearch = ({
                 <span><strong>Email:</strong> {selectedClient.email}</span>
               </div>
             )}
+            <div className="flex items-center gap-2">
+              <span className="text-xs bg-green-200 text-green-800 px-2 py-1 rounded">
+                ID: {selectedClient.id}
+              </span>
+            </div>
           </div>
         </div>
       )}
