@@ -40,8 +40,6 @@ const PointsClient = () => {
             const userPhone = user.username;
 
             try {
-                console.log('Buscando cliente en negocio:', negocioId, 'con teléfono:', userPhone);
-
                 // Obtener clientes del negocio
                 const clientesResponse = await fetch(`https://souvenir-site.com/WebPuntos/API1/GetClientesxNegocio?Negocioid=${negocioId}`);
                 

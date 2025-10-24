@@ -1,14 +1,44 @@
 // src/apps/points/views/AdminPoints.jsx
+import { useState, useEffect } from 'react';
 import { usePoints } from '../../../../contexts/PointsContext';
 import { useAuth } from '../../../../contexts/AuthContext';
+import ProgramConfigForm from '../../components/admin/ProgramConfigForm';
 
 const AdminPoints = () => {
   const { transactions, clients, businessStats, business } = usePoints();
   const { user } = useAuth();
+  
+  // Estado para la configuración
+  const [config, setConfig] = useState({
+    montoMinimo: '',
+    tipoPrograma: business?.NegocioTipoPS,
+    porcentajePuntos: '',
+    cantidadSellos: '',
+    acumulable: false,
+    observaciones: ''
+  });
+
+  // Efecto para establecer acumulable en true automáticamente si es programa de puntos
+  useEffect(() => {
+    if (config.tipoPrograma === 'P') {
+      setConfig(prev => ({
+        ...prev,
+        acumulable: true
+      }));
+    }
+  }, [config.tipoPrograma]);
 
   // Función para formatear fecha
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('es-MX');
+  };
+
+  // Manejar cambios en los campos
+  const handleInputChange = (field, value) => {
+    setConfig(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
   return (
@@ -42,20 +72,12 @@ const AdminPoints = () => {
         </div>
       )}
 
-      {/* Estadísticas y Transacciones */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      {/* Estadísticas y Configuración */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
         {/* Resumen de estadísticas */}
-        <div className="bg-white rounded-lg shadow-xl p-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Resumen de Actividad</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <p className="text-sm text-blue-600">Clientes Registrados</p>
-              <p className="text-2xl font-bold">{clients.length}</p>
-            </div>
-            <div className="bg-green-50 p-4 rounded-lg">
-              <p className="text-sm text-green-600">Transacciones Totales</p>
-              <p className="text-2xl font-bold">{transactions.length}</p>
-            </div>
+        <div className="bg-white rounded-lg shadow-xl p-6 col-span-2">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Información del Negocio</h2>
+          <div className="grid grid-cols-1 gap-4">            
             {business && (
               <>
                 <div className="bg-purple-50 p-4 rounded-lg">
@@ -73,24 +95,12 @@ const AdminPoints = () => {
           </div>
         </div>
 
-        {/* Últimas transacciones */}
-        <div className="bg-white rounded-lg shadow-xl p-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Últimas Transacciones</h2>
-          <div className="space-y-4">
-            {transactions.slice(0, 5).map((transaction) => (
-              <div key={transaction.id} className="border-b pb-3 last:border-b-0">
-                <p className="font-semibold">{transaction.clientName}</p>
-                <p className="text-sm text-gray-600">
-                  ${transaction.amount} - {transaction.date}
-                  {transaction.points && ` - ${transaction.points} puntos`}
-                </p>
-              </div>
-            ))}
-            {transactions.length === 0 && (
-              <p className="text-gray-500">No hay transacciones registradas</p>
-            )}
-          </div>
-        </div>
+        {/* Componente de Configuración Separado */}
+        <ProgramConfigForm 
+          config={config} 
+          onConfigChange={handleInputChange}
+          business={business}
+        />        
       </div>
 
       {/* Información del Usuario Admin */}

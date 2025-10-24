@@ -45,7 +45,7 @@ const AdminHeader = () => {
                 }`
               }
             >
-              Historial
+              Inicio
             </NavLink>
 
             <NavLink
