@@ -258,7 +258,7 @@ const ProgramConfigForm = ({ config, onConfigChange, business }) => {
           onChange={(e) => handleInputChange('observaciones', e.target.value)}
           rows="3"
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-          placeholder="Notas adicionales sobre la configuración..."
+          placeholder="Notas sobre la configuración. Ejemplo: A partir de los 100 pesos gastados, obtienes el 10% en puntos"
         />
       </div>
 
