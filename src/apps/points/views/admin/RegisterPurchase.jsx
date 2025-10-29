@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { usePoints } from '../../../../contexts/PointsContext';
 import { useAuth } from '../../../../contexts/AuthContext';
+import { useBusinessRules } from '../../../../hooks/useBusinessRules';
 import { Coins, Stamp } from 'lucide-react';
 import PointsForm from '../../components/admin/RegisterPurchase/PointsForm';
 import StampsForm from '../../components/admin/RegisterPurchase/StampsForm';
@@ -16,14 +17,73 @@ export const RegisterPurchase = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [clients, setClients] = useState([]);
+  const [validationError, setValidationError] = useState('');
   
   const { addTransaction, addStamp } = usePoints();
   const { business } = useAuth();
+  
+  // Obtener reglas de negocio
+  const { rules, loading: rulesLoading } = useBusinessRules(business?.NegocioId);
 
   // Determinar el tipo de sistema del negocio
   const businessType = business?.NegocioTipoPS; // 'P' para puntos, 'S' para sellos
   const isPointsSystem = businessType === 'P';
   const isStampsSystem = businessType === 'S';
+
+  // Función para limpiar completamente los formularios
+  const clearForms = () => {
+    setFormData({ 
+      clientId: '', 
+      amount: '', 
+      stamps: 1 
+    });
+    setValidationError('');
+  };
+
+  // Función para validar monto mínimo
+  const validateMinimumAmount = (amount) => {
+    if (!rules || !rules.ReglasMontoMinimo) return true;
+    
+    const minAmount = parseFloat(rules.ReglasMontoMinimo);
+    const purchaseAmount = parseFloat(amount);
+    
+    if (purchaseAmount < minAmount) {
+      setValidationError(`El monto mínimo de compra es $${minAmount.toFixed(2)}`);
+      return false;
+    }
+    
+    setValidationError('');
+    return true;
+  };
+
+  // Función para calcular puntos según reglas
+  const calculatePoints = (amount) => {
+    if (!rules || !rules.ReglasPorcentaje) {
+      // Valor por defecto si no hay reglas
+      return Math.floor(amount * 0.1);
+    }
+    
+    const percentage = parseFloat(rules.ReglasPorcentaje) / 100;
+    return Math.floor(amount * percentage);
+  };
+
+  // Función para calcular sellos según reglas
+  const calculateStamps = (amount) => {
+    if (!rules || !rules.ReglasMontoMinimo) {
+      return 1; // Valor por defecto
+    }
+    
+    const minAmount = parseFloat(rules.ReglasMontoMinimo);
+    const purchaseAmount = parseFloat(amount);
+    
+    // Si no es acumulable, solo 1 sello
+    if (!rules.ReglasAcumulable) {
+      return 1;
+    }
+    
+    // Si es acumulable, calcular según monto mínimo
+    return Math.floor(purchaseAmount / minAmount);
+  };
 
   // Usar useCallback para estabilizar la función
   const handleClientsUpdate = useCallback((clientsList) => {
@@ -33,6 +93,7 @@ export const RegisterPurchase = () => {
   // Usar useCallback para estabilizar la función
   const handleClientSelect = useCallback((clientId) => {
     setFormData(prev => ({ ...prev, clientId }));
+    setValidationError(''); // Limpiar error al cambiar cliente
   }, []);
 
   // Obtener el cliente seleccionado
@@ -48,17 +109,23 @@ export const RegisterPurchase = () => {
   const handlePointsSubmit = async (amount, client) => {
     if (!client) return;
     
+    // Validar monto mínimo
+    if (!validateMinimumAmount(amount)) {
+      return;
+    }
+    
     setIsSubmitting(true);
+    setValidationError('');
 
     try {
-      const points = Math.floor(amount * 0.1);
+      const points = calculatePoints(amount);
       const folio = generateFolio();
 
       // Preparar datos para la API
       const transactionData = {
         ListTransaccion: {
           UsuarioId: parseInt(client.id), // Usar el UsuarioId real
-          TransaccionCant: points, // 10% del monto
+          TransaccionCant: points,
           TransaccionImporte: parseFloat(amount),
           TransaccionNoReferen: folio // Folio único
         }
@@ -79,8 +146,8 @@ export const RegisterPurchase = () => {
 
       console.log('Respuesta de la API:', result);
 
-      // Verificar si la respuesta indica éxito
-      if (result.Mensaje && result.Mensaje.includes("registro correctamente") && result.TransaccionId) {
+      // Validar usando result.error === false
+      if (result.error === false && result.TransaccionId) {
         // Éxito - crear transacción local para el contexto
         const transaction = {
           id: result.TransaccionId, // Usar el ID de la transacción de la API
@@ -103,7 +170,9 @@ export const RegisterPurchase = () => {
         };
 
         addTransaction(transaction);
-        setFormData({ clientId: '', amount: '', stamps: 1 });
+        
+        // LIMPIAR FORMULARIOS DESPUÉS DE ÉXITO
+        clearForms();
         
         alert(`✅ ${result.Mensaje}\n\nCliente: ${client.name}\nTeléfono: ${client.phone}\nMonto: $${amount.toFixed(2)}\nPuntos otorgados: ${points}\nFolio: ${folio}\nTransacción ID: ${result.TransaccionId}`);
       } else {
@@ -119,20 +188,27 @@ export const RegisterPurchase = () => {
     }
   };
 
-  const handleStampsSubmit = async (stamps) => {
+  const handleStampsSubmit = async (stamps, amount = 0) => {
     if (!selectedClient) return;
     
+    // Si se proporciona un monto, validarlo
+    if (amount > 0 && !validateMinimumAmount(amount)) {
+      return;
+    }
+    
     setIsSubmitting(true);
+    setValidationError('');
 
     try {
       const folio = generateFolio();
+      const stampsToAssign = amount > 0 ? calculateStamps(amount) : parseInt(stamps);
 
-      // Para sellos, usamos la misma API pero con cantidad 1
+      // Para sellos, usamos la misma API
       const transactionData = {
         ListTransaccion: {
           UsuarioId: parseInt(selectedClient.id), // Usar el UsuarioId real
-          TransaccionCant: 1, // Siempre 1 sello por transacción
-          TransaccionImporte: 0, // Para sellos, el importe puede ser 0 o el monto real
+          TransaccionCant: stampsToAssign,
+          TransaccionImporte: amount || 0, // Para sellos, el importe puede ser 0 o el monto real
           TransaccionNoReferen: folio
         }
       };
@@ -152,15 +228,15 @@ export const RegisterPurchase = () => {
 
       console.log('Respuesta de la API para sellos:', result);
 
-      // Verificar si la respuesta indica éxito
-      if (result.Mensaje && result.Mensaje.includes("registro correctamente") && result.TransaccionId) {
+      // Validar usando result.error === false
+      if (result.error === false && result.TransaccionId) {
         // Éxito - crear transacción local para el contexto
         const stampTransaction = {
           id: result.TransaccionId, // Usar el ID de la transacción de la API
           clientId: selectedClient.id,
           clientName: selectedClient.name,
           phone: selectedClient.phone,
-          stamps: parseInt(stamps),
+          stamps: stampsToAssign,
           type: 'stamps',
           date: new Date().toLocaleString('es-MX', {
             day: '2-digit',
@@ -175,9 +251,11 @@ export const RegisterPurchase = () => {
         };
 
         addStamp(stampTransaction);
-        setFormData({ clientId: '', amount: '', stamps: 1 });
         
-        alert(`✅ ${result.Mensaje}\n\nCliente: ${selectedClient.name}\nTeléfono: ${selectedClient.phone}\nSellos otorgados: ${stamps}\nFolio: ${folio}\nTransacción ID: ${result.TransaccionId}`);
+        // LIMPIAR FORMULARIOS DESPUÉS DE ÉXITO
+        clearForms();
+        
+        alert(`✅ ${result.Mensaje}\n\nCliente: ${selectedClient.name}\nTeléfono: ${selectedClient.phone}\nSellos otorgados: ${stampsToAssign}\nFolio: ${folio}\nTransacción ID: ${result.TransaccionId}`);
       } else {
         // Error - la API respondió con error: true o mensaje de error
         throw new Error(result.Mensaje || 'Error desconocido al registrar los sellos');
@@ -232,6 +310,24 @@ export const RegisterPurchase = () => {
       </div>
 
       <div className="bg-white rounded-xl shadow-xl p-8">
+        {/* Mostrar error de validación */}
+        {validationError && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-700 text-sm">{validationError}</p>
+          </div>
+        )}
+
+        {/* Mostrar reglas de negocio */}
+        {rules && !rulesLoading && (
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <h4 className="font-semibold text-blue-800 text-sm mb-1">Reglas Configuradas:</h4>
+            <p className="text-blue-700 text-xs">
+              Monto mínimo: ${parseFloat(rules.ReglasMontoMinimo || 0).toFixed(2)} | 
+              {isPointsSystem ? ` Porcentaje: ${rules.ReglasPorcentaje || 0}%` : ` Acumulable: ${rules.ReglasAcumulable ? 'Sí' : 'No'}`}
+            </p>
+          </div>
+        )}
+
         {/* Componente de búsqueda de cliente */}
         <ClientSearch
           selectedClientId={formData.clientId}
@@ -247,6 +343,9 @@ export const RegisterPurchase = () => {
             selectedClient={selectedClient}
             isSubmitting={isSubmitting}
             onSubmit={handlePointsSubmit}
+            businessRules={rules}
+            onValidationError={setValidationError}
+            onClearForm={clearForms}
           />
         ) : isStampsSystem ? (
           <StampsForm
@@ -255,6 +354,9 @@ export const RegisterPurchase = () => {
             selectedClient={selectedClient}
             isSubmitting={isSubmitting}
             onSubmit={handleStampsSubmit}
+            businessRules={rules}
+            onValidationError={setValidationError}
+            onClearForm={clearForms}
           />
         ) : (
           <div className="text-center py-8">
