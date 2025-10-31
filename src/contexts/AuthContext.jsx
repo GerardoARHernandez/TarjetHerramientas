@@ -166,7 +166,9 @@ export const AuthProvider = ({ children }) => {
           username: credentials.phone || credentials.email,
           name: data.nombre || 'Cliente',
           role: 'client',
-          rawData: data
+          rawData: data,
+          // Agregar el ID del cliente para usar en las consultas
+          clienteId: data.usuarioId
         };
         
         setIsAuthenticated(true);

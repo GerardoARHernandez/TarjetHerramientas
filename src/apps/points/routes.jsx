@@ -10,6 +10,7 @@ import Stamps from './views/client/StampsClient';
 import PointsClient from './views/client/PointsClient';
 import AdminHeader from './components/admin/AdminHeader';
 import RegisterPromotion from './views/admin/RegisterPromotion';
+import FullHistory from './views/client/FullHistory';
 
 const PointsRoutes = () => {
   const { isAuthenticated, user } = useAuth();
@@ -121,6 +122,19 @@ const PointsRoutes = () => {
             } replace /> 
           } 
         />
+
+        {/* Ruta de historial completo */}
+        <Route 
+          path="full-history" 
+          element={
+            isAuthenticated && !isAdmin ? (
+              <FullHistory />
+            ) : (
+              <Navigate to="/points-loyalty/login" replace />
+            )
+          } 
+        />
+
       </Routes>
     </div>
   );

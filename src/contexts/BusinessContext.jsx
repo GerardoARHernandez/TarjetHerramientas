@@ -56,7 +56,8 @@ export const BusinessProvider = ({ children }) => {
       setIsLoading(true);
       setError('');
       
-      const response = await fetch(`https://souvenir-site.com/WebPuntos/API1/Campanias/negocioid/${businessId}`);
+      const timestamp = new Date().getTime();
+      const response = await fetch(`https://souvenir-site.com/WebPuntos/API1/Campanias/negocioid/${businessId}?t=${timestamp}`);
       const data = await response.json();
 
       if (!response.ok) {

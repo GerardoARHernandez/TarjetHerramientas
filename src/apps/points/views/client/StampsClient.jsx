@@ -1,57 +1,40 @@
 // src/apps/points-loyalty/views/client/Stamps.jsx
 import { useNavigate } from 'react-router-dom';
-import { Star, Clock, Gift, Award } from 'lucide-react';
+import { Star, Clock, Gift, Award, Coins } from 'lucide-react';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { useBusiness } from '../../../../contexts/BusinessContext';
+import { useClientAccount } from '../../../../hooks/useClientAccount';
 import ClientHeader from '../../components/ClientHeader';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 
 const Stamps = () => {
     const { user } = useAuth();
-    const { business, activeCampaigns, isLoading } = useBusiness();
+    const { business, activeCampaigns, isLoading: businessLoading } = useBusiness();
+    const { accountData, isLoading: accountLoading } = useClientAccount();
     const navigate = useNavigate();
 
-    const [userStamps, setUserStamps] = useState(0);
-    const [stampsHistory, setStampsHistory] = useState([]);
-
     const userName = user?.name || 'Usuario';
+    const businessType = business?.NegocioTipoPS;
+    const color1 = business?.NegocioColor1 || '#ffb900';
+    const color2 = business?.NegocioColor2 || '#f0b100';
 
-    // Determinar si el negocio usa puntos o sellos
-    const businessType = business?.NegocioTipoPS; // 'P' para puntos, 'S' para sellos
+    // Usar datos reales de la API - para sellos, también usamos puntosDisponibles
+    const userStamps = accountData?.puntosDisponibles ? parseInt(accountData.puntosDisponibles) : 0;
+    
+    // Transformar el historial para sellos
+    const stampsHistory = accountData?.Movimientos ? accountData.Movimientos.map(mov => ({
+        id: mov.TransaccionId,
+        date: new Date(mov.TransaccionFecha).toLocaleDateString(),
+        action: mov.TransaccionTipo === 'A' ? '+ 1 Sello' : '- Recompensa',
+        type: mov.TransaccionTipo === 'A' ? 'gain' : 'redeem',
+        details: `Ref: ${mov.TransaccionNoReferen}`,
+        cantidad: mov.TransaccionCant,
+        importe: mov.TransaccionImporte
+    })).reverse() : [];
 
-    // Colores para el fondo segun el negocio
-    const color1 = business?.NegocioColor1 || '#ffb900'; // Naranja por defecto
-    const color2 = business?.NegocioColor2 || '#f0b100'; // Naranja oscuro por defecto
-
-    // Filtrar campañas activas de sellos
     const stampsCampaigns = activeCampaigns.filter(campaign =>
         campaign.NegocioTipoPS === 'S'
     );
-
-    // Cargar datos del cliente (sellos e historial)
-    useEffect(() => {
-        const loadClientData = async () => {
-            if (user?.rawData?.ClienteId) {
-                try {
-                    // Aquí implementar la llamada a la API para obtener
-                    // los sellos e historial del cliente específico
-                    // Por ahora usamos datos de ejemplo
-                    setUserStamps(6);
-                    setStampsHistory([
-                        { date: '14/02/2025', action: '+ 1 Sello', type: 'gain' },
-                        { date: '14/02/2025', action: '+ 1 Sello', type: 'gain' },
-                        { date: '14/03/2025', action: '+ 1 Sello', type: 'gain' },
-                        { date: '14/03/2025', action: '+ 1 Sello', type: 'gain' },
-                        { date: '14/03/2025', action: '- 1 Hamburguesa', type: 'redeem' }
-                    ]);
-                } catch (error) {
-                    console.error('Error loading client data:', error);
-                }
-            }
-        };
-
-        loadClientData();
-    }, [user]);
 
     // Si el negocio no usa sellos, redirigir a puntos
     useEffect(() => {
@@ -60,14 +43,15 @@ const Stamps = () => {
         }
     }, [businessType, navigate]);
 
+    const isLoading = businessLoading || accountLoading;
+
     if (isLoading) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 flex items-center justify-center">
                 <div className="text-center">
-                    {/* ESTILO DINÁMICO AJUSTADO: Loader */}
                     <div
-                        className={`animate-spin rounded-full h-12 w-12 border-b-2 mx-auto`}
-                        style={{ borderColor: color1 }} // Usa el color 1 como borde dinámico
+                        className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto"
+                        style={{ borderColor: color1 }}
                     ></div>
                     <p className="mt-4 text-gray-600">Cargando información...</p>
                 </div>
@@ -81,6 +65,7 @@ const Stamps = () => {
                 title="Sellos & Recompensas"
                 userName={userName}
                 businessName={business?.NegocioDesc}
+                businessLogo={business?.NegocioImagenUrl}
             />
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -92,17 +77,22 @@ const Stamps = () => {
                         {/* Navigation */}
                         <div className="bg-white rounded-2xl p-2 shadow-sm border border-orange-100">
                             <div className="flex space-x-2">
-                                {/* ESTILO DINÁMICO AJUSTADO: Botón de Sellos */}
+                                <button
+                                    onClick={() => navigate('/points-loyalty/points')}
+                                    className="flex-1 text-gray-600 py-3 px-4 rounded-xl font-semibold bg-white hover:bg-gray-50 flex items-center justify-center gap-2 transition-colors"
+                                >
+                                    <Coins className="w-4 h-4" />
+                                    Puntos
+                                </button>
                                 <button
                                     style={{
                                         backgroundImage: `linear-gradient(to right, ${color1}, ${color1}, ${color2})`,
                                     }}
-                                    className={`flex-1 text-white py-3 px-4 rounded-xl font-semibold shadow-md flex items-center justify-center gap-2`}
+                                    className="flex-1 text-white py-3 px-4 rounded-xl font-semibold shadow-md flex items-center justify-center gap-2"
                                 >
                                     <Gift className="w-4 h-4" />
                                     Sellos
                                 </button>
-                                {/* El botón de Puntos iría aquí si se implementara */}
                             </div>
                         </div>
 
@@ -127,12 +117,11 @@ const Stamps = () => {
 
                                         {/* Progress Bar */}
                                         <div className="w-full bg-gray-200 rounded-full h-3 mb-6">
-                                            {/* ESTILO DINÁMICO AJUSTADO: Barra de Progreso */}
                                             <div
                                                 className="h-3 rounded-full transition-all duration-500"
                                                 style={{
                                                     width: `${progressPercentage}%`,
-                                                    backgroundImage: `linear-gradient(to right, ${color1}, ${color2})`, // Degradado dinámico
+                                                    backgroundImage: `linear-gradient(to right, ${color1}, ${color2})`,
                                                 }}
                                             ></div>
                                         </div>
@@ -149,7 +138,6 @@ const Stamps = () => {
                                                         ? 'border-transparent text-white shadow-lg'
                                                         : 'border-orange-200 bg-orange-50 hover:bg-orange-100'
                                                     }`}
-                                                // ESTILO DINÁMICO AJUSTADO: Sellos individuales completados
                                                 style={index < userStamps ? {
                                                     backgroundImage: `linear-gradient(to bottom right, ${color1}, ${color2})`,
                                                 } : {}}
@@ -180,7 +168,6 @@ const Stamps = () => {
                                 return (
                                     <div key={campaign.CampaId} className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl p-6 border-2 border-orange-200">
                                         <div className="flex items-center gap-3 mb-4">
-                                            {/* ESTILO DINÁMICO AJUSTADO: Icono de Recompensa */}
                                             <div className="p-2 rounded-xl" style={{ backgroundColor: color1 }}>
                                                 <Gift className="w-5 h-5 text-white" />
                                             </div>
@@ -208,12 +195,11 @@ const Stamps = () => {
                                             </div>
 
                                             <div className="w-full bg-gray-200 rounded-full h-2">
-                                                {/* ESTILO DINÁMICO AJUSTADO: Barra de Progreso de Recompensa */}
                                                 <div
                                                     className="h-2 rounded-full transition-all duration-500"
                                                     style={{
                                                         width: `${Math.min((userStamps / requiredStamps) * 100, 100)}%`,
-                                                        backgroundImage: `linear-gradient(to right, ${color1}, ${color2})`, // Degradado dinámico
+                                                        backgroundImage: `linear-gradient(to right, ${color1}, ${color2})`,
                                                     }}
                                                 ></div>
                                             </div>
@@ -231,7 +217,6 @@ const Stamps = () => {
                                         </div>
 
                                         <div className="flex items-center justify-center">
-                                            {/* ESTILO DINÁMICO AJUSTADO: Botón de Canje */}
                                             <button
                                                 disabled={!hasEnoughStamps}
                                                 className={`px-6 py-3 rounded-2xl font-semibold transition-all duration-200
@@ -240,7 +225,6 @@ const Stamps = () => {
                                                         : 'bg-gray-200 text-gray-500 cursor-not-allowed'
                                                     }`}
                                                 style={hasEnoughStamps ? {
-                                                    // Degradado dinámico para el botón activo
                                                     backgroundImage: `linear-gradient(to right, ${color1}, ${color2})`,
                                                 } : {}}
                                             >
@@ -271,36 +255,52 @@ const Stamps = () => {
                                 <Clock className="w-6 h-6 text-orange-500" />
                                 Actividad Reciente
                             </h3>
-                            <div className="space-y-4">
-                                {stampsHistory.map((item, index) => (
-                                    <div
-                                        key={index}
-                                        className={`flex justify-between items-center py-3 px-4 rounded-xl border transition-colors duration-200
-                                            ${item.type === 'gain'
-                                                ? 'bg-green-50 border-green-200'
-                                                : 'bg-red-50 border-red-200'
-                                            }`}
-                                    >
-                                        <div>
-                                            <span className="text-sm font-medium text-gray-700">{item.date}</span>
-                                            <p className="text-xs text-gray-500">
-                                                {item.type === 'gain' ? 'Sello obtenido' : 'Recompensa'}
-                                            </p>
+                            <div className="space-y-4 max-h-96 overflow-y-auto">
+                                {stampsHistory.length > 0 ? (
+                                    stampsHistory.slice(0, 5).map((item) => (
+                                        <div
+                                            key={item.id}
+                                            className={`flex justify-between items-center py-3 px-4 rounded-xl border transition-colors duration-200
+                                                ${item.type === 'gain'
+                                                    ? 'bg-green-50 border-green-200'
+                                                    : 'bg-red-50 border-red-200'
+                                                }`}
+                                        >
+                                            <div className="flex-1">
+                                                <div className="flex justify-between items-start mb-1">
+                                                    <span className="text-sm font-medium text-gray-700">{item.date}</span>
+                                                    <span className={`text-sm font-bold ${
+                                                        item.type === 'gain' ? 'text-green-600' : 'text-red-600'
+                                                    }`}>
+                                                        {item.action}
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs text-gray-500">{item.details}</p>
+                                                <p className="text-xs text-gray-400">{item.cantidad} {item.type === 'gain' ? 'sellos' : 'unidades'}</p>
+                                                {item.importe && (
+                                                    <p className="text-xs text-gray-400">${item.importe}</p>
+                                                )}
+                                            </div>
                                         </div>
-                                        <span className={`text-sm font-bold ${
-                                            item.type === 'gain' ? 'text-green-600' : 'text-red-600'
-                                        }`}>
-                                            {item.action}
-                                        </span>
+                                    ))
+                                ) : (
+                                    <div className="text-center py-8 text-gray-500">
+                                        <Clock className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                                        <p>No hay actividad registrada</p>
                                     </div>
-                                ))}
+                                )}
                             </div>
 
-                            <div className="mt-6 text-center">
-                                <button className="text-orange-600 hover:text-orange-700 font-medium text-sm hover:bg-orange-50 px-4 py-2 rounded-xl transition-colors duration-200">
-                                    Ver historial completo →
-                                </button>
-                            </div>
+                            {stampsHistory.length > 0 && (
+                                <div className="mt-6 text-center">
+                                    <button 
+                                        onClick={() => navigate('/points-loyalty/full-history')}
+                                        className="text-orange-600 hover:text-orange-700 font-medium text-sm hover:bg-orange-50 px-4 py-2 rounded-xl transition-colors duration-200"
+                                    >
+                                        Ver historial completo →
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
