@@ -11,6 +11,7 @@ import PointsClient from './views/client/PointsClient';
 import AdminHeader from './components/admin/AdminHeader';
 import RegisterPromotion from './views/admin/RegisterPromotion';
 import FullHistory from './views/client/FullHistory';
+import RedeemPromo from './views/admin/RedeemPromo';
 
 const PointsRoutes = () => {
   const { isAuthenticated, user } = useAuth();
@@ -78,6 +79,17 @@ const PointsRoutes = () => {
         />
         
         <Route 
+          path="canjear" 
+          element={
+            isAuthenticated && isAdmin ? (
+              <RedeemPromo />
+            ) : (
+              <Navigate to="/points-loyalty/login" replace />
+            )
+          } 
+        />
+        
+        <Route 
           path="crear-promocion" 
           element={
             isAuthenticated && isAdmin ? (
@@ -134,6 +146,8 @@ const PointsRoutes = () => {
             )
           } 
         />
+
+
 
       </Routes>
     </div>

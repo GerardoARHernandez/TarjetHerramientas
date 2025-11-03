@@ -70,9 +70,18 @@ const AdminHeader = () => {
                     : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50'
                 }`
               }
-            >
-              Crear Promoción
-            </NavLink>
+            >Crear Promoción</NavLink>
+
+            <NavLink
+              to="/points-loyalty/canjear"
+              className={({ isActive }) =>
+                `px-3 py-2 text-sm lg:px-4 lg:py-2 lg:text-base rounded-lg transition-all duration-200 ${
+                  isActive
+                    ? 'bg-blue-500 text-white shadow-md'
+                    : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50'
+                }`
+              }
+            >Canjear Promoción</NavLink>
 
             <a
               href='https://www.tarjet.site/directorio-tarjet'
@@ -139,9 +148,19 @@ const AdminHeader = () => {
                       : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50'
                   }`
                 }
-              >
-                Crear Promoción
-              </NavLink>
+              >Crear Promoción</NavLink>
+
+              <NavLink
+                to="/points-loyalty/canjear"
+                onClick={() => setIsMenuOpen(false)}
+                className={({ isActive }) =>
+                  `px-4 py-2 rounded-lg transition-all duration-200 ${
+                    isActive
+                      ? 'bg-blue-500 text-white shadow-md'
+                      : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50'
+                  }`
+                }
+              >Canjear Promoción</NavLink>
 
               <a
                 href='https://www.tarjet.site/directorio-tarjet'

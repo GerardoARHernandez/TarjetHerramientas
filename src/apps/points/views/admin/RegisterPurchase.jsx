@@ -6,7 +6,7 @@ import { useBusinessRules } from '../../../../hooks/useBusinessRules';
 import { Coins, Stamp } from 'lucide-react';
 import PointsForm from '../../components/admin/RegisterPurchase/PointsForm';
 import StampsForm from '../../components/admin/RegisterPurchase/StampsForm';
-import ClientSearch from '../../components/admin/RegisterPurchase/ClientSearch';
+import ClientSearch from '../../components/admin/ClientSearch';
 import BusinessStats from '../../components/admin/RegisterPurchase/BusinessStats';
 
 export const RegisterPurchase = () => {
