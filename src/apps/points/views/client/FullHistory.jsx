@@ -17,20 +17,25 @@ const FullHistory = () => {
     const color1 = business?.NegocioColor1 || '#ffb900';
 
     // Transformar movimientos para historial completo
-    const allMovements = accountData?.Movimientos ? accountData.Movimientos.map(mov => ({
-        id: mov.TransaccionId,
-        date: new Date(mov.TransaccionFecha),
-        formattedDate: new Date(mov.TransaccionFecha).toLocaleDateString('es-MX', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        }),
-        action: mov.TransaccionTipo === 'A' ? 'Acumulación' : 'Canje',
-        type: mov.TransaccionTipo === 'A' ? 'gain' : 'redeem',
-        points: mov.TransaccionCant,
-        reference: mov.TransaccionNoReferen,
-        importe: mov.TransaccionImporte
-    })).reverse() : [];
+    const allMovements = accountData?.Movimientos ? accountData.Movimientos.map(mov => {
+        const localDateString = `${mov.TransaccionFecha}T00:00:00`;
+        const correctDate = new Date(localDateString);
+
+        return {
+            id: mov.TransaccionId,
+            date: correctDate, 
+            formattedDate: correctDate.toLocaleDateString('es-MX', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            }),
+            action: mov.TransaccionTipo === 'A' ? 'Acumulación' : 'Canje',
+            type: mov.TransaccionTipo === 'A' ? 'gain' : 'redeem',
+            points: mov.TransaccionCant,
+            reference: mov.TransaccionNoReferen,
+            importe: mov.TransaccionImporte
+        };
+    }).reverse() : [];
 
     const totalPoints = allMovements.reduce((sum, mov) => 
         mov.type === 'gain' ? sum + mov.points : sum - mov.points, 0

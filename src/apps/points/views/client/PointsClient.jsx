@@ -22,15 +22,19 @@ const PointsClient = () => {
     const userPoints = accountData?.puntosDisponibles ? parseInt(accountData.puntosDisponibles) : 0;
     
     // Transformar el historial de movimientos
-    const pointsHistory = accountData?.Movimientos ? accountData.Movimientos.map(mov => ({
-        id: mov.TransaccionId,
-        date: new Date(mov.TransaccionFecha).toLocaleDateString(),
-        action: mov.TransaccionTipo === 'A' ? 'Acumulación de puntos' : 'Canje de puntos',
-        points: mov.TransaccionTipo === 'A' ? `+${mov.TransaccionCant}` : `-${mov.TransaccionCant}`,
-        type: mov.TransaccionTipo === 'A' ? 'gain' : 'redeem',
-        details: `Referencia: ${mov.TransaccionNoReferen}`,
-        importe: mov.TransaccionImporte
-    })).reverse() : [];
+    const pointsHistory = accountData?.Movimientos ? accountData.Movimientos.map(mov => {
+        const dateLocalString = `${mov.TransaccionFecha}T00:00:00`; 
+    
+        return {
+            id: mov.TransaccionId,
+            date: new Date(dateLocalString).toLocaleDateString(), 
+            action: mov.TransaccionTipo === 'A' ? 'Acumulación de puntos' : 'Canje de puntos',
+            points: mov.TransaccionTipo === 'A' ? `+${mov.TransaccionCant}` : `-${mov.TransaccionCant}`,
+            type: mov.TransaccionTipo === 'A' ? 'gain' : 'redeem',
+            details: `Referencia: ${mov.TransaccionNoReferen}`,
+            importe: mov.TransaccionImporte
+        };
+    }).reverse() : [];
 
     const pointsCampaigns = activeCampaigns.filter(campaign =>
         campaign.NegocioTipoPS === 'P'
