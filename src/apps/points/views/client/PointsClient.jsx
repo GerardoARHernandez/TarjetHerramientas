@@ -226,8 +226,9 @@ const PointsClient = () => {
 
                             <div className="mt-6 bg-amber-50 rounded-2xl p-4 text-sm text-amber-700 border border-amber-200">
                                 <p className="mb-2">📋 <strong>Proceso de canje:</strong></p>
-                                <p className="mb-2">• Se envía el status de canje a la interfaz del negocio para aprobación</p>
-                                <p>• Recibirás una notificación una vez confirmado el canje</p>
+                                <p className="mb-2">• Se necesita ir al negocio para aprobación previa.</p>
+                                <p>• Una vez ahí, serás atendido y validado que la promoción es valida.</p>
+                                <p>• El cajero deberá darte la promoción en caso de ser canjeada.</p>
                             </div>
                         </div>
                     </div>
