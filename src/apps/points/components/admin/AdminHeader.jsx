@@ -1,198 +1,192 @@
 // src/apps/admin-puntos/components/admin/AdminHeader.jsx
-import { Link, NavLink } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { useState } from 'react';
 import { useAuth } from '../../../../contexts/AuthContext';
+import { 
+  Home, 
+  ShoppingCart, 
+  Gift, 
+  Ticket, 
+  UserPlus, 
+  LogOut,
+  Menu,
+  X 
+} from 'lucide-react';
 
 const AdminHeader = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { logout, user } = useAuth();
 
+  const navigationItems = [
+    {
+      path: "/",
+      label: "Inicio",
+      icon: Home
+    },
+    {
+      path: "/points-loyalty/registrar-compra",
+      label: "Registrar Compra",
+      icon: ShoppingCart
+    },
+    {
+      path: "/points-loyalty/crear-promocion",
+      label: "Crear Promoción",
+      icon: Gift
+    },
+    {
+      path: "/points-loyalty/canjear",
+      label: "Canjear Promoción",
+      icon: Ticket
+    },
+    {
+      path: "/points-loyalty/registro-cliente",
+      label: "Registrar Cliente",
+      icon: UserPlus
+    }
+  ];
+
   return (
-    <header className="bg-gray-100 shadow-lg border-b">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-4 md:py-6">
-          {/* Logo y botón móvil */}
-          <div className="flex items-center justify-between w-full md:w-auto">
-            <div className="flex items-center">
-              <h1 className="text-xl md:text-2xl font-bold text-green-950">Tarjet Recompensas</h1>
+    <header className="bg-white shadow-lg border-b border-gray-200 sticky top-0 z-50">
+      <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center py-4">
+          {/* Logo y marca */}
+          <div className="flex items-center space-x-4">
+            <div className="flex-shrink-0">
+              <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-3 rounded-xl shadow-lg">
+                <Gift className="h-6 w-6" />
+              </div>
             </div>
-            
-            {/* Botón hamburguesa para móvil */}
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden text-gray-500 hover:text-gray-600 focus:outline-none"
-              aria-label="Toggle menu"
-            >
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                {isMenuOpen ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                )}
-              </svg>
-            </button>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900 leading-tight">
+                Tarjet Recompensas
+              </h1>
+              <p className="text-sm text-gray-500 hidden sm:block">
+                Panel de Administración
+              </p>
+            </div>
           </div>
 
           {/* Navegación para desktop */}
-          <nav className="hidden md:flex space-x-2 lg:space-x-6">
-            <NavLink
-              to="/"
-              className={({ isActive }) =>
-                `px-3 py-2 text-sm lg:px-4 lg:py-2 lg:text-base rounded-lg transition-all duration-200 ${
-                  isActive
-                    ? 'bg-blue-500 text-white shadow-md'
-                    : 'text-gray-700 hover:text-blue-600 hover:bg-gray-100'
-                }`
-              }
-            >
-              Inicio
-            </NavLink>
-
-            <NavLink
-              to="/points-loyalty/registrar-compra"
-              className={({ isActive }) =>
-                `px-3 py-2 text-sm lg:px-4 lg:py-2 lg:text-base rounded-lg transition-all duration-200 ${
-                  isActive
-                    ? 'bg-blue-500 text-white shadow-md'
-                    : 'text-gray-700 hover:text-blue-600 hover:bg-gray-100'
-                }`
-              }
-            >
-              Registrar Compra
-            </NavLink>
-
-            <NavLink
-              to="/points-loyalty/crear-promocion"
-              className={({ isActive }) =>
-                `px-3 py-2 text-sm lg:px-4 lg:py-2 lg:text-base rounded-lg transition-all duration-200 ${
-                  isActive
-                    ? 'bg-blue-500 text-white shadow-md'
-                    : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50'
-                }`
-              }
-            >Crear Promoción</NavLink>
-
-            <NavLink
-              to="/points-loyalty/canjear"
-              className={({ isActive }) =>
-                `px-3 py-2 text-sm lg:px-4 lg:py-2 lg:text-base rounded-lg transition-all duration-200 ${
-                  isActive
-                    ? 'bg-blue-500 text-white shadow-md'
-                    : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50'
-                }`
-              }
-            >Canjear Promoción</NavLink>
-
-            <NavLink
-              to="/points-loyalty/registro-cliente"
-              onClick={() => setIsMenuOpen(false)}
-              className={({ isActive }) =>
-                `px-4 py-2 rounded-lg transition-all duration-200 ${
-                  isActive
-                    ? 'bg-blue-500 text-white shadow-md'
-                    : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50'
-                }`
-              }
-            >Registrar Cliente</NavLink>
-
+          <nav className="hidden lg:flex items-center space-x-1">
+            {navigationItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className={({ isActive }) =>
+                    `flex items-center space-x-2 px-4 py-3 rounded-xl transition-all duration-200 font-medium text-sm ${
+                      isActive
+                        ? 'bg-blue-50 text-blue-700 border border-blue-200 shadow-sm'
+                        : 'text-gray-600 hover:text-blue-600 hover:bg-gray-50'
+                    }`
+                  }
+                >
+                  <Icon className="h-4 w-4 flex-shrink-0" />
+                  <span className="whitespace-nowrap">{item.label}</span>
+                </NavLink>
+              );
+            })}
           </nav>
 
-          {/* Botón de logout para desktop */}
+          {/* Botones de acción desktop */}
+          <div className="hidden lg:flex items-center space-x-4">
+            <div className="text-right">
+              <p className="text-sm font-medium text-gray-900">Hola, {user?.name}</p>
+              <p className="text-xs text-gray-500">Bienvenido</p>
+            </div>
+            <button
+              onClick={logout}
+              className="flex items-center space-x-2 bg-red-500 hover:bg-red-600 text-white px-4 py-3 rounded-xl transition-colors duration-200 font-medium text-sm shadow-sm hover:shadow-md hover:cursor-pointer"
+            >
+              <LogOut className="h-4 w-4" />
+              <span>Salir</span>
+            </button>
+          </div>
+
+          {/* Botón hamburguesa para móvil */}
           <button
-            onClick={logout}
-            className="hidden md:block bg-red-500 hover:bg-red-600 text-white mx-2 px-4 py-2 rounded-lg transition-colors duration-200 text-sm lg:text-base"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="lg:hidden p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+            aria-label="Toggle menu"
           >
-            Cerrar Sesión
+            {isMenuOpen ? (
+              <X className="h-6 w-6" />
+            ) : (
+              <Menu className="h-6 w-6" />
+            )}
           </button>
         </div>
 
         {/* Menú móvil */}
         {isMenuOpen && (
-          <div className="md:hidden pb-4">
-            <div className="mb-3 px-4 py-2 text-sm text-gray-600 border-b">
-              Hola, {user?.name}
+          <div className="lg:hidden border-t border-gray-200 pt-4 pb-6">
+            {/* Información del usuario */}
+            <div className="px-4 py-3 bg-gray-50 rounded-lg mb-4">
+              <p className="text-sm font-medium text-gray-900">Hola, {user?.name}</p>
+              <p className="text-xs text-gray-500">Panel de Administración</p>
             </div>
             
-            <nav className="flex flex-col space-y-2">
-              <NavLink
-                to="/"
-                onClick={() => setIsMenuOpen(false)}
-                className={({ isActive }) =>
-                  `px-4 py-2 rounded-lg transition-all duration-200 ${
-                    isActive
-                      ? 'bg-blue-500 text-white shadow-md'
-                      : 'text-gray-700 hover:text-blue-600 hover:bg-gray-100'
-                  }`
-                }
-              >
-                Inicio
-              </NavLink>
-
-              <NavLink
-                to="/points-loyalty/registrar-compra"
-                onClick={() => setIsMenuOpen(false)}
-                className={({ isActive }) =>
-                  `px-4 py-2 rounded-lg transition-all duration-200 ${
-                    isActive
-                      ? 'bg-blue-500 text-white shadow-md'
-                      : 'text-gray-700 hover:text-blue-600 hover:bg-gray-100'
-                  }`
-                }
-              >
-                Registrar Compra
-              </NavLink>
-
-              <NavLink
-                to="/points-loyalty/crear-promocion"
-                onClick={() => setIsMenuOpen(false)}
-                className={({ isActive }) =>
-                  `px-4 py-2 rounded-lg transition-all duration-200 ${
-                    isActive
-                      ? 'bg-blue-500 text-white shadow-md'
-                      : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50'
-                  }`
-                }
-              >Crear Promoción</NavLink>
-
-              <NavLink
-                to="/points-loyalty/canjear"
-                onClick={() => setIsMenuOpen(false)}
-                className={({ isActive }) =>
-                  `px-4 py-2 rounded-lg transition-all duration-200 ${
-                    isActive
-                      ? 'bg-blue-500 text-white shadow-md'
-                      : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50'
-                  }`
-                }
-              >Canjear Promoción</NavLink>
-
-              <NavLink
-                to="/points-loyalty/registro-cliente"
-                onClick={() => setIsMenuOpen(false)}
-                className={({ isActive }) =>
-                  `px-4 py-2 rounded-lg transition-all duration-200 ${
-                    isActive
-                      ? 'bg-blue-500 text-white shadow-md'
-                      : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50'
-                  }`
-                }
-              >Registrar Cliente</NavLink>
-
+            {/* Navegación móvil */}
+            <nav className="space-y-2">
+              {navigationItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    onClick={() => setIsMenuOpen(false)}
+                    className={({ isActive }) =>
+                      `flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 font-medium ${
+                        isActive
+                          ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                          : 'text-gray-600 hover:text-blue-600 hover:bg-gray-50'
+                      }`
+                    }
+                  >
+                    <Icon className="h-5 w-5 flex-shrink-0" />
+                    <span>{item.label}</span>
+                  </NavLink>
+                );
+              })}
             </nav>
 
+            {/* Botón de logout móvil */}
             <button
               onClick={() => {
                 logout();
                 setIsMenuOpen(false);
-                window.location.href = "/points-loyalty/login";
               }}
-              className="mt-4 w-full bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors duration-200 hover:cursor-pointer"
+              className="mt-4 w-full flex items-center justify-center space-x-2 bg-red-500 hover:bg-red-600 text-white px-4 py-3 rounded-lg transition-colors duration-200 font-medium hover:cursor-pointer"
             >
-              Cerrar Sesión
+              <LogOut className="h-5 w-5" />
+              <span>Cerrar Sesión</span>
             </button>
-            
           </div>
         )}
+
+        {/* Navegación intermedia para tablets */}
+        <nav className="hidden md:flex lg:hidden items-center justify-center space-x-1 pt-2 pb-4">
+          {navigationItems.slice(0, 3).map((item) => {
+            const Icon = item.icon;
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                className={({ isActive }) =>
+                  `flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-all duration-200 text-xs font-medium ${
+                    isActive
+                      ? 'bg-blue-50 text-blue-700'
+                      : 'text-gray-600 hover:text-blue-600 hover:bg-gray-50'
+                  }`
+                }
+              >
+                <Icon className="h-4 w-4" />
+                <span className="text-center leading-tight">{item.label.split(' ')[0]}</span>
+              </NavLink>
+            );
+          })}
+        </nav>
       </div>
     </header>
   );
