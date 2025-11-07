@@ -29,8 +29,6 @@ const ProgramConfigForm = ({ config, onConfigChange, business }) => {
       const response = await fetch(`https://souvenir-site.com/WebPuntos/API1/GetReglasNegocio?Negocioid=${business.NegocioId}&t=${timestamp}`);
       const result = await response.json();
       
-      console.log('Configuración existente:', result);
-      
       if (result && result.NegocioId) {
         setExistingConfig(result);
         
@@ -83,7 +81,6 @@ const ProgramConfigForm = ({ config, onConfigChange, business }) => {
         }
       };
 
-      console.log('Enviando datos a la API:', requestData);
 
       const response = await fetch('https://souvenir-site.com/WebPuntos/API1/RegistrarReglasNegocio', {
         method: 'POST',
@@ -94,8 +91,6 @@ const ProgramConfigForm = ({ config, onConfigChange, business }) => {
       });
 
       const result = await response.json();
-      
-      console.log('Respuesta de la API:', result);
 
       if (result.error === false) {
         setMessage({

@@ -80,8 +80,6 @@ const RedeemPromo = () => {
         }
       };
 
-      console.log('Enviando canje a la API:', transactionData);
-
       const response = await fetch('https://souvenir-site.com/WebPuntos/API1/CanjePuntos', {
         method: 'POST',
         headers: {

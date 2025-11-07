@@ -132,8 +132,6 @@ export const RegisterPurchase = () => {
         }
       };
 
-      console.log('Enviando datos a la API:', transactionData);
-
       // Llamar a la API real
       const response = await fetch('https://souvenir-site.com/WebPuntos/API1/AbonoPuntos', {
         method: 'POST',
@@ -144,8 +142,6 @@ export const RegisterPurchase = () => {
       });
 
       const result = await response.json();
-
-      console.log('Respuesta de la API:', result);
 
       // Validar usando result.error === false
       if (result.error === false && result.TransaccionId) {
