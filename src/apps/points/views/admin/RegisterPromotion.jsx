@@ -6,6 +6,7 @@ import CampaignStats from '../../components/admin/RegisterPromos/CampaignStats';
 import CampaignList from '../../components/admin/RegisterPromos/CampaignList';
 import CreateCampaignForm from '../../components/admin/RegisterPromos/CreateCampaignForm';
 import BusinessInfoSidebar from '../../components/admin/RegisterPromos/BusinessInfoSidebar';
+import Footer from '../../components/Footer';
 
 const RegisterPromotion = () => {
   const { business } = useAuth();
@@ -50,6 +51,7 @@ const RegisterPromotion = () => {
   }, [business?.NegocioId]);
 
   return (
+    <>
     <div className="min-h-screen bg-gradient-to-br from-blue-100 to-cyan-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
@@ -109,6 +111,8 @@ const RegisterPromotion = () => {
 
       </div>
     </div>
+    <Footer />
+    </>
   );
 };
 

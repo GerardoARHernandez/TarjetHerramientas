@@ -6,6 +6,7 @@ import { useBusiness } from '../../../../contexts/BusinessContext';
 import { useClientAccount } from '../../../../hooks/useClientAccount';
 import ClientHeader from '../../components/ClientHeader';
 import { useEffect } from 'react';
+import Footer from '../../components/Footer';
 
 const PointsClient = () => {
     const { user } = useAuth();
@@ -64,6 +65,7 @@ const PointsClient = () => {
     }
 
     return (
+        <>
         <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50">
             <ClientHeader
                 title="Puntos & Recompensas"
@@ -295,6 +297,8 @@ const PointsClient = () => {
                 </div>
             </div>
         </div>
+        <Footer />
+        </>
     );
 };
 

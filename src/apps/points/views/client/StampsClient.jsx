@@ -6,6 +6,7 @@ import { useBusiness } from '../../../../contexts/BusinessContext';
 import { useClientAccount } from '../../../../hooks/useClientAccount';
 import ClientHeader from '../../components/ClientHeader';
 import { useEffect } from 'react';
+import Footer from '../../components/Footer';
 
 const Stamps = () => {
     const { user } = useAuth();
@@ -60,6 +61,7 @@ const Stamps = () => {
     }
 
     return (
+        <>
         <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50">
             <ClientHeader
                 title="Sellos & Recompensas"
@@ -299,6 +301,8 @@ const Stamps = () => {
                 </div>
             </div>
         </div>
+        <Footer />
+        </>
     );
 };
 

@@ -8,6 +8,7 @@ import PointsForm from '../../components/admin/RegisterPurchase/PointsForm';
 import StampsForm from '../../components/admin/RegisterPurchase/StampsForm';
 import ClientSearch from '../../components/admin/ClientSearch';
 import BusinessStats from '../../components/admin/RegisterPurchase/BusinessStats';
+import Footer from '../../components/Footer';
 
 export const RegisterPurchase = () => {
   const [formData, setFormData] = useState({ 
@@ -289,6 +290,7 @@ export const RegisterPurchase = () => {
   const SystemIcon = currentSystem.icon;
 
   return (
+    <>
     <div className="max-w-3xl mx-auto px-2 py-8">
       {/* Header informativo */}
       <div className="text-center mb-8">
@@ -372,5 +374,7 @@ export const RegisterPurchase = () => {
         business={business}
       />
     </div>
+    <Footer />
+    </>
   );
 };

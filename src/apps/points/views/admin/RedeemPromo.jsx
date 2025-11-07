@@ -3,6 +3,7 @@ import { useBusiness } from '../../../../contexts/BusinessContext';
 import { useAuth } from '../../../../contexts/AuthContext';
 import ClientSearch from '../../components/admin/ClientSearch';
 import { Gift, AlertCircle, CheckCircle, Coins } from 'lucide-react';
+import Footer from '../../components/Footer';
 
 const RedeemPromo = () => {
   const [formData, setFormData] = useState({ 
@@ -127,6 +128,7 @@ const RedeemPromo = () => {
   };
 
   return (
+    <>
     <div className="max-w-3xl mx-auto px-2 py-8">
       {/* Header */}
       <div className="text-center mb-8">
@@ -329,6 +331,8 @@ const RedeemPromo = () => {
         </ul>
       </div>
     </div>
+    <Footer />
+    </>
   );
 };
 

@@ -5,6 +5,7 @@ import { useAuth } from '../../../../contexts/AuthContext';
 import { useBusiness } from '../../../../contexts/BusinessContext';
 import { useClientAccount } from '../../../../hooks/useClientAccount';
 import ClientHeader from '../../components/ClientHeader';
+import Footer from '../../components/Footer';
 
 const FullHistory = () => {
     const { user } = useAuth();
@@ -80,6 +81,7 @@ const FullHistory = () => {
     }
 
     return (
+        <>
         <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50">
             <ClientHeader
                 title="Historial Completo"
@@ -202,6 +204,9 @@ const FullHistory = () => {
                 </div>
             </div>
         </div>
+        <Footer />
+        
+        </>
     );
 };
 

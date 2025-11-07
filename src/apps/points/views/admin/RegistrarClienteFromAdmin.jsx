@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { User, Phone, Mail, ArrowLeft } from 'lucide-react';
 import { useBusiness } from '../../../../contexts/BusinessContext';
 import { usePoints } from '../../../../contexts/PointsContext';
+import Footer from '../../components/Footer';
 
 const RegistrarClienteFromAdmin = () => {
   const [formData, setFormData] = useState({ 
@@ -145,6 +146,7 @@ const RegistrarClienteFromAdmin = () => {
   };
 
   return (
+    <>
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 px-4 py-8">
       <div className="max-w-md mx-auto">
 
@@ -255,6 +257,8 @@ const RegistrarClienteFromAdmin = () => {
         </div>
       </div>
     </div>
+    <Footer />
+    </>
   );
 };
 

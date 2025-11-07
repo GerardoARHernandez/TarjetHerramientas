@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { usePoints } from '../../../../contexts/PointsContext';
 import { useAuth } from '../../../../contexts/AuthContext';
 import ProgramConfigForm from '../../components/admin/ProgramConfigForm';
+import Footer from '../../components/Footer';
 
 const AdminPoints = () => {
   const { transactions, clients, businessStats, business } = usePoints();
@@ -42,6 +43,7 @@ const AdminPoints = () => {
   };
 
   return (
+    <>
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Información del Negocio */}
       {business && (
@@ -122,6 +124,9 @@ const AdminPoints = () => {
         </div>
       </div>
     </div>
+
+    <Footer />
+    </>
   );
 };
 
