@@ -148,7 +148,7 @@ const RegisterClient = () => {
 
       addClient(newClient);
       
-      setMessage(`¡Registro exitoso! Bienvenido ${formData.name}\n\nAhora puede iniciar sesión con su teléfono y contraseña 123`);
+      setMessage(`¡Registro exitoso! Bienvenido ${formData.name}\n\nAhora puede iniciar sesión con su teléfono y contraseña`);
 
       setTimeout(() => {
         setMessage('');
