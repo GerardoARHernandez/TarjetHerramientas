@@ -101,7 +101,7 @@ const FullHistory = () => {
                                 {userName} - {business?.NegocioDesc}
                             </p>
                         </div>
-                        <div className="flex gap-3">
+                        {/* <div className="flex gap-3">
                             <button
                                 onClick={exportToCSV}
                                 className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors"
@@ -109,7 +109,7 @@ const FullHistory = () => {
                                 <Download className="w-4 h-4" />
                                 Exportar CSV
                             </button>
-                        </div>
+                        </div> */}
                     </div>
 
                     {/* Resumen */}
