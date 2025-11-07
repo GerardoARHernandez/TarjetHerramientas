@@ -78,13 +78,6 @@ const Stamps = () => {
                         <div className="bg-white rounded-2xl p-2 shadow-sm border border-orange-100">
                             <div className="flex space-x-2">
                                 <button
-                                    onClick={() => navigate('/points-loyalty/points')}
-                                    className="flex-1 text-gray-600 py-3 px-4 rounded-xl font-semibold bg-white hover:bg-gray-50 flex items-center justify-center gap-2 transition-colors"
-                                >
-                                    <Coins className="w-4 h-4" />
-                                    Puntos
-                                </button>
-                                <button
                                     style={{
                                         backgroundImage: `linear-gradient(to right, ${color1}, ${color1}, ${color2})`,
                                     }}
