@@ -1,6 +1,7 @@
 // components/ClientLogin.jsx
 import { useState } from 'react';
 import { Mail, Phone } from 'lucide-react';
+import { MdOutlineAdminPanelSettings } from 'react-icons/md';
 
 const ClientLogin = ({ onLogin, isLoading, onSwitchToAdmin }) => {
   const [email, setEmail] = useState('');
@@ -63,34 +64,26 @@ const ClientLogin = ({ onLogin, isLoading, onSwitchToAdmin }) => {
             />
           </div>
         </div>
-
-        {/* Información adicional */}
-        {/* <div className="bg-blue-50 p-3 rounded-lg">
-          <p className="text-sm text-blue-700">
-            💡 <strong>Nota:</strong> Puedes ingresar solo tu email, solo tu teléfono, o ambos. 
-            La API validará con la información proporcionada.
-          </p>
-        </div> */}
         
         <button
           type="submit"
           disabled={!isFormValid || isLoading}
-          className={`w-full py-3 rounded-lg font-semibold text-white transition-colors ${
+          className={`w-full py-3 rounded-lg font-semibold text-lg text-white transition-colors ${
             isLoading 
               ? 'bg-gray-400 cursor-not-allowed' 
               : 'bg-green-600 hover:bg-green-700 cursor-pointer'
           }`}
         >
-          {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión como Cliente'}
+          {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
         </button>
       </form>
 
-      <div className="mt-6 text-center">
+      <div className="pt-12 text-left -mb-6">
         <button
           onClick={onSwitchToAdmin}
-          className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+          className="text-blue-600 hover:text-blue-800 text-sm font-medium hover:cursor-pointer"
         >
-          ¿Eres administrador? Inicia sesión aquí
+          <MdOutlineAdminPanelSettings className='text-lg'/>
         </button>
       </div>
     </div>

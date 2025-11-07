@@ -80,13 +80,6 @@ const AdminLogin = ({ onLogin, isLoading, onSwitchToClient }) => {
           ¿Eres cliente? Inicia sesión aquí
         </button>
       </div>
-
-      {/* Información adicional */}
-        <div className="bg-gray-300 my-2 p-3 rounded-lg">
-          <p className="text-sm text-blue-700 font-semibold">
-            💡 <strong>Nota:</strong><br></br>User: 1 <br></br>Pass:admin123
-          </p>
-        </div>
         
     </div>
   );
