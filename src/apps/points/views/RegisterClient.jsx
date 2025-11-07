@@ -15,17 +15,51 @@ const RegisterClient = () => {
   const { addClient, clients } = usePoints();
   const [message, setMessage] = useState('');
   const { negocioId } = useParams(); // Obtener negocioId de la URL
+  const [negocioInfo, setNegocioInfo] = useState(null); // Estado para almacenar la info del negocio
+  const [loadingNegocio, setLoadingNegocio] = useState(true); // Estado de carga del negocio
 
-  // Verificar si tenemos un negocioId válido
+  // Obtener información del negocio desde la API
   useEffect(() => {
-    if (!negocioId || isNaN(parseInt(negocioId))) {
-      setMessage('ID de negocio no válido. No se puede completar el registro.');
-      
-      setTimeout(() => {
-        setMessage('');
-        navigate('/points-loyalty/login');
-      }, 3000);
-    }
+    const fetchNegocioInfo = async () => {
+      if (!negocioId || isNaN(parseInt(negocioId))) {
+        setMessage('ID de negocio no válido. No se puede completar el registro.');
+        
+        setTimeout(() => {
+          setMessage('');
+          navigate('/points-loyalty/login');
+        }, 3000);
+        return;
+      }
+
+      try {
+        setLoadingNegocio(true);
+        const response = await fetch(`https://souvenir-site.com/WebPuntos/API1/Negocio/${negocioId}`);
+        
+        if (!response.ok) {
+          throw new Error('Error al obtener información del negocio');
+        }
+
+        const result = await response.json();
+        
+        if (result.error) {
+          throw new Error(result.Mensaje || 'Error en la información del negocio');
+        }
+
+        setNegocioInfo(result.listNegocio);
+      } catch (error) {
+        console.error('Error al cargar información del negocio:', error);
+        setMessage('Error al cargar información del negocio. Por favor, intente nuevamente.');
+        
+        setTimeout(() => {
+          setMessage('');
+          navigate('/points-loyalty/login');
+        }, 3000);
+      } finally {
+        setLoadingNegocio(false);
+      }
+    };
+
+    fetchNegocioInfo();
   }, [negocioId, navigate]);
 
   const handleSubmit = async (e) => {
@@ -183,8 +217,16 @@ const RegisterClient = () => {
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold text-gray-800 mb-2">REGISTRARSE</h1>
             <p className="text-gray-600">Únete a nuestro programa de fidelidad</p>
-            {negocioId && (
-              <p className="text-sm text-gray-500 mt-1">Negocio ID: {negocioId}</p>
+            
+            {/* Mostrar información del negocio */}
+            {loadingNegocio ? (
+              <p className="text-sm text-gray-500 mt-1">Cargando información del negocio...</p>
+            ) : negocioInfo ? (
+              <p className="text-sm text-gray-500 mt-1">
+                Negocio: <span className="font-semibold">{negocioInfo.NegocioDesc}</span>
+              </p>
+            ) : (
+              <p className="text-sm text-red-500 mt-1">No se pudo cargar la información del negocio</p>
             )}
           </div>
 
@@ -241,9 +283,9 @@ const RegisterClient = () => {
 
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || loadingNegocio}
               className={`w-full py-3 px-4 rounded-lg font-semibold text-white transition-all ${
-                isSubmitting
+                isSubmitting || loadingNegocio
                   ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-red-600 hover:bg-red-700 hover:cursor-pointer'
               }`}
@@ -276,7 +318,7 @@ const RegisterClient = () => {
             <p className="text-sm text-gray-600 font-semibold mb-2">Información importante:</p>
             <ul className="text-sm text-gray-600 space-y-1">
               <li>• Use su número de teléfono para iniciar sesión</li>
-              <li>• Contraseña de demo: <span className="font-mono">123</span></li>
+              <li>• Correo electronico necesario. </li>
               <li>• Después del registro podrá iniciar sesión inmediatamente</li>
             </ul>
           </div>
