@@ -12,6 +12,7 @@ import AdminHeader from './components/admin/AdminHeader';
 import RegisterPromotion from './views/admin/RegisterPromotion';
 import FullHistory from './views/client/FullHistory';
 import RedeemPromo from './views/admin/RedeemPromo';
+import RegistrarClienteFromAdmin from './views/admin/RegistrarClienteFromAdmin';
 
 const PointsRoutes = () => {
   const { isAuthenticated, user } = useAuth();
@@ -94,6 +95,17 @@ const PointsRoutes = () => {
           element={
             isAuthenticated && isAdmin ? (
               <RegisterPromotion />
+            ) : (
+              <Navigate to="/points-loyalty/login" replace />
+            )
+          } 
+        />
+
+        <Route 
+          path="registro-cliente" 
+          element={
+            isAuthenticated && isAdmin ? (
+              <RegistrarClienteFromAdmin />
             ) : (
               <Navigate to="/points-loyalty/login" replace />
             )

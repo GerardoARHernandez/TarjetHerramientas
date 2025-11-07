@@ -34,7 +34,7 @@ const AdminHeader = () => {
           </div>
 
           {/* Navegación para desktop */}
-          <nav className="hidden md:flex space-x-2 lg:space-x-4">
+          <nav className="hidden md:flex space-x-2 lg:space-x-6">
             <NavLink
               to="/"
               className={({ isActive }) =>
@@ -83,20 +83,24 @@ const AdminHeader = () => {
               }
             >Canjear Promoción</NavLink>
 
-            <a
-              href='https://www.tarjet.site/directorio-tarjet'
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center px-3 py-2 text-sm lg:px-4 lg:py-2 lg:text-base rounded-lg transition-all duration-200 text-gray-700 hover:text-blue-600 hover:bg-gray-100"
-            >
-              Directorio
-            </a>
+            <NavLink
+              to="/points-loyalty/registro-cliente"
+              onClick={() => setIsMenuOpen(false)}
+              className={({ isActive }) =>
+                `px-4 py-2 rounded-lg transition-all duration-200 ${
+                  isActive
+                    ? 'bg-blue-500 text-white shadow-md'
+                    : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50'
+                }`
+              }
+            >Registrar Cliente</NavLink>
+
           </nav>
 
           {/* Botón de logout para desktop */}
           <button
             onClick={logout}
-            className="hidden md:block bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors duration-200 text-sm lg:text-base"
+            className="hidden md:block bg-red-500 hover:bg-red-600 text-white mx-2 px-4 py-2 rounded-lg transition-colors duration-200 text-sm lg:text-base"
           >
             Cerrar Sesión
           </button>
@@ -162,15 +166,18 @@ const AdminHeader = () => {
                 }
               >Canjear Promoción</NavLink>
 
-              <a
-                href='https://www.tarjet.site/directorio-tarjet'
-                target="_blank"
-                rel="noopener noreferrer"
+              <NavLink
+                to="/points-loyalty/registro-cliente"
                 onClick={() => setIsMenuOpen(false)}
-                className="px-4 py-2 rounded-lg transition-all duration-200 text-gray-700 hover:text-blue-600 hover:bg-gray-100"
-              >
-                Directorio Tarjet
-              </a>
+                className={({ isActive }) =>
+                  `px-4 py-2 rounded-lg transition-all duration-200 ${
+                    isActive
+                      ? 'bg-blue-500 text-white shadow-md'
+                      : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50'
+                  }`
+                }
+              >Registrar Cliente</NavLink>
+
             </nav>
 
             <button
