@@ -18,6 +18,7 @@ const PointsClient = () => {
     const businessType = business?.NegocioTipoPS;
     const color1 = business?.NegocioColor1 ? business.NegocioColor1 : '#ffb900';
     const color2 = business?.NegocioColor2 ? business.NegocioColor2 : '#fe9a00';
+    const detallesColor = business?.NegocioColor2 || '#FF9800';
 
     // Usar datos reales de la API
     const userPoints = accountData?.puntosDisponibles ? parseInt(accountData.puntosDisponibles) : 0;
@@ -52,7 +53,12 @@ const PointsClient = () => {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 flex items-center justify-center">
+            <div 
+                className="min-h-screen flex items-center justify-center"
+                style={{
+                    backgroundImage: `linear-gradient(to bottom right, ${detallesColor}15, ${detallesColor}08)`
+                }}
+            >
                 <div className="text-center">
                     <div
                         className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto"
@@ -66,7 +72,12 @@ const PointsClient = () => {
 
     return (
         <>
-        <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50">
+        <div 
+            className="min-h-screen"
+            style={{
+                backgroundImage: `linear-gradient(to bottom right, ${detallesColor}15, ${detallesColor}08)`
+            }}
+        >
             <ClientHeader
                 title="Puntos & Recompensas"
                 userName={userName}
@@ -83,7 +94,13 @@ const PointsClient = () => {
                     <div className="lg:col-span-2 space-y-8">
 
                         {/* Navigation */}
-                        <div className="bg-white rounded-2xl p-2 shadow-sm border border-orange-100">
+                        <div 
+                            className="rounded-2xl p-2 shadow-sm border"
+                            style={{
+                                backgroundColor: 'white',
+                                borderColor: `${detallesColor}30`
+                            }}
+                        >
                             <div className="flex space-x-2">
                                 <button
                                     style={{
@@ -98,10 +115,16 @@ const PointsClient = () => {
                         </div>
 
                         {/* Points Display */}
-                        <div className="bg-white rounded-3xl p-8 shadow-lg border border-orange-100">
+                        <div 
+                            className="rounded-3xl p-8 shadow-lg border"
+                            style={{
+                                backgroundColor: 'white',
+                                borderColor: `${detallesColor}30`
+                            }}
+                        >
                             <div className="text-center">
                                 <h3 className="text-xl font-bold mb-6 text-gray-800 flex items-center justify-center gap-2">
-                                    <TrendingUp className="w-6 h-6 text-orange-400" />
+                                    <TrendingUp className="w-6 h-6" style={{ color: detallesColor }}/>
                                     MIS PUNTOS OBTENIDOS
                                 </h3>
                                 <div
@@ -115,20 +138,38 @@ const PointsClient = () => {
                                 </div>
                                 {accountData && (
                                     <div className="grid grid-cols-2 gap-4 mt-4">
-                                        <div className="bg-green-50 rounded-xl p-4 text-center">
-                                            <div className="text-2xl font-bold text-green-600">{userPoints}</div>
-                                            <div className="text-sm text-green-700">Puntos disponibles</div>
+                                        <div 
+                                            className="rounded-xl p-4 text-center"
+                                            style={{
+                                                backgroundColor: `${detallesColor}15`,
+                                                color: detallesColor
+                                            }}
+                                        >
+                                            <div className="text-2xl font-bold">{userPoints}</div>
+                                            <div className="text-sm">Puntos disponibles</div>
                                         </div>
-                                        <div className="bg-blue-50 rounded-xl p-4 text-center">
-                                            <div className="text-2xl font-bold text-blue-600">
+                                        <div 
+                                            className="rounded-xl p-4 text-center"
+                                            style={{
+                                                backgroundColor: `${color1}15`,
+                                                color: color1
+                                            }}
+                                        >
+                                            <div className="text-2xl font-bold">
                                                 {accountData.puntosRedimidos || 0}
                                             </div>
-                                            <div className="text-sm text-blue-700">Puntos redimidos</div>
+                                            <div className="text-sm">Puntos redimidos</div>
                                         </div>
                                     </div>
                                 )}
-                                <div className="bg-orange-50 rounded-2xl p-4 inline-block mt-4">
-                                    <p className="text-sm text-orange-600 font-medium">
+                                <div 
+                                    className="rounded-2xl p-4 inline-block mt-4"
+                                    style={{
+                                        backgroundColor: `${detallesColor}15`,
+                                        color: detallesColor
+                                    }}
+                                >
+                                    <p className="text-sm font-medium">
                                         Sistema de puntos de {business?.NegocioDesc}
                                     </p>
                                 </div>
@@ -137,23 +178,36 @@ const PointsClient = () => {
 
                         {/* Campañas Activas de Puntos */}
                         {pointsCampaigns.length > 0 && (
-                            <div className="bg-white rounded-3xl p-8 shadow-lg border border-orange-100">
+                            <div 
+                                className="rounded-3xl p-8 shadow-lg border"
+                                style={{
+                                    backgroundColor: 'white',
+                                    borderColor: `${detallesColor}30`
+                                }}
+                            >
                                 <h3 className="text-xl font-bold mb-6 text-gray-800 flex items-center gap-2">
-                                    <Coins className="w-6 h-6 text-orange-400" />
+                                    <Coins className="w-6 h-6" style={{ color: detallesColor }}/>
                                     Promociones Activas
                                 </h3>
 
                                 <div className="space-y-6">
                                     {pointsCampaigns.map((campaign) => (
-                                        <div key={campaign.CampaId} className="border-2 border-orange-200 rounded-2xl p-6 bg-gradient-to-br from-orange-50 to-amber-50">
+                                        <div 
+                                            key={campaign.CampaId} 
+                                            className="rounded-2xl p-6 border-2"
+                                            style={{
+                                                backgroundImage: `linear-gradient(to bottom right, ${detallesColor}15, ${detallesColor}08)`,
+                                                borderColor: `${detallesColor}30`
+                                            }}
+                                        >
                                             <div className="flex justify-between items-start mb-3">
                                                 <div>
                                                     <h4 className="font-bold text-lg text-gray-800">{campaign.CampaNombre}</h4>
-                                                    <p className="text-sm text-orange-500 font-medium">
+                                                    <p className="text-sm font-medium" style={{ color: detallesColor }}>
                                                         Válida hasta: {new Date(campaign.CampaVigeFin).toLocaleDateString()}
                                                     </p>
                                                 </div>
-                                                <span className="text-orange-500 font-bold text-xl">
+                                                <span className="font-bold text-xl" style={{ color: color2 }}>
                                                     {campaign.CampaCantPSCanje} pts
                                                 </span>
                                             </div>
@@ -162,12 +216,17 @@ const PointsClient = () => {
                                                 {campaign.CampaDesc}
                                             </p>
 
-                                            <div className="bg-white/60 rounded-xl p-4 mb-4">
+                                            <div 
+                                                className="rounded-xl p-4 mb-4"
+                                                style={{
+                                                    backgroundColor: `${detallesColor}08`
+                                                }}
+                                            >
                                                 <div className="flex items-center justify-between mb-2">
                                                     <span className="text-sm font-medium text-gray-700">Puntos necesarios:</span>
                                                     <div className="flex items-center gap-1">
-                                                        <Coins className="w-4 h-4 text-amber-400" />
-                                                        <span className="font-bold text-amber-500">{campaign.CampaCantPSCanje}</span>
+                                                        <Coins className="w-4 h-4" style={{ color: color1 }}/>
+                                                        <span className="font-bold" style={{ color: color2 }}>{campaign.CampaCantPSCanje}</span>
                                                     </div>
                                                 </div>
 
@@ -176,7 +235,7 @@ const PointsClient = () => {
                                                         className="h-2 rounded-full transition-all duration-500"
                                                         style={{
                                                             width: `${Math.min((userPoints / campaign.CampaCantPSCanje) * 100, 100)}%`,
-                                                            backgroundColor: color1,
+                                                            backgroundImage: `linear-gradient(to right, ${color1}, ${color2})`,
                                                         }}
                                                     ></div>
                                                 </div>
@@ -185,12 +244,18 @@ const PointsClient = () => {
                                                 </p>
                                             </div>
 
-                                            <div className="bg-green-50 rounded-xl p-4 border border-green-200 mb-4">
+                                            <div 
+                                                className="rounded-xl p-4 border mb-4"
+                                                style={{
+                                                    backgroundColor: `${detallesColor}08`,
+                                                    borderColor: `${detallesColor}30`
+                                                }}
+                                            >
                                                 <div className="flex items-center gap-2 mb-1">
-                                                    <Gift className="w-4 h-4 text-green-600" />
-                                                    <span className="text-sm font-medium text-green-700">Tu recompensa:</span>
+                                                    <Gift className="w-4 h-4" style={{ color: detallesColor }}/>
+                                                    <span className="text-sm font-medium" style={{ color: detallesColor }}>Tu recompensa:</span>
                                                 </div>
-                                                <p className="font-bold text-green-800">{campaign.CampaRecompensa}</p>
+                                                <p className="font-bold" style={{ color: detallesColor }}>{campaign.CampaRecompensa}</p>
                                             </div>
 
                                             <button
@@ -216,9 +281,15 @@ const PointsClient = () => {
                         )}
 
                         {/* Exchange Section */}
-                        <div className="bg-white rounded-3xl p-8 shadow-lg border border-orange-100">
+                        <div 
+                            className="rounded-3xl p-8 shadow-lg border"
+                            style={{
+                                backgroundColor: 'white',
+                                borderColor: `${detallesColor}30`
+                            }}
+                        >
                             <h3 className="text-xl font-bold mb-6 text-gray-800 flex items-center gap-2">
-                                <Coins className="w-6 h-6 text-orange-400" />
+                                <Coins className="w-6 h-6" style={{ color: detallesColor }}/>
                                 Canjear mis Puntos
                             </h3>
 
@@ -232,7 +303,14 @@ const PointsClient = () => {
                                 )}
                             </div>
 
-                            <div className="mt-6 bg-amber-50 rounded-2xl p-4 text-sm text-amber-700 border border-amber-200">
+                            <div 
+                                className="mt-6 rounded-2xl p-4 text-sm border"
+                                style={{ 
+                                    backgroundColor: `${detallesColor}15`,
+                                    color: detallesColor,
+                                    borderColor: `${detallesColor}30`
+                                }}
+                            >
                                 <p className="mb-2">📋 <strong>Proceso de canje:</strong></p>
                                 <p className="mb-2">• Se necesita ir al negocio para aprobación previa.</p>
                                 <p>• Una vez ahí, serás atendido y validado que la promoción es valida.</p>
@@ -243,9 +321,15 @@ const PointsClient = () => {
 
                     {/* Sidebar - Historial */}
                     <div className="lg:col-span-1">
-                        <div className="bg-white rounded-3xl p-6 shadow-lg border border-orange-100 sticky top-8">
+                        <div 
+                            className="rounded-3xl p-6 shadow-lg border sticky top-8"
+                            style={{
+                                backgroundColor: 'white',
+                                borderColor: `${detallesColor}30`
+                            }}
+                        >
                             <h3 className="text-xl font-bold mb-6 text-gray-800 flex items-center gap-2">
-                                <Clock className="w-6 h-6 text-orange-500" />
+                                <Clock className="w-6 h-6" style={{ color: detallesColor }}/>
                                 Historial de Puntos
                             </h3>
                             <div className="space-y-4 max-h-96 overflow-y-auto">
@@ -288,7 +372,17 @@ const PointsClient = () => {
                                 <div className="mt-6 text-center">
                                     <button 
                                         onClick={() => navigate('/points-loyalty/full-history')}
-                                        className="text-orange-500 hover:text-orange-600 font-medium text-sm hover:bg-orange-50 px-4 py-2 rounded-xl transition-colors duration-200"
+                                        className="font-medium text-sm px-4 py-2 rounded-xl transition-colors duration-200 hover:bg-opacity-20"
+                                        style={{
+                                            color: detallesColor,
+                                            backgroundColor: 'transparent'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            e.target.style.backgroundColor = `${detallesColor}15`;
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.target.style.backgroundColor = 'transparent';
+                                        }}
                                     >
                                         Ver historial completo →
                                     </button>
