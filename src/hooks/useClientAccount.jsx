@@ -12,8 +12,9 @@ export const useClientAccount = () => {
     try {
       setIsLoading(true);
       setError('');
-      
-      const response = await fetch(`https://souvenir-site.com/WebPuntos/API1/Cliente/EstadoCuenta/${clienteId}`);
+
+      const timestamp = new Date().getTime();
+      const response = await fetch(`https://souvenir-site.com/WebPuntos/API1/Cliente/EstadoCuenta/${clienteId}&t=${timestamp}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

@@ -22,9 +22,11 @@ const ClientSearch = ({
       if (!business?.NegocioId) return;
       
       setIsLoading(true);
+      const timestamp = new Date().getTime();
+
       try {
         const response = await fetch(
-          `https://souvenir-site.com/WebPuntos/API1/GetClientesxNegocio?Negocioid=${business.NegocioId}`
+          `https://souvenir-site.com/WebPuntos/API1/GetClientesxNegocio?Negocioid=${business.NegocioId}&t=${timestamp}`
         );
         
         if (!response.ok) {
