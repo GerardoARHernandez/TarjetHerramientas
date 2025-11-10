@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { Gift, Store } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 
-const ClientHeader = ({ title, userName, businessName }) => {
+const ClientHeader = ({ title, userName, businessName, color1, color2 }) => {
   const navigate = useNavigate();
   const { logout } = useAuth();
+
+  console.log('ClientHeader colors:', { color1, color2 }); // Debug
 
   const handleLogout = () => {
     localStorage.removeItem('isAuthenticated');
@@ -15,7 +17,12 @@ const ClientHeader = ({ title, userName, businessName }) => {
   };
 
   return (
-    <div className="bg-gradient-to-br from-amber-500 via-orange-400 to-amber-600 text-white">
+    <div 
+    className="text-white"
+    style={{
+      backgroundImage: `linear-gradient(to right, ${color1}, ${color1}, ${color2})`,
+    }}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header con logout y nombre del negocio */}
         <div className="flex justify-between items-start mb-8">

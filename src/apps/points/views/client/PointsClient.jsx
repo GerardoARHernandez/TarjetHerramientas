@@ -16,8 +16,8 @@ const PointsClient = () => {
 
     const userName = user?.name || 'Usuario';
     const businessType = business?.NegocioTipoPS;
-    const color1 = business?.NegocioColor1 || '#ffb900';
-    const color2 = business?.NegocioColor2 || '#fe9a00';
+    const color1 = business?.NegocioColor1 ? business.NegocioColor1 : '#ffb900';
+    const color2 = business?.NegocioColor2 ? business.NegocioColor2 : '#fe9a00';
 
     // Usar datos reales de la API
     const userPoints = accountData?.puntosDisponibles ? parseInt(accountData.puntosDisponibles) : 0;
@@ -72,6 +72,8 @@ const PointsClient = () => {
                 userName={userName}
                 businessName={business?.NegocioDesc}
                 businessLogo={business?.NegocioImagenUrl}
+                color1={color1}
+                color2={color2}
             />
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

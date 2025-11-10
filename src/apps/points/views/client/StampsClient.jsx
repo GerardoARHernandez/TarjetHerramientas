@@ -18,6 +18,7 @@ const Stamps = () => {
     const businessType = business?.NegocioTipoPS;
     const color1 = business?.NegocioColor1 || '#ffb900';
     const color2 = business?.NegocioColor2 || '#f0b100';
+    const detallesColor = business?.NegocioColor2 || '#FF9800';
 
     // Usar datos reales de la API - para sellos, también usamos puntosDisponibles
     const userStamps = accountData?.puntosDisponibles ? parseInt(accountData.puntosDisponibles) : 0;
@@ -68,6 +69,8 @@ const Stamps = () => {
                 userName={userName}
                 businessName={business?.NegocioDesc}
                 businessLogo={business?.NegocioImagenUrl}
+                color1={color1}
+                color2={color2}
             />
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -100,11 +103,14 @@ const Stamps = () => {
                                 <div key={campaign.CampaId} className="bg-white rounded-3xl p-8 shadow-lg border border-orange-100">
                                     <div className="text-center mb-8">
                                         <h3 className="text-xl font-bold mb-4 text-gray-800 flex items-center justify-center gap-2">
-                                            <Award className="w-6 h-6 text-orange-500" />
+                                            <Award 
+                                            className="w-6 h-6" 
+                                            style={{ color: detallesColor }}
+                                            />
                                             Mi Progreso de Sellos
                                         </h3>
                                         <div className="bg-orange-100 rounded-2xl p-4 mb-4">
-                                            <div className="text-4xl font-bold text-orange-600 mb-2">
+                                            <div className="text-4xl font-bold mb-2" style={{ color: detallesColor }}>
                                                 {userStamps}/{requiredStamps}
                                             </div>
                                             <div className="text-gray-600">Sellos completados</div>
@@ -130,19 +136,30 @@ const Stamps = () => {
                                                 key={index}
                                                 className={`aspect-square rounded-full border-3 flex items-center justify-center transition-all duration-300 transform hover:scale-105
                                                     ${index < userStamps
-                                                        ? 'border-transparent text-white shadow-lg'
-                                                        : 'border-orange-200 bg-orange-50 hover:bg-orange-100'
+                                                    ? 'border-transparent text-white shadow-lg'
+                                                    : 'hover:bg-opacity-20'
                                                     }`}
                                                 style={index < userStamps ? {
                                                     backgroundImage: `linear-gradient(to bottom right, ${color1}, ${color2})`,
-                                                } : {}}
-                                            >
+                                                } : {
+                                                    backgroundColor: `${detallesColor}15`,
+                                                    borderColor: `${detallesColor}30`,
+                                                    color: detallesColor
+                                                }}
+                                                >
                                                 {index < userStamps && <Star className="w-4 h-4 sm:w-6 sm:h-6 fill-current" />}
                                             </div>
                                         ))}
                                     </div>
 
-                                    <div className="bg-amber-50 rounded-2xl p-4 text-sm text-amber-800 border border-amber-200">
+                                    <div 
+                                        className="rounded-2xl p-4 text-sm border"
+                                        style={{ 
+                                            backgroundColor: `${detallesColor}15`, // 15 es para 8% de opacidad en hex
+                                            color: detallesColor,
+                                            borderColor: `${detallesColor}30` // 30 es para 18% de opacidad
+                                        }}
+                                        >
                                         <p>✨ ¡Obtén más sellos comprando en {business?.NegocioDesc}!</p>
                                     </div>
                                 </div>
@@ -152,7 +169,7 @@ const Stamps = () => {
                         {/* Rewards Section */}
                         <div className="space-y-6">
                             <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                                <Gift className="w-6 h-6 text-orange-500" />
+                                <Gift className="w-6 h-6" style={{ color: detallesColor }}/>
                                 Recompensas Disponibles
                             </h3>
 
@@ -161,14 +178,21 @@ const Stamps = () => {
                                 const hasEnoughStamps = userStamps >= requiredStamps;
 
                                 return (
-                                    <div key={campaign.CampaId} className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl p-6 border-2 border-orange-200">
+                                    <div 
+                                        key={campaign.CampaId} 
+                                        className="rounded-2xl p-6 border-2"
+                                        style={{
+                                            backgroundImage: `linear-gradient(to bottom right, ${detallesColor}15, ${detallesColor}08)`,
+                                            borderColor: `${detallesColor}30`
+                                        }}
+                                    >
                                         <div className="flex items-center gap-3 mb-4">
                                             <div className="p-2 rounded-xl" style={{ backgroundColor: color1 }}>
                                                 <Gift className="w-5 h-5 text-white" />
                                             </div>
                                             <div className="flex-1">
                                                 <h4 className="font-bold text-lg text-gray-800">{campaign.CampaNombre}</h4>
-                                                <p className="text-xs text-orange-600 font-medium">
+                                                <p className="text-xs font-medium" style={{ color: detallesColor }}>
                                                     Válida hasta: {new Date(campaign.CampaVigeFin).toLocaleDateString()}
                                                 </p>
                                             </div>
@@ -184,8 +208,8 @@ const Stamps = () => {
                                             <div className="flex items-center justify-between mb-2">
                                                 <span className="text-sm font-medium text-gray-700">Sellos necesarios:</span>
                                                 <div className="flex items-center gap-1">
-                                                    <Star className="w-4 h-4 text-amber-500" />
-                                                    <span className="font-bold text-amber-600">{requiredStamps}</span>
+                                                    <Star className="w-4 h-4 " style={{ color: color1 }}/>
+                                                    <span className="font-bold" style={{ color: color2 }}>{requiredStamps}</span>
                                                 </div>
                                             </div>
 
@@ -247,7 +271,7 @@ const Stamps = () => {
                     <div className="lg:col-span-1">
                         <div className="bg-white rounded-3xl p-6 shadow-lg border border-orange-100 sticky top-8">
                             <h3 className="text-xl font-bold mb-6 text-gray-800 flex items-center gap-2">
-                                <Clock className="w-6 h-6 text-orange-500" />
+                                <Clock className="w-6 h-6" style={{ color: detallesColor }}/>
                                 Actividad Reciente
                             </h3>
                             <div className="space-y-4 max-h-96 overflow-y-auto">
@@ -287,14 +311,22 @@ const Stamps = () => {
                             </div>
 
                             {stampsHistory.length > 0 && (
-                                <div className="mt-6 text-center">
-                                    <button 
-                                        onClick={() => navigate('/points-loyalty/full-history')}
-                                        className="text-orange-600 hover:text-orange-700 font-medium text-sm hover:bg-orange-50 px-4 py-2 rounded-xl transition-colors duration-200"
+                                <button 
+                                    onClick={() => navigate('/points-loyalty/full-history')}
+                                    className="font-medium text-sm px-4 py-2 rounded-xl transition-colors duration-200 hover:bg-opacity-20"
+                                    style={{
+                                    color: detallesColor,
+                                    backgroundColor: 'transparent'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                    e.target.style.backgroundColor = `${detallesColor}15`;
+                                    }}
+                                    onMouseLeave={(e) => {
+                                    e.target.style.backgroundColor = 'transparent';
+                                    }}
                                     >
-                                        Ver historial completo →
-                                    </button>
-                                </div>
+                                    Ver historial completo →
+                                </button>
                             )}
                         </div>
                     </div>
