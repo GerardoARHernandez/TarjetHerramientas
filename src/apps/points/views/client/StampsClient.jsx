@@ -16,12 +16,16 @@ const Stamps = () => {
     const navigate = useNavigate();
     const [calculatedStamps, setCalculatedStamps] = useState(0);
     const [isRedeeming, setIsRedeeming] = useState(false);
+    const [hasShownWelcomeConfetti, setHasShownWelcomeConfetti] = useState(false);
 
     const userName = user?.name || 'Usuario';
     const businessType = business?.NegocioTipoPS;
     const color1 = business?.NegocioColor1 || '#ffb900';
     const color2 = business?.NegocioColor2 || '#f0b100';
     const detallesColor = business?.NegocioColor2 || '#FF9800';
+
+    // Mover la declaración de isLoading aquí, antes de los useEffects que lo usan
+    const isLoading = businessLoading || accountLoading;
 
     // Calcular sellos basado en el historial para mayor precisión
     useEffect(() => {
@@ -45,7 +49,6 @@ const Stamps = () => {
     // Usar tanto los puntosDisponibles como el cálculo para verificar
     const apiStamps = accountData?.puntosDisponibles ? parseInt(accountData.puntosDisponibles) : 0;
     const userStamps = calculatedStamps > 0 ? calculatedStamps : apiStamps;
-
 
     // Transformar el historial para sellos
     const stampsHistory = accountData?.Movimientos ? accountData.Movimientos.map(mov => ({
@@ -90,6 +93,26 @@ const Stamps = () => {
         }, 2000); // 2 segundos de bloqueo
     };
 
+    // Verificar si el usuario tiene suficientes sellos para alguna campaña al cargar
+    useEffect(() => {
+        if (!isLoading && !hasShownWelcomeConfetti && stampsCampaigns.length > 0) {
+            const hasEnoughStampsForAnyCampaign = stampsCampaigns.some(campaign => {
+                const requiredStamps = parseInt(campaign.CampaCantPSCanje) || 10;
+                return userStamps >= requiredStamps;
+            });
+
+            if (hasEnoughStampsForAnyCampaign) {
+                // Pequeño delay para que la página termine de cargar
+                const timer = setTimeout(() => {
+                    launchConfetti();
+                    setHasShownWelcomeConfetti(true);
+                }, 1000);
+
+                return () => clearTimeout(timer);
+            }
+        }
+    }, [isLoading, hasShownWelcomeConfetti, stampsCampaigns, userStamps]);
+
     // Si el negocio no usa sellos, redirigir a puntos
     useEffect(() => {
         if (businessType === 'P') {
@@ -97,7 +120,8 @@ const Stamps = () => {
         }
     }, [businessType, navigate]);
 
-    const isLoading = businessLoading || accountLoading;
+    // isLoading ya está declarado arriba, así que removemos esta línea duplicada
+    // const isLoading = businessLoading || accountLoading;
 
     if (isLoading) {
         return (
@@ -126,7 +150,6 @@ const Stamps = () => {
             />
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Columna Principal */}
                     <div className="lg:col-span-2 space-y-8">

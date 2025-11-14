@@ -15,12 +15,16 @@ const PointsClient = () => {
     const { accountData, isLoading: accountLoading, error: accountError } = useClientAccount();
     const navigate = useNavigate();
     const [isRedeeming, setIsRedeeming] = useState(false);
+    const [hasShownWelcomeConfetti, setHasShownWelcomeConfetti] = useState(false);
 
     const userName = user?.name || 'Usuario';
     const businessType = business?.NegocioTipoPS;
     const color1 = business?.NegocioColor1 ? business.NegocioColor1 : '#ffb900';
     const color2 = business?.NegocioColor2 ? business.NegocioColor2 : '#fe9a00';
     const detallesColor = business?.NegocioColor2 || '#FF9800';
+
+    // Mover isLoading aquí antes de los useEffects que lo usan
+    const isLoading = businessLoading || accountLoading;
 
     // Usar datos reales de la API
     const userPoints = accountData?.puntosDisponibles ? parseInt(accountData.puntosDisponibles) : 0;
@@ -70,6 +74,26 @@ const PointsClient = () => {
         }, 2000); // 2 segundos de bloqueo
     };
 
+    // Verificar si el usuario tiene suficientes puntos para alguna campaña al cargar
+    useEffect(() => {
+        if (!isLoading && !hasShownWelcomeConfetti && pointsCampaigns.length > 0) {
+            const hasEnoughPointsForAnyCampaign = pointsCampaigns.some(campaign => {
+                const requiredPoints = parseInt(campaign.CampaCantPSCanje) || 0;
+                return userPoints >= requiredPoints;
+            });
+
+            if (hasEnoughPointsForAnyCampaign) {
+                // Pequeño delay para que la página termine de cargar
+                const timer = setTimeout(() => {
+                    launchConfetti();
+                    setHasShownWelcomeConfetti(true);
+                }, 1000);
+
+                return () => clearTimeout(timer);
+            }
+        }
+    }, [isLoading, hasShownWelcomeConfetti, pointsCampaigns, userPoints]);
+
     // Si el negocio no usa puntos, redirigir a sellos
     useEffect(() => {
         if (businessType === 'S') {
@@ -77,7 +101,8 @@ const PointsClient = () => {
         }
     }, [businessType, navigate]);
 
-    const isLoading = businessLoading || accountLoading;
+    // isLoading ya está declarado arriba, así que removemos esta línea duplicada
+    // const isLoading = businessLoading || accountLoading;
 
     if (isLoading) {
         return (
