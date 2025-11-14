@@ -5,14 +5,16 @@ import { useAuth } from '../../../../contexts/AuthContext';
 import { useBusiness } from '../../../../contexts/BusinessContext';
 import { useClientAccount } from '../../../../hooks/useClientAccount';
 import ClientHeader from '../../components/ClientHeader';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Footer from '../../components/Footer';
+import confetti from 'canvas-confetti';
 
 const PointsClient = () => {
     const { user } = useAuth();
     const { business, activeCampaigns, isLoading: businessLoading } = useBusiness();
     const { accountData, isLoading: accountLoading, error: accountError } = useClientAccount();
     const navigate = useNavigate();
+    const [isRedeeming, setIsRedeeming] = useState(false);
 
     const userName = user?.name || 'Usuario';
     const businessType = business?.NegocioTipoPS;
@@ -41,6 +43,32 @@ const PointsClient = () => {
     const pointsCampaigns = activeCampaigns.filter(campaign =>
         campaign.NegocioTipoPS === 'P'
     );
+
+    // Función para lanzar confeti
+    const launchConfetti = () => {
+        confetti({
+            particleCount: 750,
+            spread: 90,
+            origin: { y: 0.6 },
+            colors: [color1, color2, detallesColor, '#ffffff'],
+            shapes: ['circle', 'square'],
+            gravity: 0.8,
+            scalar: 1.2
+        });
+    };
+
+    // Función para manejar el canje con animación
+    const handleRedeem = async (campaign) => {
+        if (isRedeeming) return;
+        
+        setIsRedeeming(true);
+        // Lanzar confeti
+        launchConfetti();
+        // Simular delay para evitar múltiples clicks
+        setTimeout(() => {
+            setIsRedeeming(false);
+        }, 2000); // 2 segundos de bloqueo
+    };
 
     // Si el negocio no usa puntos, redirigir a sellos
     useEffect(() => {
@@ -191,91 +219,102 @@ const PointsClient = () => {
                                 </h3>
 
                                 <div className="space-y-6">
-                                    {pointsCampaigns.map((campaign) => (
-                                        <div 
-                                            key={campaign.CampaId} 
-                                            className="rounded-2xl p-6 border-2"
-                                            style={{
-                                                backgroundImage: `linear-gradient(to bottom right, ${detallesColor}15, ${detallesColor}08)`,
-                                                borderColor: `${detallesColor}30`
-                                            }}
-                                        >
-                                            <div className="flex justify-between items-start mb-3">
-                                                <div>
-                                                    <h4 className="font-bold text-lg text-gray-800">{campaign.CampaNombre}</h4>
-                                                    <p className="text-sm font-medium" style={{ color: detallesColor }}>
-                                                        Válida hasta: {new Date(campaign.CampaVigeFin).toLocaleDateString()}
-                                                    </p>
-                                                </div>
-                                                <span className="font-bold text-xl" style={{ color: color2 }}>
-                                                    {campaign.CampaCantPSCanje} pts
-                                                </span>
-                                            </div>
-
-                                            <p className="text-sm text-gray-600 mb-4 leading-relaxed">
-                                                {campaign.CampaDesc}
-                                            </p>
-
+                                    {pointsCampaigns.map((campaign) => {
+                                        const isCanjeable = userPoints >= campaign.CampaCantPSCanje;
+                                        
+                                        return (
                                             <div 
-                                                className="rounded-xl p-4 mb-4"
+                                                key={campaign.CampaId} 
+                                                className="rounded-2xl p-6 border-2"
                                                 style={{
-                                                    backgroundColor: `${detallesColor}08`
-                                                }}
-                                            >
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <span className="text-sm font-medium text-gray-700">Puntos necesarios:</span>
-                                                    <div className="flex items-center gap-1">
-                                                        <Coins className="w-4 h-4" style={{ color: color1 }}/>
-                                                        <span className="font-bold" style={{ color: color2 }}>{campaign.CampaCantPSCanje}</span>
-                                                    </div>
-                                                </div>
-
-                                                <div className="w-full bg-gray-200 rounded-full h-2">
-                                                    <div
-                                                        className="h-2 rounded-full transition-all duration-500"
-                                                        style={{
-                                                            width: `${Math.min((userPoints / campaign.CampaCantPSCanje) * 100, 100)}%`,
-                                                            backgroundImage: `linear-gradient(to right, ${color1}, ${color2})`,
-                                                        }}
-                                                    ></div>
-                                                </div>
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                    Progreso: {userPoints}/{campaign.CampaCantPSCanje} puntos
-                                                </p>
-                                            </div>
-
-                                            <div 
-                                                className="rounded-xl p-4 border mb-4"
-                                                style={{
-                                                    backgroundColor: `${detallesColor}08`,
+                                                    backgroundImage: `linear-gradient(to bottom right, ${detallesColor}15, ${detallesColor}08)`,
                                                     borderColor: `${detallesColor}30`
                                                 }}
                                             >
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <Gift className="w-4 h-4" style={{ color: detallesColor }}/>
-                                                    <span className="text-sm font-medium" style={{ color: detallesColor }}>Tu recompensa:</span>
+                                                <div className="flex justify-between items-start mb-3">
+                                                    <div>
+                                                        <h4 className="font-bold text-lg text-gray-800">{campaign.CampaNombre}</h4>
+                                                        <p className="text-sm font-medium" style={{ color: detallesColor }}>
+                                                            Válida hasta: {new Date(campaign.CampaVigeFin).toLocaleDateString()}
+                                                        </p>
+                                                    </div>
+                                                    <span className="font-bold text-xl" style={{ color: color2 }}>
+                                                        {campaign.CampaCantPSCanje} pts
+                                                    </span>
                                                 </div>
-                                                <p className="font-bold" style={{ color: detallesColor }}>{campaign.CampaRecompensa}</p>
-                                            </div>
 
-                                            <button
-                                                disabled={userPoints < campaign.CampaCantPSCanje}
-                                                className={`w-full py-4 rounded-2xl font-semibold text-lg transition-all duration-200
-                                                    ${userPoints >= campaign.CampaCantPSCanje
-                                                        ? 'text-white shadow-lg transform hover:-translate-y-0.5'
-                                                        : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                                                    }`}
-                                                style={userPoints >= campaign.CampaCantPSCanje ? {
-                                                    backgroundImage: `linear-gradient(to right, ${color1}, ${color2})`,
-                                                } : {}}
-                                            >
-                                                {userPoints >= campaign.CampaCantPSCanje
-                                                    ? `Canjeable por ${campaign.CampaCantPSCanje} Puntos`
-                                                    : `Necesitas ${campaign.CampaCantPSCanje - userPoints} puntos más`
-                                                }
-                                            </button>
-                                        </div>
-                                    ))}
+                                                <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+                                                    {campaign.CampaDesc}
+                                                </p>
+
+                                                <div 
+                                                    className="rounded-xl p-4 mb-4"
+                                                    style={{
+                                                        backgroundColor: `${detallesColor}08`
+                                                    }}
+                                                >
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <span className="text-sm font-medium text-gray-700">Puntos necesarios:</span>
+                                                        <div className="flex items-center gap-1">
+                                                            <Coins className="w-4 h-4" style={{ color: color1 }}/>
+                                                            <span className="font-bold" style={{ color: color2 }}>{campaign.CampaCantPSCanje}</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="w-full bg-gray-200 rounded-full h-2">
+                                                        <div
+                                                            className="h-2 rounded-full transition-all duration-500"
+                                                            style={{
+                                                                width: `${Math.min((userPoints / campaign.CampaCantPSCanje) * 100, 100)}%`,
+                                                                backgroundImage: `linear-gradient(to right, ${color1}, ${color2})`,
+                                                            }}
+                                                        ></div>
+                                                    </div>
+                                                    <p className="text-xs text-gray-500 mt-1">
+                                                        Progreso: {userPoints}/{campaign.CampaCantPSCanje} puntos
+                                                    </p>
+                                                </div>
+
+                                                <div 
+                                                    className="rounded-xl p-4 border mb-4"
+                                                    style={{
+                                                        backgroundColor: `${detallesColor}08`,
+                                                        borderColor: `${detallesColor}30`
+                                                    }}
+                                                >
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <Gift className="w-4 h-4" style={{ color: detallesColor }}/>
+                                                        <span className="text-sm font-medium" style={{ color: detallesColor }}>Tu recompensa:</span>
+                                                    </div>
+                                                    <p className="font-bold" style={{ color: detallesColor }}>{campaign.CampaRecompensa}</p>
+                                                </div>
+
+                                                <button
+                                                    onClick={() => isCanjeable && handleRedeem(campaign)}
+                                                    disabled={!isCanjeable || isRedeeming}
+                                                    className={`w-full py-4 rounded-2xl font-semibold text-lg transition-all duration-200 relative overflow-hidden
+                                                        ${isCanjeable && !isRedeeming
+                                                            ? 'text-white shadow-lg transform hover:-translate-y-0.5 hover:shadow-xl active:scale-95'
+                                                            : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                                        }`}
+                                                    style={isCanjeable && !isRedeeming ? {
+                                                        backgroundImage: `linear-gradient(to right, ${color1}, ${color2})`,
+                                                    } : {}}
+                                                >
+                                                    {isRedeeming ? (
+                                                        <div className="flex items-center justify-center gap-2">
+                                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                            Procesando canje...
+                                                        </div>
+                                                    ) : isCanjeable ? (
+                                                        `Canjeable por ${campaign.CampaCantPSCanje} Puntos`
+                                                    ) : (
+                                                        `Necesitas ${campaign.CampaCantPSCanje - userPoints} puntos más`
+                                                    )}
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         )}

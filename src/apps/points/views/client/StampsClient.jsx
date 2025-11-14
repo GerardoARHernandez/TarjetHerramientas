@@ -7,6 +7,7 @@ import { useClientAccount } from '../../../../hooks/useClientAccount';
 import ClientHeader from '../../components/ClientHeader';
 import { useEffect, useState } from 'react';
 import Footer from '../../components/Footer';
+import confetti from 'canvas-confetti';
 
 const Stamps = () => {
     const { user } = useAuth();
@@ -14,6 +15,7 @@ const Stamps = () => {
     const { accountData, isLoading: accountLoading } = useClientAccount();
     const navigate = useNavigate();
     const [calculatedStamps, setCalculatedStamps] = useState(0);
+    const [isRedeeming, setIsRedeeming] = useState(false);
 
     const userName = user?.name || 'Usuario';
     const businessType = business?.NegocioTipoPS;
@@ -43,8 +45,7 @@ const Stamps = () => {
     // Usar tanto los puntosDisponibles como el cálculo para verificar
     const apiStamps = accountData?.puntosDisponibles ? parseInt(accountData.puntosDisponibles) : 0;
     const userStamps = calculatedStamps > 0 ? calculatedStamps : apiStamps;
-    
-    console.log('Sellos calculados:', calculatedStamps, 'Sellos API:', apiStamps, 'Sellos a mostrar:', userStamps);
+
 
     // Transformar el historial para sellos
     const stampsHistory = accountData?.Movimientos ? accountData.Movimientos.map(mov => ({
@@ -60,6 +61,34 @@ const Stamps = () => {
     const stampsCampaigns = activeCampaigns.filter(campaign =>
         campaign.NegocioTipoPS === 'S'
     );
+
+    // Función para lanzar confeti
+    const launchConfetti = () => {
+        confetti({
+            particleCount: 750,
+            spread: 90,
+            origin: { y: 0.6 },
+            colors: [color1, color2, detallesColor, '#ffffff'],
+            shapes: ['circle', 'square'],
+            gravity: 0.8,
+            scalar: 1.2
+        });
+    };
+
+    // Función para manejar el canje con animación
+    const handleRedeem = async (campaign) => {
+        if (isRedeeming) return;
+        
+        setIsRedeeming(true);
+        
+        // Lanzar confeti
+        launchConfetti();
+        
+        // Simular delay para evitar múltiples clicks
+        setTimeout(() => {
+            setIsRedeeming(false);
+        }, 2000); // 2 segundos de bloqueo
+    };
 
     // Si el negocio no usa sellos, redirigir a puntos
     useEffect(() => {
@@ -83,11 +112,6 @@ const Stamps = () => {
             </div>
         );
     }
-
-    // Debug information
-    console.log('Datos de cuenta:', accountData);
-    console.log('Campañas de sellos:', stampsCampaigns);
-    console.log('Sellos del usuario:', userStamps);
 
     return (
         <>
@@ -258,35 +282,48 @@ const Stamps = () => {
                                                         }}
                                                     ></div>
                                                 </div>
-                                                <p className="text-xs text-gray-500 mt-1">
+                                                <p className="text-xs text-gray-500 mt-1 font-medium">
                                                     Progreso actual: {userStamps}/{requiredStamps} sellos
                                                 </p>
                                             </div>
 
-                                            <div className="bg-green-50 rounded-xl p-4 border border-green-200 mb-4">
+                                            <div 
+                                                className="rounded-xl p-4 border mb-4"
+                                                style={{
+                                                    backgroundColor: `${detallesColor}15`,
+                                                    borderColor: `${detallesColor}30`
+                                                }}
+                                            >
                                                 <div className="flex items-center gap-2 mb-1">
-                                                    <Award className="w-4 h-4 text-green-600" />
-                                                    <span className="text-sm font-medium text-green-700">Tu recompensa:</span>
+                                                    <Award className="w-4 h-4" style={{ color: detallesColor }} />
+                                                    <span className="text-sm font-medium" style={{ color: detallesColor }}>Tu recompensa:</span>
                                                 </div>
-                                                <p className="font-bold text-green-800">{campaign.CampaRecompensa}</p>
+                                                <p className="font-bold" style={{ color: detallesColor }}>{campaign.CampaRecompensa}</p>
                                             </div>
 
                                             <div className="flex items-center justify-center">
                                                 <button
-                                                    disabled={!hasEnoughStamps}
-                                                    className={`px-6 py-3 rounded-2xl font-semibold transition-all duration-200
-                                                        ${hasEnoughStamps
-                                                            ? 'text-white shadow-lg transform hover:-translate-y-0.5'
-                                                            : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                                    onClick={() => hasEnoughStamps && handleRedeem(campaign)}
+                                                    disabled={!hasEnoughStamps || isRedeeming}
+                                                    className={`px-6 py-3 rounded-2xl font-semibold transition-all duration-200 relative overflow-hidden
+                                                        ${hasEnoughStamps && !isRedeeming
+                                                            ? 'text-white shadow-lg transform hover:-translate-y-0.5 hover:shadow-xl active:scale-95'
+                                                            : 'bg-gray-200 text-gray-500 cursor-not-allowed font-medium'
                                                         }`}
-                                                    style={hasEnoughStamps ? {
+                                                    style={hasEnoughStamps && !isRedeeming ? {
                                                         backgroundImage: `linear-gradient(to right, ${color1}, ${color2})`,
                                                     } : {}}
                                                 >
-                                                    {hasEnoughStamps
-                                                        ? 'Canjear Ahora'
-                                                        : `Necesitas ${requiredStamps - userStamps} sellos más`
-                                                    }
+                                                    {isRedeeming ? (
+                                                        <div className="flex items-center justify-center gap-2">
+                                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                            Procesando...
+                                                        </div>
+                                                    ) : hasEnoughStamps ? (
+                                                        'Canjear Ahora'
+                                                    ) : (
+                                                        `Necesitas ${requiredStamps - userStamps} sellos más`
+                                                    )}
                                                 </button>
                                             </div>
                                         </div>

@@ -2,12 +2,17 @@
 import { useNavigate } from 'react-router-dom';
 import { Gift, Store } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useBusiness } from '../../../contexts/BusinessContext';
 
 const ClientHeader = ({ title, userName, businessName, color1, color2 }) => {
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const { business } = useBusiness();
 
-  console.log('ClientHeader colors:', { color1, color2 }); // Debug
+  // Determinar la imagen a mostrar
+  const headerImage = business?.NegocioImagenUrl 
+    ? business.NegocioImagenUrl 
+    : "/images/header-client.jpeg";
 
   const handleLogout = () => {
     localStorage.removeItem('isAuthenticated');
@@ -47,9 +52,12 @@ const ClientHeader = ({ title, userName, businessName, color1, color2 }) => {
           <div className="w-full lg:w-1/2 max-w-md lg:max-w-none transform transition-transform duration-300 hover:scale-105">
             <div className="rounded-2xl overflow-hidden border-4 border-white/40 shadow-2xl">
               <img 
-                src="/images/header-client.jpeg" 
+                src={headerImage} 
                 alt="Tarjeta de fidelidad"
                 className="w-full h-auto object-cover"
+                onError={(e) => {
+                  e.target.src = "/images/header-client.jpeg";
+                }}
               />
             </div>
           </div>
