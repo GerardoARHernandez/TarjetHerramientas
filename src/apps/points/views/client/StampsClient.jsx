@@ -17,12 +17,18 @@ const Stamps = () => {
     const [calculatedStamps, setCalculatedStamps] = useState(0);
     const [isRedeeming, setIsRedeeming] = useState(false);
     const [hasShownWelcomeConfetti, setHasShownWelcomeConfetti] = useState(false);
+    const [stampIconError, setStampIconError] = useState(false);
 
     const userName = user?.name || 'Usuario';
     const businessType = business?.NegocioTipoPS;
     const color1 = business?.NegocioColor1 || '#ffb900';
     const color2 = business?.NegocioColor2 || '#f0b100';
     const detallesColor = business?.NegocioColor2 || '#FF9800';
+
+    // Determinar el ícono de sellos a usar
+    const stampIcon = business?.NegocioIconoSellosUrl 
+        ? business.NegocioIconoSellosUrl 
+        : null; // Si está vacío, usaremos el ícono por defecto (Star)
 
     // Mover la declaración de isLoading aquí, antes de los useEffects que lo usan
     const isLoading = businessLoading || accountLoading;
@@ -120,9 +126,6 @@ const Stamps = () => {
         }
     }, [businessType, navigate]);
 
-    // isLoading ya está declarado arriba, así que removemos esta línea duplicada
-    // const isLoading = businessLoading || accountLoading;
-
     if (isLoading) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 flex items-center justify-center">
@@ -136,6 +139,26 @@ const Stamps = () => {
             </div>
         );
     }
+
+    // Función para renderizar el ícono del sello
+    const renderStampIcon = (size = 'w-9 h-9 sm:w-8 sm:h-8') => {
+        // Si hay un ícono personalizado y no ha habido error, mostrarlo
+        if (stampIcon && !stampIconError) {
+            return (
+                <img 
+                    src={stampIcon} 
+                    alt="Sello" 
+                    className={`${size} object-contain`}
+                    onError={() => {
+                        console.log('Error cargando ícono personalizado, usando ícono por defecto');
+                        setStampIconError(true);
+                    }}
+                />
+            );
+        }
+        // Si no hay ícono personalizado o hubo error, usar el ícono por defecto
+        return <Star className={`${size} fill-current`} />;
+    };
 
     return (
         <>
@@ -222,7 +245,7 @@ const Stamps = () => {
                                                         color: detallesColor
                                                     }}
                                                     >
-                                                    {index < userStamps && <Star className="w-4 h-4 sm:w-6 sm:h-6 fill-current" />}
+                                                    {index < userStamps && renderStampIcon()}
                                                 </div>
                                             ))}
                                         </div>
@@ -291,7 +314,7 @@ const Stamps = () => {
                                                 <div className="flex items-center justify-between mb-2">
                                                     <span className="text-sm font-medium text-gray-700">Sellos necesarios:</span>
                                                     <div className="flex items-center gap-1">
-                                                        <Star className="w-4 h-4 " style={{ color: color1 }}/>
+                                                        {renderStampIcon('w-4 h-4')}
                                                         <span className="font-bold" style={{ color: color2 }}>{requiredStamps}</span>
                                                     </div>
                                                 </div>
