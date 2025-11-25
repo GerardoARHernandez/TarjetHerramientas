@@ -141,7 +141,7 @@ const Stamps = () => {
     }
 
     // Función para renderizar el ícono del sello
-    const renderStampIcon = (size = 'w-9 h-9 sm:w-8 sm:h-8') => {
+    const renderStampIcon = (size = 'w-13 h-13 sm:w-12 sm:h-12') => {
         // Si hay un ícono personalizado y no ha habido error, mostrarlo
         if (stampIcon && !stampIconError) {
             return (
