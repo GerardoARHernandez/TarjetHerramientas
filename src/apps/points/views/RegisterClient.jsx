@@ -201,13 +201,27 @@ const RegisterClient = () => {
     }
   };
 
+  const getImagenFondo = () => {
+    if (!negocioInfo || !negocioInfo.NegocioImagenUrl) {
+      return '/images/header-client.jpeg';
+    }
+    
+    // Si la URL está vacía o solo contiene espacios
+    if (negocioInfo.NegocioImagenUrl.trim() === '') {
+      return '/images/header-client.jpeg';
+    }
+    
+    return negocioInfo.NegocioImagenUrl;
+  };
+  const imagenFondo = getImagenFondo();
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-100 to-blue-300 px-4 py-8">
       <div className="max-w-md mx-auto">
         {/* Loyalty Card Header */}
         <div className="p-2 mb-6">
           <img 
-            src="/images/header-client.jpeg" alt="Header de Cliente" 
+            src={imagenFondo} alt="Header de Cliente" 
             className='rounded-[20px] shadow-2xl w-full'
           />
         </div>
