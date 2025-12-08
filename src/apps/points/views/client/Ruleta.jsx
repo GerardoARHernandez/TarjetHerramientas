@@ -11,8 +11,8 @@ const Ruleta = ({ onClose }) => {
   
   // Opciones de la ruleta (2 son "sigue participando")
   const options = [
-    "Queso",
-    "Jamón",
+    "Camisa Gratis",
+    "-20%",
     "Sigue participando",
     "Gaseosa",
     "-10%",
