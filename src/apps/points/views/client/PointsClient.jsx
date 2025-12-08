@@ -51,12 +51,12 @@ const PointsClient = () => {
     // Función para lanzar confeti
     const launchConfetti = () => {
         confetti({
-            particleCount: 750,
-            spread: 90,
+            particleCount: 950,
+            spread: 95,
             origin: { y: 0.6 },
             colors: [color1, color2, detallesColor, '#ffffff'],
             shapes: ['circle', 'square'],
-            gravity: 0.8,
+            gravity: 0.9,
             scalar: 1.2
         });
     };

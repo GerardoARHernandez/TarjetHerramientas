@@ -13,6 +13,7 @@ import RegisterPromotion from './views/admin/RegisterPromotion';
 import FullHistory from './views/client/FullHistory';
 import RedeemPromo from './views/admin/RedeemPromo';
 import RegistrarClienteFromAdmin from './views/admin/RegistrarClienteFromAdmin';
+import Ruleta from './views/client/Ruleta';
 
 const PointsRoutes = () => {
   const { isAuthenticated, user } = useAuth();
@@ -157,6 +158,11 @@ const PointsRoutes = () => {
               <Navigate to="/points-loyalty/login" replace />
             )
           } 
+        />
+
+        <Route 
+          path='ruleta'
+          element={<Ruleta />}
         />
 
 
