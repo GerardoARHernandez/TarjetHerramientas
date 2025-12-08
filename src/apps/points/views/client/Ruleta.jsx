@@ -46,11 +46,23 @@ const Ruleta = ({ onClose }) => {
     const ctx = canvas.getContext('2d');
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
-    const radius = Math.min(centerX, centerY) - 10;
+    const radius = Math.min(centerX, centerY) - 20;
     const arc = (2 * Math.PI) / options.length;
     
     // Fondo del canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Sombra exterior de la ruleta (efecto 3D)
+    ctx.save();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+    ctx.shadowBlur = 30;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 15;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius + 5, 0, 2 * Math.PI);
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fill();
+    ctx.restore();
     
     // Aplicar rotación
     ctx.save();
@@ -58,7 +70,7 @@ const Ruleta = ({ onClose }) => {
     ctx.rotate(rotation);
     ctx.translate(-centerX, -centerY);
     
-    // Dibujar cada segmento
+    // Dibujar cada segmento con efectos 3D
     for (let i = 0; i < options.length; i++) {
       const angle = startAngleRef.current + i * arc;
       
@@ -68,30 +80,77 @@ const Ruleta = ({ onClose }) => {
       ctx.arc(centerX, centerY, radius, angle, angle + arc, false);
       ctx.closePath();
       
-      // Color del segmento
-      ctx.fillStyle = colors[i];
+      // Gradiente radial para efecto 3D
+      const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
+      gradient.addColorStop(0, colors[i]);
+      gradient.addColorStop(0.7, colors[i]);
+      gradient.addColorStop(1, shadeColor(colors[i], -30));
+      
+      ctx.fillStyle = gradient;
       ctx.fill();
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 2;
+      
+      // Borde con efecto de profundidad
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.lineWidth = 3;
       ctx.stroke();
       
-      // Texto del segmento
+      // Línea interna para más profundidad
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.arc(centerX, centerY, radius - 10, angle, angle + arc, false);
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      
+      // Texto del segmento con sombra
       ctx.save();
       ctx.translate(centerX, centerY);
       ctx.rotate(angle + arc / 2);
       ctx.textAlign = 'right';
-      ctx.fillStyle = '#000000';
-      ctx.font = 'bold 14px Arial';
-      ctx.fillText(options[i], radius - 20, 5);
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+      ctx.shadowBlur = 4;
+      ctx.shadowOffsetX = 2;
+      ctx.shadowOffsetY = 2;
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 16px Arial';
+      ctx.fillText(options[i], radius - 25, 6);
       ctx.restore();
     }
     
-    // Dibujar centro
+    // Anillo decorativo exterior
     ctx.beginPath();
-    ctx.arc(centerX, centerY, 15, 0, 2 * Math.PI);
-    ctx.fillStyle = '#FFD700';
+    ctx.arc(centerX, centerY, radius + 8, 0, 2 * Math.PI);
+    ctx.strokeStyle = '#FFD700';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius + 12, 0, 2 * Math.PI);
+    ctx.strokeStyle = 'rgba(255, 215, 0, 0.3)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    
+    // Centro con efecto 3D mejorado
+    const centerGradient = ctx.createRadialGradient(centerX - 5, centerY - 5, 0, centerX, centerY, 30);
+    centerGradient.addColorStop(0, '#FFD700');
+    centerGradient.addColorStop(0.5, '#FFA500');
+    centerGradient.addColorStop(1, '#D4AF37');
+    
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 30, 0, 2 * Math.PI);
+    ctx.fillStyle = centerGradient;
     ctx.fill();
-    ctx.strokeStyle = '#D4AF37';
+    
+    // Brillo en el centro
+    ctx.beginPath();
+    ctx.arc(centerX - 8, centerY - 8, 12, 0, 2 * Math.PI);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.fill();
+    
+    // Borde del centro
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 30, 0, 2 * Math.PI);
+    ctx.strokeStyle = '#8B7500';
     ctx.lineWidth = 3;
     ctx.stroke();
     
@@ -99,6 +158,19 @@ const Ruleta = ({ onClose }) => {
     
     // Dibujar puntero
     drawPointer(ctx, centerX, centerY, radius);
+  };
+  
+  // Función auxiliar para oscurecer/aclarar colores
+  const shadeColor = (color, percent) => {
+    const num = parseInt(color.replace("#", ""), 16);
+    const amt = Math.round(2.55 * percent);
+    const R = (num >> 16) + amt;
+    const G = (num >> 8 & 0x00FF) + amt;
+    const B = (num & 0x0000FF) + amt;
+    return "#" + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+      (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+      (B < 255 ? B < 1 ? 0 : B : 255))
+      .toString(16).slice(1);
   };
   
   const drawPointer = (ctx, centerX, centerY, radius) => {
