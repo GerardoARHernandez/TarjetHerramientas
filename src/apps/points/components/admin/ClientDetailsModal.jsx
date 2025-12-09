@@ -82,7 +82,7 @@ const ClientDetailsModal = ({ client, onClose }) => {
         </div>
 
         {/* Información básica del cliente */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 mb-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div className="bg-blue-50 p-4 rounded-lg">
             <p className="text-sm text-blue-600">Nombre completo</p>
             <p className="text-lg font-bold">
@@ -93,11 +93,17 @@ const ClientDetailsModal = ({ client, onClose }) => {
             <p className="text-sm text-green-600">Correo electrónico</p>
             <p className="text-lg font-bold">{client.UsuarioCorreo}</p>
           </div>
+          {client.UsuarioTelefono && (
+            <div className="bg-yellow-50 p-4 rounded-lg">
+              <p className="text-sm text-yellow-600">Teléfono</p>
+              <p className="text-lg font-bold">{client.UsuarioTelefono}</p>
+            </div>
+          )}
         </div>
 
         {/* Estado de cuenta */}
         {isLoading ? (
-          <div className="flex justify-center items-center py-5">
+          <div className="flex justify-center items-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             <span className="ml-2 text-gray-600">Cargando detalles...</span>
           </div>
