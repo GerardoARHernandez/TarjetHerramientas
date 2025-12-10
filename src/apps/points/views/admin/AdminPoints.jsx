@@ -154,6 +154,7 @@ const AdminPoints = () => {
         <ClientDetailsModal 
           client={selectedClient} 
           onClose={handleCloseModal} 
+          business={business}
         />
       )}
 
