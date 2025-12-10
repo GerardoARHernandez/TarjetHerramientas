@@ -10,7 +10,7 @@ const PointsForm = ({
   onSubmit,
   businessRules,
   onValidationError,
-  onClearForm // ← NUEVA PROPIEDAD
+  onClearForm 
 }) => {
   const [errors, setErrors] = useState({});
   const [calculatedPoints, setCalculatedPoints] = useState(0);
@@ -181,7 +181,7 @@ const PointsForm = ({
         <button
           type="submit"
           disabled={isSubmitting || !selectedClient || !formData.amount || calculatedPoints === 0}
-          className={`flex-1 py-3 px-4 rounded-lg font-semibold text-white transition-all ${
+          className={`flex-1 py-3 px-4 rounded-lg font-semibold text-white transition-all cursor-pointer ${
             isSubmitting || !selectedClient || !formData.amount || calculatedPoints === 0
               ? 'bg-gray-400 cursor-not-allowed'
               : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-md'

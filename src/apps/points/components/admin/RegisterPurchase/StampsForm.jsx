@@ -10,7 +10,7 @@ const StampsForm = ({
   onSubmit,
   businessRules,
   onValidationError,
-  onClearForm // ← NUEVA PROPIEDAD
+  onClearForm 
 }) => {
   const [errors, setErrors] = useState({});
   const [calculatedStamps, setCalculatedStamps] = useState(1);
@@ -258,7 +258,7 @@ const StampsForm = ({
         <button
           type="submit"
           disabled={isSubmitting || !selectedClient || (!useAmount && !formData.stamps) || (useAmount && !formData.amount)}
-          className={`flex-1 py-3 px-4 rounded-lg font-semibold text-white transition-all ${
+          className={`flex-1 py-3 px-4 rounded-lg font-semibold text-white transition-all cursor-pointer ${
             isSubmitting || !selectedClient || (!useAmount && !formData.stamps) || (useAmount && !formData.amount)
               ? 'bg-gray-400 cursor-not-allowed'
               : 'bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 shadow-md'

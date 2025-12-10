@@ -9,6 +9,7 @@ import StampsForm from '../../components/admin/RegisterPurchase/StampsForm';
 import ClientSearch from '../../components/admin/ClientSearch';
 import BusinessStats from '../../components/admin/RegisterPurchase/BusinessStats';
 import Footer from '../../components/Footer';
+import { ConfirmationModal } from '../../components/admin/RegisterPurchase/ConfirmationModal';
 
 export const RegisterPurchase = () => {
   const [formData, setFormData] = useState({ 
@@ -19,6 +20,8 @@ export const RegisterPurchase = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [clients, setClients] = useState([]);
   const [validationError, setValidationError] = useState('');
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [confirmationData, setConfirmationData] = useState(null);
   
   const { addTransaction, addStamp } = usePoints();
   const { business } = useAuth();
@@ -31,6 +34,12 @@ export const RegisterPurchase = () => {
   const isPointsSystem = businessType === 'P';
   const isStampsSystem = businessType === 'S';
 
+  // Función para mostrar el modal de confirmación
+  const showSuccessModal = (data) => {
+    setConfirmationData(data);
+    setShowConfirmationModal(true);
+  };
+
   // Función para limpiar completamente los formularios
   const clearForms = () => {
     setFormData({ 
@@ -39,6 +48,8 @@ export const RegisterPurchase = () => {
       stamps: 1 
     });
     setValidationError('');
+    setShowConfirmationModal(false);
+    setConfirmationData(null);
   };
 
   // Función para validar monto mínimo
@@ -168,10 +179,24 @@ export const RegisterPurchase = () => {
 
         addTransaction(transaction);
         
-        // LIMPIAR FORMULARIOS DESPUÉS DE ÉXITO
-        clearForms();
+        // Mostrar modal de confirmación en lugar de alert
+        showSuccessModal({
+          message: result.Mensaje,
+          client: {
+            name: client.name,
+            id: client.id
+          },
+          phone: client.phone,
+          amount: amount,
+          points: points,
+          folio: folio,
+          transactionId: result.TransaccionId,
+          type: 'points'
+        });
         
-        alert(`✅ ${result.Mensaje}\n\nCliente: ${client.name}\nTeléfono: ${client.phone}\nMonto: $${amount.toFixed(2)}\nPuntos otorgados: ${points}\nFolio: ${folio}\nTransacción ID: ${result.TransaccionId}`);
+        // Limpiar formulario después de mostrar el modal
+        setFormData({ clientId: '', amount: '', stamps: 1 });
+        
       } else {
         // Error - la API respondió con error: true o mensaje de error
         throw new Error(result.Mensaje || 'Error desconocido al registrar la transacción');
@@ -179,7 +204,7 @@ export const RegisterPurchase = () => {
 
     } catch (error) {
       console.error('Error al registrar puntos:', error);
-      alert(`❌ Error al registrar la compra: ${error.message}`);
+      setValidationError(`Error al registrar la compra: ${error.message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -210,8 +235,6 @@ export const RegisterPurchase = () => {
         }
       };
 
-      console.log('Enviando datos de sellos a la API:', transactionData);
-
       // Llamar a la API real
       const response = await fetch('https://souvenir-site.com/WebPuntos/API1/AbonoPuntos', {
         method: 'POST',
@@ -222,8 +245,6 @@ export const RegisterPurchase = () => {
       });
 
       const result = await response.json();
-
-      console.log('Respuesta de la API para sellos:', result);
 
       // Validar usando result.error === false
       if (result.error === false && result.TransaccionId) {
@@ -249,10 +270,24 @@ export const RegisterPurchase = () => {
 
         addStamp(stampTransaction);
         
-        // LIMPIAR FORMULARIOS DESPUÉS DE ÉXITO
-        clearForms();
+        // Mostrar modal de confirmación en lugar de alert
+        showSuccessModal({
+          message: result.Mensaje,
+          client: {
+            name: selectedClient.name,
+            id: selectedClient.id
+          },
+          phone: selectedClient.phone,
+          amount: amount || 0,
+          stamps: stampsToAssign,
+          folio: folio,
+          transactionId: result.TransaccionId,
+          type: 'stamps'
+        });
         
-        alert(`✅ ${result.Mensaje}\n\nCliente: ${selectedClient.name}\nTeléfono: ${selectedClient.phone}\nSellos otorgados: ${stampsToAssign}\nFolio: ${folio}\nTransacción ID: ${result.TransaccionId}`);
+        // Limpiar formulario después de mostrar el modal
+        setFormData({ clientId: '', amount: '', stamps: 1 });
+        
       } else {
         // Error - la API respondió con error: true o mensaje de error
         throw new Error(result.Mensaje || 'Error desconocido al registrar los sellos');
@@ -260,7 +295,7 @@ export const RegisterPurchase = () => {
 
     } catch (error) {
       console.error('Error al registrar sellos:', error);
-      alert(`❌ Error al asignar sellos: ${error.message}`);
+      setValidationError(`Error al asignar sellos: ${error.message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -287,90 +322,103 @@ export const RegisterPurchase = () => {
 
   return (
     <>
-    <div className="max-w-3xl mx-auto px-2 py-8">
-      {/* Header informativo */}
-      <div className="text-center mb-8">
-        <div className={`inline-flex items-center gap-16 bg-${currentSystem.color}-50 px-12 py-3 rounded-2xl border border-${currentSystem.color}-200 mb-4`}>
-          <div className={`p-2 bg-${currentSystem.color}-100 rounded-lg`}>
-            <SystemIcon className={`w-6 h-6 text-${currentSystem.color}-600`} />
+      <div className="max-w-3xl mx-auto px-2 py-8">
+        {/* Header informativo */}
+        <div className="text-center mb-8">
+          <div className={`inline-flex items-center gap-16 bg-${currentSystem.color}-50 px-12 py-3 rounded-2xl border border-${currentSystem.color}-200 mb-4`}>
+            <div className={`p-2 bg-${currentSystem.color}-100 rounded-lg`}>
+              <SystemIcon className={`w-6 h-6 text-${currentSystem.color}-600`} />
+            </div>
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-gray-950">{currentSystem.title}</h2>
+              <p className="text-gray-600 text-sm">{currentSystem.description}</p>
+            </div>
           </div>
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-950">{currentSystem.title}</h2>
-            <p className="text-gray-600 text-sm">{currentSystem.description}</p>
-          </div>
-        </div>
-        
-        {business?.NegocioDesc && (
-          <p className="text-sm text-gray-500">
-            Negocio: {business.NegocioDesc}
-          </p>
-        )}
-      </div>
-
-      <div className="bg-white rounded-xl shadow-xl p-8">
-        {/* Mostrar error de validación */}
-        {validationError && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-700 text-sm">{validationError}</p>
-          </div>
-        )}
-
-        {/* Mostrar reglas de negocio */}
-        {rules && !rulesLoading && (
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <h4 className="font-semibold text-blue-800 text-sm mb-1">Reglas Configuradas:</h4>
-            <p className="text-blue-700 text-xs">
-              Monto mínimo: ${parseFloat(rules.ReglasMontoMinimo || 0).toFixed(2)} | 
-              {isPointsSystem ? ` Porcentaje: ${rules.ReglasPorcentaje || 0}%` : ` Acumulable: ${rules.ReglasAcumulable ? 'Sí' : 'No'}`}
+          
+          {business?.NegocioDesc && (
+            <p className="text-sm text-gray-500">
+              Negocio: {business.NegocioDesc}
             </p>
-          </div>
-        )}
+          )}
+        </div>
 
-        {/* Componente de búsqueda de cliente */}
-        <ClientSearch
-          selectedClientId={formData.clientId}
-          onClientSelect={handleClientSelect}
-          onClientsUpdate={handleClientsUpdate}
+        <div className="bg-white rounded-xl shadow-xl p-8">
+          {/* Mostrar error de validación */}
+          {validationError && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-700 text-sm">{validationError}</p>
+            </div>
+          )}
+
+          {/* Mostrar reglas de negocio */}
+          {rules && !rulesLoading && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <h4 className="font-semibold text-blue-800 text-sm mb-1">Reglas Configuradas:</h4>
+              <p className="text-blue-700 text-xs">
+                Monto mínimo: ${parseFloat(rules.ReglasMontoMinimo || 0).toFixed(2)} | 
+                {isPointsSystem ? ` Porcentaje: ${rules.ReglasPorcentaje || 0}%` : ` Acumulable: ${rules.ReglasAcumulable ? 'Sí' : 'No'}`}
+              </p>
+            </div>
+          )}
+
+          {/* Componente de búsqueda de cliente */}
+          <ClientSearch
+            selectedClientId={formData.clientId}
+            onClientSelect={handleClientSelect}
+            onClientsUpdate={handleClientsUpdate}
+          />
+
+          {/* Mostrar solo el formulario correspondiente al sistema */}
+          {isPointsSystem ? (
+            <PointsForm
+              formData={formData}
+              onFormDataChange={setFormData}
+              selectedClient={selectedClient}
+              isSubmitting={isSubmitting}
+              onSubmit={handlePointsSubmit}
+              businessRules={rules}
+              onValidationError={setValidationError}
+              onClearForm={clearForms}
+            />
+          ) : isStampsSystem ? (
+            <StampsForm
+              formData={formData}
+              onFormDataChange={setFormData}
+              selectedClient={selectedClient}
+              isSubmitting={isSubmitting}
+              onSubmit={handleStampsSubmit}
+              businessRules={rules}
+              onValidationError={setValidationError}
+              onClearForm={clearForms}
+            />
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-gray-500">No se ha configurado el sistema de fidelidad para este negocio.</p>
+            </div>
+          )}
+        </div>
+
+        {/* Estadísticas rápidas */}
+        <BusinessStats 
+          clients={clients}
+          businessType={businessType}
+          business={business}
         />
-
-        {/* Mostrar solo el formulario correspondiente al sistema */}
-        {isPointsSystem ? (
-          <PointsForm
-            formData={formData}
-            onFormDataChange={setFormData}
-            selectedClient={selectedClient}
-            isSubmitting={isSubmitting}
-            onSubmit={handlePointsSubmit}
-            businessRules={rules}
-            onValidationError={setValidationError}
-            onClearForm={clearForms}
-          />
-        ) : isStampsSystem ? (
-          <StampsForm
-            formData={formData}
-            onFormDataChange={setFormData}
-            selectedClient={selectedClient}
-            isSubmitting={isSubmitting}
-            onSubmit={handleStampsSubmit}
-            businessRules={rules}
-            onValidationError={setValidationError}
-            onClearForm={clearForms}
-          />
-        ) : (
-          <div className="text-center py-8">
-            <p className="text-gray-500">No se ha configurado el sistema de fidelidad para este negocio.</p>
-          </div>
-        )}
       </div>
 
-      {/* Estadísticas rápidas */}
-      <BusinessStats 
-        clients={clients}
-        businessType={businessType}
-        business={business}
-      />
-    </div>
-    <Footer />
+      {/* Modal de confirmación */}
+      {confirmationData && (
+        <ConfirmationModal
+          isOpen={showConfirmationModal}
+          onClose={clearForms}
+          client={confirmationData.client}
+          transactionDetails={confirmationData}
+          business={business}
+          businessType={businessType}
+        />
+      )}
+
+      <Footer />
     </>
   );
 };
