@@ -270,7 +270,7 @@ const Ruleta = ({ onClose }) => {
   
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl shadow-2xl p-6 max-w-md w-full border border-yellow-500">
+      <div className="bg-gradient-to-br from-gray-200 to-gray-300 rounded-2xl shadow-2xl p-6 max-w-md w-full border border-yellow-500">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-black">Ruleta de la Fortuna</h2>
           <button
