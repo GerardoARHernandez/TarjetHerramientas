@@ -48,9 +48,9 @@ const ClientHeader = ({ title, userName, businessName, color1, color2 }) => {
               {business.NegocioId == 3 && (
                 <button
                   onClick={() => setIsModalOpen(true)} // Abrir modal
-                  className="flex items-center gap-2 bg-white/65 text-gray-800 px-4 py-2 sm:px-5 sm:py-2.5 rounded-full hover:bg-gray-100 transition-all duration-200 font-medium text-sm sm:text-base shadow-md hover:shadow-lg flex-1 sm:flex-none justify-center"
+                  className="flex items-center gap-2 bg-white/20 text-white px-4 py-2 sm:px-5 sm:py-2.5 rounded-full hover:bg-white/5 transition-all duration-200 font-semibold text-sm sm:text-base shadow-md hover:shadow-lg flex-1 sm:flex-none justify-center"
                 >
-                  <span>Redimir Compra</span>
+                  <span>Registrar Ticket</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               )}

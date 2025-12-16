@@ -204,11 +204,10 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
                         onChange={handleChange}
                         placeholder="0.00"
                         min="0"
-                        step="0.01"
+                        step="0.10"
                         className="w-full px-4 py-3 pl-10 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                         required
                         />
-                        <DollarSign className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                     </div>
                     <p className="text-xs text-gray-500 mt-1">
                         El 10% del importe se convertirá en puntos
@@ -253,7 +252,7 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
                         ) : (
                         <>
                             <Gift className="w-5 h-5 cursor-pointer" />
-                            Redimir Puntos
+                            Registrar
                         </>
                         )}
                     </button>
