@@ -1,28 +1,16 @@
 // src/apps/points/components/ClientHeader.jsx
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, Gift, Store } from 'lucide-react';
-import { useAuth } from '../../../contexts/AuthContext';
+import { Store } from 'lucide-react';
 import { useBusiness } from '../../../contexts/BusinessContext';
-import RedeemPurchaseModal from './RedeemPurchaseModal'; // Importar el modal
 
 const ClientHeader = ({ title, userName, businessName, color1, color2 }) => {
-  const navigate = useNavigate();
-  const { logout } = useAuth();
   const { business } = useBusiness();
-  const [isModalOpen, setIsModalOpen] = useState(false); // Estado para el modal
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Determinar la imagen a mostrar
   const headerImage = business?.NegocioImagenUrl 
     ? business.NegocioImagenUrl 
     : "/images/header-client.jpeg";
-
-  const handleLogout = () => {
-    localStorage.removeItem('isAuthenticated');
-    localStorage.removeItem('userName');
-    logout();
-    navigate('/points-loyalty/login');
-  };
 
   return (
     <>
@@ -33,33 +21,10 @@ const ClientHeader = ({ title, userName, businessName, color1, color2 }) => {
         }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          {/* Header con logout y nombre del negocio */}
+          {/* Header con título y botón de redimir */}
           <div className="flex justify-between items-start mb-8">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2">{title}</h1>
-              <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full border border-white/30">
-                <Gift className="w-5 h-5" />
-                <span className="text-sm font-medium">Mi Tarjeta de Fidelidad</span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 w-full sm:w-auto">
-              {/* Botón de Redimir Compra - Solo para negocio 3 */}
-              {business.NegocioId == 3 && (
-                <button
-                  onClick={() => setIsModalOpen(true)} // Abrir modal
-                  className="flex items-center gap-2 bg-white/20 text-white px-4 py-2 sm:px-5 sm:py-2.5 rounded-full hover:bg-white/5 transition-all duration-200 font-semibold text-sm sm:text-base shadow-md hover:shadow-lg flex-1 sm:flex-none justify-center"
-                >
-                  <span>Registrar Ticket</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              )}
-              <button
-                onClick={handleLogout}
-                className="text-sm bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full hover:bg-white/30 transition-all duration-200 font-medium border border-white/30"
-              >
-                Salir
-              </button>
             </div>
           </div>
          
@@ -102,13 +67,6 @@ const ClientHeader = ({ title, userName, businessName, color1, color2 }) => {
           </div>
         </div>
       </div>
-
-      {/* Modal de Redención */}
-      <RedeemPurchaseModal 
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        businessName={businessName}
-      />
     </>
   );
 };

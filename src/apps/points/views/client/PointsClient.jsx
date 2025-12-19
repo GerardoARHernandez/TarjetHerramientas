@@ -1,13 +1,14 @@
 // src/apps/points-loyalty/views/client/PointsClient.jsx
 import { useNavigate } from 'react-router-dom';
-import { Clock, Coins, TrendingUp, Gift, X, Copy } from 'lucide-react';
+import { Clock, Coins, TrendingUp, Gift, X, Copy, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { useBusiness } from '../../../../contexts/BusinessContext';
 import { useClientAccount } from '../../../../hooks/useClientAccount';
 import ClientHeader from '../../components/ClientHeader';
 import { useEffect, useState } from 'react';
-import Footer from '../../components/Footer';
 import confetti from 'canvas-confetti';
+import ClientFooter from '../../components/ClientFooter';
+import RedeemPurchaseModal from '../../components/RedeemPurchaseModal'; // Asegúrate de importar el modal
 
 const PointsClient = () => {
     const { user } = useAuth();
@@ -19,6 +20,7 @@ const PointsClient = () => {
     const [showRedeemModal, setShowRedeemModal] = useState(false);
     const [redeemCode, setRedeemCode] = useState('');
     const [copied, setCopied] = useState(false);
+    const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false); // Estado para el modal de registrar ticket
 
     const userName = user?.name || 'Usuario';
     const businessType = business?.NegocioTipoPS;
@@ -182,8 +184,6 @@ const PointsClient = () => {
 
                     {/* Columna Principal - Puntos */}
                     <div className="lg:col-span-2 space-y-8">
-
-                        {/* Navigation */}
                         <div 
                             className="rounded-2xl p-2 shadow-sm border"
                             style={{
@@ -191,16 +191,21 @@ const PointsClient = () => {
                                 borderColor: `${detallesColor}30`
                             }}
                         >
-                            <div className="flex space-x-2">
-                                <button
-                                    style={{
-                                        backgroundImage: `linear-gradient(to right, ${color1}, ${color1}, ${color2})`,
-                                    }}
-                                    className="flex-1 text-white py-3 px-4 rounded-xl font-semibold shadow-md flex items-center justify-center gap-2"
-                                >
-                                    <Coins className="w-4 h-4" />
-                                    Puntos
-                                </button>
+                            <div className="flex space-x-2">                                
+                                {/* Botón de Registrar Ticket - Solo para negocio 3 */}
+                                {business?.NegocioId == 3 && (
+                                    <button
+                                        onClick={() => setIsPurchaseModalOpen(true)}
+                                        className="flex items-center gap-2 text-white px-4 py-2 sm:px-5 sm:py-2.5 rounded-full hover:bg-white/5 transition-all duration-200 font-semibold text-sm sm:text-base shadow-md hover:shadow-lg flex-1 sm:flex-none justify-center cursor-pointer"                
+                                        style={{
+                                            borderColor: `${detallesColor}30`,
+                                            backgroundImage: `linear-gradient(to right, ${color1}, ${color2})`,
+                                        }}
+                                    >
+                                        <span>Registrar Ticket</span>
+                                        <ArrowRight className="w-4 h-4" />
+                                    </button>
+                                )}
                             </div>
                         </div>
 
@@ -266,6 +271,7 @@ const PointsClient = () => {
                             </div>
                         </div>
 
+                        {/* Resto del código permanece igual... */}
                         {/* Campañas Activas de Puntos */}
                         {pointsCampaigns.length > 0 && (
                             <div 
@@ -494,7 +500,14 @@ const PointsClient = () => {
                 </div>
             </div>
         </div>
-        <Footer />
+        <ClientFooter />
+
+        {/* Modal de Registrar Ticket */}
+        <RedeemPurchaseModal 
+            isOpen={isPurchaseModalOpen}
+            onClose={() => setIsPurchaseModalOpen(false)}
+            businessName={business?.NegocioDesc}
+        />
 
         {/* Modal de Código de Canje */}
         {showRedeemModal && business.NegocioId==3 && (
