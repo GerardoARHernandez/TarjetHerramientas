@@ -1,13 +1,14 @@
 // src/apps/points-loyalty/views/client/PointsClient.jsx
 import { useNavigate } from 'react-router-dom';
-import { Clock, Coins, TrendingUp, Gift } from 'lucide-react';
+import { Clock, Coins, TrendingUp, Gift, X, Copy, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { useBusiness } from '../../../../contexts/BusinessContext';
 import { useClientAccount } from '../../../../hooks/useClientAccount';
 import ClientHeader from '../../components/ClientHeader';
 import { useEffect, useState } from 'react';
-import Footer from '../../components/Footer';
 import confetti from 'canvas-confetti';
+import ClientFooter from '../../components/ClientFooter';
+import RedeemPurchaseModal from '../../components/RedeemPurchaseModal'; // Asegúrate de importar el modal
 
 const PointsClient = () => {
     const { user } = useAuth();
@@ -16,6 +17,10 @@ const PointsClient = () => {
     const navigate = useNavigate();
     const [isRedeeming, setIsRedeeming] = useState(false);
     const [hasShownWelcomeConfetti, setHasShownWelcomeConfetti] = useState(false);
+    const [showRedeemModal, setShowRedeemModal] = useState(false);
+    const [redeemCode, setRedeemCode] = useState('');
+    const [copied, setCopied] = useState(false);
+    const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false); // Estado para el modal de registrar ticket
 
     const userName = user?.name || 'Usuario';
     const businessType = business?.NegocioTipoPS;
@@ -48,6 +53,17 @@ const PointsClient = () => {
         campaign.NegocioTipoPS === 'P'
     );
 
+    // Función para generar código alfanumérico
+    const generateRedeemCode = () => {
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let code = '';
+        for (let i = 0; i < 12; i++) {
+            if (i > 0 && i % 4 === 0) code += '-';
+            code += characters.charAt(Math.floor(Math.random() * characters.length));
+        }
+        return code;
+    };
+
     // Función para lanzar confeti
     const launchConfetti = () => {
         confetti({
@@ -61,17 +77,43 @@ const PointsClient = () => {
         });
     };
 
+    // Función para copiar código al portapapeles
+    const copyToClipboard = () => {
+        navigator.clipboard.writeText(redeemCode)
+            .then(() => {
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            })
+            .catch(err => {
+                console.error('Error al copiar:', err);
+            });
+    };
+
     // Función para manejar el canje con animación
     const handleRedeem = async (campaign) => {
         if (isRedeeming) return;
         
         setIsRedeeming(true);
+        
         // Lanzar confeti
         launchConfetti();
-        // Simular delay para evitar múltiples clicks
+        
+        // Simular procesamiento del canje
         setTimeout(() => {
+            // Generar código de canje
+            const newCode = generateRedeemCode();
+            setRedeemCode(newCode);
+            
+            // Mostrar modal con el código
+            setShowRedeemModal(true);
             setIsRedeeming(false);
-        }, 2000); // 2 segundos de bloqueo
+        }, 1500); // 1.5 segundos de procesamiento
+    };
+
+    // Función para cerrar modal
+    const closeRedeemModal = () => {
+        setShowRedeemModal(false);
+        setCopied(false);
     };
 
     // Verificar si el usuario tiene suficientes puntos para alguna campaña al cargar
@@ -100,9 +142,6 @@ const PointsClient = () => {
             navigate('/points-loyalty/stamps');
         }
     }, [businessType, navigate]);
-
-    // isLoading ya está declarado arriba, así que removemos esta línea duplicada
-    // const isLoading = businessLoading || accountLoading;
 
     if (isLoading) {
         return (
@@ -145,8 +184,6 @@ const PointsClient = () => {
 
                     {/* Columna Principal - Puntos */}
                     <div className="lg:col-span-2 space-y-8">
-
-                        {/* Navigation */}
                         <div 
                             className="rounded-2xl p-2 shadow-sm border"
                             style={{
@@ -154,16 +191,21 @@ const PointsClient = () => {
                                 borderColor: `${detallesColor}30`
                             }}
                         >
-                            <div className="flex space-x-2">
-                                <button
-                                    style={{
-                                        backgroundImage: `linear-gradient(to right, ${color1}, ${color1}, ${color2})`,
-                                    }}
-                                    className="flex-1 text-white py-3 px-4 rounded-xl font-semibold shadow-md flex items-center justify-center gap-2"
-                                >
-                                    <Coins className="w-4 h-4" />
-                                    Puntos
-                                </button>
+                            <div className="flex space-x-2">                                
+                                {/* Botón de Registrar Ticket - Solo para negocio 3 */}
+                                {business?.NegocioId == 3 && (
+                                    <button
+                                        onClick={() => setIsPurchaseModalOpen(true)}
+                                        className="flex items-center gap-2 text-white px-4 py-2 sm:px-5 sm:py-2.5 rounded-full hover:bg-white/5 transition-all duration-200 font-semibold text-sm sm:text-base shadow-md hover:shadow-lg flex-1 sm:flex-none justify-center cursor-pointer"                
+                                        style={{
+                                            borderColor: `${detallesColor}30`,
+                                            backgroundImage: `linear-gradient(to right, ${color1}, ${color2})`,
+                                        }}
+                                    >
+                                        <span>Registrar Ticket</span>
+                                        <ArrowRight className="w-4 h-4" />
+                                    </button>
+                                )}
                             </div>
                         </div>
 
@@ -229,6 +271,7 @@ const PointsClient = () => {
                             </div>
                         </div>
 
+                        {/* Resto del código permanece igual... */}
                         {/* Campañas Activas de Puntos */}
                         {pointsCampaigns.length > 0 && (
                             <div 
@@ -457,7 +500,120 @@ const PointsClient = () => {
                 </div>
             </div>
         </div>
-        <Footer />
+        <ClientFooter />
+
+        {/* Modal de Registrar Ticket */}
+        <RedeemPurchaseModal 
+            isOpen={isPurchaseModalOpen}
+            onClose={() => setIsPurchaseModalOpen(false)}
+            businessName={business?.NegocioDesc}
+        />
+
+        {/* Modal de Código de Canje */}
+        {showRedeemModal && business.NegocioId==3 && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm">
+                <div 
+                    className="relative w-full max-w-md rounded-3xl p-8 shadow-2xl animate-fade-in-up"
+                    style={{
+                        backgroundColor: 'white',
+                        border: `2px solid ${detallesColor}50`,
+                    }}
+                >
+                    {/* Botón cerrar */}
+                    <button
+                        onClick={closeRedeemModal}
+                        className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition-colors"
+                    >
+                        <X className="w-5 h-5 text-gray-500" />
+                    </button>
+
+                    {/* Icono y título */}
+                    <div className="text-center mb-6">
+                        <div 
+                            className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4"
+                            style={{
+                                backgroundImage: `linear-gradient(to bottom right, ${color1}, ${color2})`,
+                            }}
+                        >
+                            <Gift className="w-10 h-10 text-white" />
+                        </div>
+                        <h3 className="text-2xl font-bold text-gray-800 mb-2">
+                            ¡Canje Exitoso!
+                        </h3>
+                        <p className="text-gray-600">
+                            Tu código de canje ha sido generado
+                        </p>
+                    </div>
+
+                    {/* Código de canje */}
+                    <div 
+                        className="rounded-2xl p-6 mb-6 text-center border-2"
+                        style={{
+                            backgroundColor: `${detallesColor}10`,
+                            borderColor: detallesColor,
+                        }}
+                    >
+                        <p className="text-sm font-medium text-gray-700 mb-2">
+                            Presenta este código en {business?.NegocioDesc || 'el establecimiento'}:
+                        </p>
+                        <div className="flex items-center justify-center gap-3">
+                            <code 
+                                className="text-2xl font-bold tracking-wider select-all"
+                                style={{ color: detallesColor }}
+                            >
+                                {redeemCode}
+                            </code>
+                            <button
+                                onClick={copyToClipboard}
+                                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                                title="Copiar código"
+                            >
+                                <Copy className={`w-5 h-5 ${copied ? 'text-green-500' : 'text-gray-500'}`} />
+                            </button>
+                        </div>
+                        {copied && (
+                            <p className="text-sm text-green-600 mt-2 animate-fade-in">
+                                ✓ Código copiado al portapapeles
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Instrucciones */}
+                    <div 
+                        className="rounded-xl p-4 mb-6"
+                        style={{
+                            backgroundColor: `${detallesColor}15`,
+                        }}
+                    >
+                        <h4 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                            <span className="text-lg">📋</span> Instrucciones:
+                        </h4>
+                        <ul className="text-sm text-gray-700 space-y-1">
+                            <li>• Presenta este código al cajero</li>
+                            <li>• El código es válido por única vez</li>
+                            <li>• Debes acudir al establecimiento físicamente</li>
+                        </ul>
+                    </div>
+
+                    {/* Botón de cerrar */}
+                    <button
+                        onClick={closeRedeemModal}
+                        className="w-full py-3 rounded-xl font-semibold text-white transition-all duration-200 shadow-lg hover:shadow-xl"
+                        style={{
+                            backgroundImage: `linear-gradient(to right, ${color1}, ${color2})`,
+                        }}
+                    >
+                        Entendido
+                    </button>
+
+                    {/* Nota */}
+                    <p className="text-xs text-center text-gray-500 mt-4">
+                        Guarda una captura de pantalla o copia este código
+                    </p>
+                </div>
+            </div>
+        )}
+        
         </>
     );
 };

@@ -6,8 +6,8 @@ import { useBusiness } from '../../../../contexts/BusinessContext';
 import { useClientAccount } from '../../../../hooks/useClientAccount';
 import ClientHeader from '../../components/ClientHeader';
 import { useEffect, useState } from 'react';
-import Footer from '../../components/Footer';
 import confetti from 'canvas-confetti';
+import ClientFooter from '../../components/ClientFooter';
 
 const Stamps = () => {
     const { user } = useAuth();
@@ -451,7 +451,7 @@ const Stamps = () => {
                 </div>
             </div>
         </div>
-        <Footer />
+        <ClientFooter />
         </>
     );
 };
