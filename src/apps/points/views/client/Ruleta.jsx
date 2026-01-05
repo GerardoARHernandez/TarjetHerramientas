@@ -110,13 +110,13 @@ const Ruleta = ({ onClose }) => {
     // Anillo decorativo exterior
     ctx.beginPath();
     ctx.arc(centerX, centerY, radius + 8, 0, 2 * Math.PI);
-    ctx.strokeStyle = '#FFD700';
+    ctx.strokeStyle = color1;
     ctx.lineWidth = 4;
     ctx.stroke();
     
     ctx.beginPath();
     ctx.arc(centerX, centerY, radius + 12, 0, 2 * Math.PI);
-    ctx.strokeStyle = 'rgba(255, 215, 0, 0.3)';
+    ctx.strokeStyle = color1;
     ctx.lineWidth = 2;
     ctx.stroke();
     

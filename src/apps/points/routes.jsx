@@ -22,8 +22,6 @@ const PointsRoutes = () => {
   // Determinar si el usuario es admin basado en el rol
   const isAdmin = user?.role === 'admin';
   
-  console.log('Auth state:', { isAuthenticated, user, isAdmin }); // Debug
-  
   return (
     <div className="min-h-screen bg-blue-100">
       {/* Solo mostrar AdminHeader para admins - los componentes cliente manejan su propio header */}
