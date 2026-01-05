@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useBusiness } from '../../../../contexts/BusinessContext';
 
 const Ruleta = ({ onClose }) => {
   const [spinning, setSpinning] = useState(false);
@@ -8,6 +9,10 @@ const Ruleta = ({ onClose }) => {
   const audioRef = useRef(null);
   const spinTimeoutRef = useRef(null);
   const startAngleRef = useRef(0);
+
+    const { business } = useBusiness();
+    const color1 = business?.NegocioColor1 || '#FF9800';
+    const color2 = business?.NegocioColor2 || '#FFC107';
   
   // Opciones de la ruleta (2 son "sigue participando")
   const options = [
@@ -21,7 +26,7 @@ const Ruleta = ({ onClose }) => {
   
   // Colores para cada segmento
   const colors = [
-    '#23b836', '#ffcf32', '#23b836', '#ffcf32', '#23b836', '#ffcf32'
+    color1, color2, color1, color2, color1, color2,
   ];
   
   const drawWheel = () => {
