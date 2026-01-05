@@ -349,7 +349,7 @@ const [notificationScheduler] = useState(() => new SimpleNotificationScheduler(1
                 )}
 
                 {/* Botón de prueba de notificación (solo para desarrollo) */}
-                {process.env.NODE_ENV === 'development' && getNotificationPermission() === 'granted' && (
+                { getNotificationPermission() === 'granted' && (
                     <div className="mb-4">
                         <button
                             onClick={testNotification}
