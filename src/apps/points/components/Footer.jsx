@@ -3,7 +3,7 @@ const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-gradient-to-br from-gray-900 to-black text-white shadow-xl mt-12">
+    <footer className="bg-gradient-to-br from-gray-900 to-black text-white shadow-xl mt-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Contenido con efecto de gradiente */}
           <div className="relative z-10">
