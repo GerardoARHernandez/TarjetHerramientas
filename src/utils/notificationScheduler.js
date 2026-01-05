@@ -1,55 +1,262 @@
 // src/utils/notificationScheduler.js
-export class SimpleNotificationScheduler {
-  constructor(hour = 16, minute = 15) {
-    this.hour = hour;
-    this.minute = minute;
-    this.timeoutId = null;
-    this.intervalId = null;
-    this.userData = null;
-    this.isInitialized = false;
+export class NotificationScheduler {
+  constructor() {
+    this.notificationHour = 16; // 4:00 PM
+    this.notificationMinute = 30; // 15 minutos
+    this.checkInterval = null;
   }
 
-  // Método para inicializar
-  async init(userData) {
-    if (this.isInitialized) return;
-    
+  // Inicializar programador
+  init(userData) {
     this.userData = userData;
-    console.log('NotificationScheduler inicializado para', this.hour + ':' + this.minute);
     
-    // Guardar datos en localStorage para persistencia
-    if (userData && userData.points > 0) {
-      localStorage.setItem('notificationUserData', JSON.stringify(userData));
+    // Verificar permiso
+    if (!this.hasPermission()) {
+      this.requestPermission();
+      return;
     }
+
+    // Programar chequeos
+    this.scheduleChecks();
     
-    // Verificar permiso actual
-    if (Notification.permission === 'granted') {
-      this.scheduleNextNotification();
-    } else if (Notification.permission === 'default') {
-      console.log('Permiso pendiente, se solicitará con interacción del usuario');
-    }
-    
-    this.isInitialized = true;
+    // Verificar inmediatamente
+    this.checkAndShowNotification();
   }
 
-  // Método para actualizar datos del usuario
-  updateUserData(newData) {
-    if (!this.userData) {
-      this.userData = {};
+  hasPermission() {
+    return Notification.permission === 'granted';
+  }
+
+  async requestPermission() {
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        this.scheduleChecks();
+        this.checkAndShowNotification();
+      }
+    } catch (error) {
+      console.error('Error solicitando permiso:', error);
     }
+  }
+
+  scheduleChecks() {
+    // Limpiar intervalo anterior
+    if (this.checkInterval) {
+      clearInterval(this.checkInterval);
+    }
+
+    // Verificar cada minuto para mayor precisión
+    this.checkInterval = setInterval(() => {
+      this.checkAndShowNotification();
+    }, 60 * 1000); // Cada minuto
+
+    // También verificar cuando la página se vuelve visible
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        this.checkAndShowNotification();
+      }
+    });
+
+    // Calcular tiempo hasta la próxima notificación
+    this.scheduleNextCheck();
+  }
+
+  // Calcular tiempo exacto para la próxima verificación
+  scheduleNextCheck() {
+    const now = new Date();
+    const nextCheck = this.getNextNotificationTime();
+    const timeUntilNextCheck = nextCheck.getTime() - now.getTime();
+
+    // Si ya pasó la hora de hoy, programar para mañana
+    if (timeUntilNextCheck < 0) {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(this.notificationHour, this.notificationMinute, 0, 0);
+      
+      const timeUntilTomorrow = tomorrow.getTime() - now.getTime();
+      
+      console.log(`Próxima notificación programada para mañana a las ${tomorrow.getHours()}:${tomorrow.getMinutes()}`);
+      
+      // Programar chequeo para mañana
+      setTimeout(() => {
+        this.checkAndShowNotification();
+      }, timeUntilTomorrow);
+    } else {
+      console.log(`Próxima notificación programada para hoy a las ${nextCheck.getHours()}:${nextCheck.getMinutes()}`);
+      
+      // Programar chequeo para hoy
+      setTimeout(() => {
+        this.checkAndShowNotification();
+      }, timeUntilNextCheck);
+    }
+  }
+
+  // Obtener la próxima hora de notificación
+  getNextNotificationTime() {
+    const now = new Date();
+    const nextTime = new Date();
+    
+    // Establecer la hora objetivo (16:15)
+    nextTime.setHours(this.notificationHour, this.notificationMinute, 0, 0);
+    
+    // Si ya pasó la hora de hoy, devolver mañana
+    if (now > nextTime) {
+      nextTime.setDate(nextTime.getDate() + 1);
+    }
+    
+    return nextTime;
+  }
+
+  checkAndShowNotification() {
+    const now = new Date();
+    const today = now.toDateString();
+    const lastNotificationDate = localStorage.getItem('lastNotificationDate');
+    
+    // Solo mostrar una notificación por día
+    if (lastNotificationDate === today) {
+      return;
+    }
+
+    // Verificar si es hora exacta de la notificación (16:15)
+    if (now.getHours() === this.notificationHour && now.getMinutes() === this.notificationMinute) {
+      this.showNotification();
+      localStorage.setItem('lastNotificationDate', today);
+      
+      // Reprogramar para mañana
+      this.scheduleNextCheck();
+    }
+  }
+
+  // Versión mejorada con margen de error (opcional)
+  checkAndShowNotificationWithMargin() {
+    const now = new Date();
+    const today = now.toDateString();
+    const lastNotificationDate = localStorage.getItem('lastNotificationDate');
+    
+    // Solo mostrar una notificación por día
+    if (lastNotificationDate === today) {
+      return;
+    }
+
+    // Margen de +/- 1 minuto para evitar perder la notificación
+    const targetHour = this.notificationHour;
+    const targetMinute = this.notificationMinute;
+    
+    // Crear tiempo objetivo
+    const targetTime = new Date();
+    targetTime.setHours(targetHour, targetMinute, 0, 0);
+    
+    // Calcular diferencia en minutos
+    const diffInMinutes = Math.abs(now - targetTime) / (1000 * 60);
+    
+    // Mostrar notificación si estamos dentro de 1 minuto del tiempo objetivo
+    if (diffInMinutes <= 1) {
+      this.showNotification();
+      localStorage.setItem('lastNotificationDate', today);
+      
+      // Reprogramar para mañana
+      this.scheduleNextCheck();
+    }
+  }
+
+  showNotification() {
+    if (!this.userData || !this.hasPermission()) return;
+
+    const { userName, points, businessName, businessLogo } = this.userData;
+    
+    if (points > 0) {
+      const notification = new Notification(
+        `¡Hola ${userName}!`,
+        {
+          body: `Recuerda que tienes ${points} puntos disponibles en ${businessName}`,
+          icon: businessLogo || '/favicon.ico',
+          badge: '/badge.png',
+          tag: 'daily-points-reminder',
+          requireInteraction: true,
+          // Opcional: vibrar en dispositivos móviles
+          vibrate: [200, 100, 200]
+        }
+      );
+
+      notification.onclick = () => {
+        window.focus();
+        notification.close();
+        
+        // Navegar a la página de puntos si es posible
+        if (window.location.pathname !== '/points-loyalty/points') {
+          window.location.href = '/points-loyalty/points';
+        }
+      };
+
+      // Cerrar automáticamente después de 10 segundos
+      setTimeout(() => {
+        notification.close();
+      }, 10000);
+    }
+  }
+
+  updateUserData(newData) {
     this.userData = { ...this.userData, ...newData };
     
-    // Actualizar localStorage
+    // Guardar en localStorage para persistencia
     if (this.userData.points > 0) {
       localStorage.setItem('notificationUserData', JSON.stringify(this.userData));
     }
   }
 
-  // Calcular tiempo hasta la próxima notificación
+  destroy() {
+    if (this.checkInterval) {
+      clearInterval(this.checkInterval);
+    }
+    
+    // Remover event listeners
+    document.removeEventListener('visibilitychange', this.checkAndShowNotification);
+  }
+}
+
+// Versión alternativa más simple
+export class SimpleNotificationScheduler {
+  constructor(hour = 16, minute = 15) {
+    this.hour = hour;
+    this.minute = minute;
+    this.intervalId = null;
+    this.timeoutId = null;
+  }
+
+  init(userData) {
+    this.userData = userData;
+    
+    if (!this.hasPermission()) {
+      this.requestPermission();
+      return;
+    }
+
+    // Calcular tiempo hasta la próxima notificación
+    this.scheduleNextNotification();
+    
+    // También verificar cada vez que la página se hace visible
+    document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
+  }
+
+  hasPermission() {
+    return Notification.permission === 'granted';
+  }
+
+  async requestPermission() {
+    try {
+      const permission = await Notification.requestPermission();
+      return permission === 'granted';
+    } catch (error) {
+      console.error('Error solicitando permiso:', error);
+      return false;
+    }
+  }
+
   calculateTimeUntilNextNotification() {
     const now = new Date();
     const target = new Date();
     
-    // Establecer hora objetivo (ej: 16:15)
+    // Establecer hora objetivo (16:15)
     target.setHours(this.hour, this.minute, 0, 0);
     
     // Si ya pasó la hora de hoy, programar para mañana
@@ -57,73 +264,68 @@ export class SimpleNotificationScheduler {
       target.setDate(target.getDate() + 1);
     }
     
-    const timeUntil = target.getTime() - now.getTime();
-    
-    console.log(`Tiempo hasta próxima notificación: ${Math.round(timeUntil/1000/60)} minutos`);
-    console.log(`Próxima notificación: ${target.toLocaleTimeString()}`);
-    
-    return timeUntil;
+    return target.getTime() - now.getTime();
   }
 
-  // Programar la próxima notificación
   scheduleNextNotification() {
     // Limpiar timeout anterior
     if (this.timeoutId) {
       clearTimeout(this.timeoutId);
-      this.timeoutId = null;
     }
 
-    const timeUntil = this.calculateTimeUntilNextNotification();
+    const timeUntilNotification = this.calculateTimeUntilNextNotification();
+    const nextNotificationTime = new Date(Date.now() + timeUntilNotification);
     
-    // Programar la notificación
+    console.log(`Notificación programada para: ${nextNotificationTime.toLocaleTimeString()}`);
+    
     this.timeoutId = setTimeout(() => {
-      this.showScheduledNotification();
-      // Reprogramar para el siguiente día
+      this.showNotification();
+      
+      // Programar la siguiente notificación para mañana
       this.scheduleNextNotification();
-    }, timeUntil);
+    }, timeUntilNotification);
   }
 
-  // Mostrar notificación programada
-  async showScheduledNotification() {
-    if (!this.hasPermission()) {
-      console.log('No hay permiso para mostrar notificación programada');
-      return;
-    }
-
-    try {
-      // Cargar datos desde localStorage si no están en memoria
-      if (!this.userData) {
-        const savedData = localStorage.getItem('notificationUserData');
-        if (savedData) {
-          this.userData = JSON.parse(savedData);
-        }
-      }
-
-      if (!this.userData || !this.userData.userName || this.userData.points <= 0) {
-        console.log('Datos insuficientes para mostrar notificación');
-        return;
-      }
-
-      const { userName, points, businessName, businessLogo } = this.userData;
-      const today = new Date().toDateString();
+  handleVisibilityChange() {
+    if (!document.hidden) {
+      // Cuando la página se vuelve visible, verificar si deberíamos mostrar notificación
+      const now = new Date();
+      const today = now.toDateString();
       const lastNotificationDate = localStorage.getItem('lastNotificationDate');
       
-      // Solo mostrar una notificación por día
-      if (lastNotificationDate === today) {
-        console.log('Ya se mostró notificación hoy');
-        return;
+      // Si no hemos mostrado notificación hoy y es después de las 16:15
+      if (lastNotificationDate !== today) {
+        const targetHour = this.hour;
+        const targetMinute = this.minute;
+        
+        // Verificar si ya pasó la hora de hoy
+        if (
+          now.getHours() > targetHour || 
+          (now.getHours() === targetHour && now.getMinutes() >= targetMinute)
+        ) {
+          this.showNotification();
+          localStorage.setItem('lastNotificationDate', today);
+        }
       }
+    }
+  }
 
-      console.log('Mostrando notificación programada para:', userName);
+  showNotification() {
+    if (!this.userData || !this.hasPermission()) return;
 
-      // Mostrar notificación
+    const { userName, points, businessName, businessLogo } = this.userData;
+    
+    if (points > 0) {
+      const today = new Date().toDateString();
+      localStorage.setItem('lastNotificationDate', today);
+      
       const notification = new Notification(
         `¡Hola ${userName}!`,
         {
-          body: `Recuerda que tienes ${points} puntos disponibles en ${businessName}`,
+          body: `Recuerda que tienes ${points} puntos disponibles en ${businessName} xd`,
           icon: businessLogo || '/favicon.ico',
           badge: '/badge.png',
-          tag: `daily-reminder-${Date.now()}`,
+          tag: `daily-reminder-${today}`,
           requireInteraction: true
         }
       );
@@ -132,172 +334,33 @@ export class SimpleNotificationScheduler {
         window.focus();
         notification.close();
         
-        // Navegar a la página de puntos
         if (window.location.pathname !== '/points-loyalty/points') {
           window.location.href = '/points-loyalty/points';
         }
       };
 
-      // Cerrar automáticamente después de 10 segundos
-      setTimeout(() => {
-        try {
-          notification.close();
-        } catch (e) {
-          // Ignorar error si ya fue cerrada
-        }
-      }, 10000);
-
-      // Guardar que ya mostramos notificación hoy
-      localStorage.setItem('lastNotificationDate', today);
-      
-      console.log('Notificación programada mostrada exitosamente');
-
-    } catch (error) {
-      console.error('Error mostrando notificación programada:', error);
+      // Cerrar después de 8 segundos
+      setTimeout(() => notification.close(), 8000);
     }
   }
 
-  // Método para probar notificación inmediatamente
-  async testNotification() {
-    console.log('Iniciando testNotification...');
+  updateUserData(newData) {
+    this.userData = { ...this.userData, ...newData };
     
-    // Verificar soporte
-    if (!('Notification' in window)) {
-      throw new Error('Este navegador no soporta notificaciones');
-    }
-
-    // Verificar permiso
-    if (Notification.permission !== 'granted') {
-      throw new Error('Permiso no concedido para notificaciones');
-    }
-
-    try {
-      // Intentar obtener datos del usuario
-      let displayName = 'Usuario';
-      let displayPoints = 0;
-      let displayBusiness = 'nuestro establecimiento';
-      let displayLogo = '/favicon.ico';
-
-      // Primero de userData en memoria
-      if (this.userData) {
-        displayName = this.userData.userName || displayName;
-        displayPoints = this.userData.points || displayPoints;
-        displayBusiness = this.userData.businessName || displayBusiness;
-        displayLogo = this.userData.businessLogo || displayLogo;
-      } 
-      // Si no, de localStorage
-      else {
-        const savedData = localStorage.getItem('notificationUserData');
-        if (savedData) {
-          const parsedData = JSON.parse(savedData);
-          displayName = parsedData.userName || displayName;
-          displayPoints = parsedData.points || displayPoints;
-          displayBusiness = parsedData.businessName || displayBusiness;
-          displayLogo = parsedData.businessLogo || displayLogo;
-        }
-      }
-
-      console.log('Mostrando notificación de prueba con datos:', {
-        displayName,
-        displayPoints,
-        displayBusiness
-      });
-
-      // Crear notificación de prueba
-      const notification = new Notification(
-        `¡Hola ${displayName}!`,
-        {
-          body: `Esta es una notificación de prueba. ${displayPoints > 0 ? `Tienes ${displayPoints} puntos disponibles en ${displayBusiness}.` : 'Bienvenido al sistema de puntos.'}`,
-          icon: displayLogo,
-          badge: '/badge.png',
-          tag: 'test-notification-' + Date.now(),
-          requireInteraction: true,
-          vibrate: [200, 100, 200] // Para dispositivos móviles
-        }
-      );
-
-      notification.onclick = () => {
-        console.log('Notificación de prueba clickeada');
-        window.focus();
-        notification.close();
-      };
-
-      // Cerrar automáticamente después de 5 segundos
-      setTimeout(() => {
-        try {
-          notification.close();
-        } catch (e) {
-          // Ignorar error
-        }
-      }, 5000);
-
-      console.log('Notificación de prueba mostrada exitosamente');
-      return true;
-
-    } catch (error) {
-      console.error('Error en testNotification:', error);
-      throw error;
+    if (this.userData.points > 0) {
+      localStorage.setItem('notificationUserData', JSON.stringify(this.userData));
     }
   }
 
-  // Verificar si tenemos permiso
-  hasPermission() {
-    return Notification.permission === 'granted';
-  }
-
-  // Solicitar permiso (debe llamarse desde un evento de click en móviles)
-  async requestPermission() {
-    try {
-      console.log('Solicitando permiso para notificaciones...');
-      
-      // Para navegadores modernos (promise-based)
-      if (typeof Notification.requestPermission === 'function') {
-        const permission = await Notification.requestPermission();
-        console.log('Permiso obtenido (promise):', permission);
-        
-        if (permission === 'granted') {
-          this.scheduleNextNotification();
-          return true;
-        }
-        return false;
-      } 
-      // Para navegadores antiguos (callback-based)
-      else if (typeof Notification.requestPermission === 'function') {
-        return new Promise((resolve) => {
-          Notification.requestPermission((permission) => {
-            console.log('Permiso obtenido (callback):', permission);
-            
-            if (permission === 'granted') {
-              this.scheduleNextNotification();
-              resolve(true);
-            } else {
-              resolve(false);
-            }
-          });
-        });
-      }
-      
-      return false;
-    } catch (error) {
-      console.error('Error solicitando permiso:', error);
-      return false;
-    }
-  }
-
-  // Limpiar recursos
   destroy() {
-    console.log('Destruyendo NotificationScheduler...');
-    
     if (this.timeoutId) {
       clearTimeout(this.timeoutId);
-      this.timeoutId = null;
     }
     
     if (this.intervalId) {
       clearInterval(this.intervalId);
-      this.intervalId = null;
     }
     
-    this.isInitialized = false;
+    document.removeEventListener('visibilitychange', this.handleVisibilityChange);
   }
 }
