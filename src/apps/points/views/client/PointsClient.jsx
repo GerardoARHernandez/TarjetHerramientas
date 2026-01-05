@@ -1,14 +1,16 @@
 // src/apps/points-loyalty/views/client/PointsClient.jsx
 import { useNavigate } from 'react-router-dom';
-import { Clock, Coins, TrendingUp, Gift, X, Copy, ArrowRight } from 'lucide-react';
+import { Clock, Coins, TrendingUp, Gift, X, Copy, ArrowRight, Bell } from 'lucide-react';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { useBusiness } from '../../../../contexts/BusinessContext';
 import { useClientAccount } from '../../../../hooks/useClientAccount';
 import ClientHeader from '../../components/ClientHeader';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import ClientFooter from '../../components/ClientFooter';
-import RedeemPurchaseModal from '../../components/RedeemPurchaseModal'; // Asegúrate de importar el modal
+import RedeemPurchaseModal from '../../components/RedeemPurchaseModal';
+import NotificationPermission from '../../components/NotificationPermission';
+import { SimpleNotificationScheduler } from '../../../../utils/notificationScheduler';
 
 const PointsClient = () => {
     const { user } = useAuth();
@@ -20,27 +22,27 @@ const PointsClient = () => {
     const [showRedeemModal, setShowRedeemModal] = useState(false);
     const [redeemCode, setRedeemCode] = useState('');
     const [copied, setCopied] = useState(false);
-    const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false); // Estado para el modal de registrar ticket
+    const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
+    const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
+    const notificationCheckRef = useRef(false);
 
     const userName = user?.name || 'Usuario';
     const businessType = business?.NegocioTipoPS;
     const color1 = business?.NegocioColor1 ? business.NegocioColor1 : '#ffb900';
     const color2 = business?.NegocioColor2 ? business.NegocioColor2 : '#fe9a00';
     const detallesColor = business?.NegocioColor2 || '#FF9800';
+const [notificationScheduler] = useState(() => new SimpleNotificationScheduler(17, 0)); //5pm
 
-    // Mover isLoading aquí antes de los useEffects que lo usan
+   
     const isLoading = businessLoading || accountLoading;
 
-    // Usar datos reales de la API
     const userPoints = accountData?.puntosDisponibles ? parseInt(accountData.puntosDisponibles) : 0;
     
-    // Transformar el historial de movimientos
     const pointsHistory = accountData?.Movimientos ? accountData.Movimientos.map(mov => {
-        const dateLocalString = `${mov.TransaccionFecha}T00:00:00`; 
-    
+        const dateLocalString = `${mov.TransaccionFecha}T00:00:00`;
         return {
             id: mov.TransaccionId,
-            date: new Date(dateLocalString).toLocaleDateString(), 
+            date: new Date(dateLocalString).toLocaleDateString(),
             action: mov.TransaccionTipo === 'A' ? 'Acumulación de puntos' : 'Canje de puntos',
             points: mov.TransaccionTipo === 'A' ? `+${mov.TransaccionCant}` : `-${mov.TransaccionCant}`,
             type: mov.TransaccionTipo === 'A' ? 'gain' : 'redeem',
@@ -52,6 +54,122 @@ const PointsClient = () => {
     const pointsCampaigns = activeCampaigns.filter(campaign =>
         campaign.NegocioTipoPS === 'P'
     );
+
+    useEffect(() => {
+    // Inicializar cuando tengamos los datos
+    if (!isLoading && userPoints > 0) {
+      notificationScheduler.init({
+        userName,
+        points: userPoints,
+        businessName: business?.NegocioDesc,
+        businessLogo: business?.NegocioImagenUrl
+      });
+    }
+    
+    return () => {
+      notificationScheduler.destroy();
+    };
+  }, [isLoading, userName, userPoints, business]);
+  
+  // Actualizar datos cuando cambien
+  useEffect(() => {
+    if (userPoints > 0) {
+      notificationScheduler.updateUserData({
+        points: userPoints
+      });
+    }
+  }, [userPoints]);
+
+    // Función para verificar si el navegador soporta notificaciones
+    const isNotificationSupported = () => {
+        return 'Notification' in window;
+    };
+
+    // Función para verificar el permiso
+    const getNotificationPermission = () => {
+        if (!isNotificationSupported()) return 'unsupported';
+        return Notification.permission;
+    };
+
+    // Función para solicitar permiso
+    const requestNotificationPermission = async () => {
+        if (!isNotificationSupported()) return false;
+        
+        try {
+            const permission = await Notification.requestPermission();
+            return permission === 'granted';
+        } catch (error) {
+            console.error('Error al solicitar permiso:', error);
+            return false;
+        }
+    };
+
+    // Función para enviar notificación con los puntos
+    const sendPointsNotification = useCallback(async (force = false) => {
+        if (!isNotificationSupported() || getNotificationPermission() !== 'granted') {
+            return;
+        }
+
+        // Solo enviar si hay puntos y no es la primera carga (o si forzamos)
+        if (userPoints > 0 && (force || !notificationCheckRef.current)) {
+            try {
+                const notification = new Notification(
+                    `¡Hola ${userName}!`,
+                    {
+                        body: `Cuentas con ${userPoints} puntos disponibles`,
+                        icon: business?.NegocioImagenUrl || '/favicon.ico',
+                        badge: business?.NegocioImagenUrl || '/badge.png',
+                        tag: 'points-reminder',
+                        requireInteraction: false,
+                        silent: false
+                    }
+                );
+
+                // Manejar clic en la notificación
+                notification.onclick = () => {
+                    window.focus();
+                    notification.close();
+                };
+
+                notificationCheckRef.current = true;
+                
+                // Programar próximas notificaciones (si fue forzado)
+                if (force) {
+                    setTimeout(() => {
+                        if (getNotificationPermission() === 'granted') {
+                            sendPointsNotification(true);
+                        }
+                    }, 24 * 60 * 60 * 1000); // 24 horas
+                }
+            } catch (error) {
+                console.error('Error al enviar notificación:', error);
+            }
+        }
+    }, [userName, userPoints, business]);
+
+    // Verificar y enviar notificación después de cargar datos
+    useEffect(() => {
+        if (!isLoading && accountData && getNotificationPermission() === 'granted') {
+            // Pequeño delay para asegurar que todo esté listo
+            const timer = setTimeout(() => {
+                sendPointsNotification();
+            }, 2000);
+
+            return () => clearTimeout(timer);
+        }
+    }, [isLoading, accountData, sendPointsNotification]);
+
+    // Mostrar prompt de notificaciones después de 5 segundos (solo una vez)
+    useEffect(() => {
+        if (!isLoading && getNotificationPermission() === 'default' && !notificationCheckRef.current) {
+            const timer = setTimeout(() => {
+                setShowNotificationPrompt(true);
+                notificationCheckRef.current = true;
+            }, 5000);
+
+            return () => clearTimeout(timer);
+        }
+    }, [isLoading]);
 
     // Función para generar código alfanumérico
     const generateRedeemCode = () => {
@@ -98,16 +216,28 @@ const PointsClient = () => {
         // Lanzar confeti
         launchConfetti();
         
+        // Enviar notificación de canje exitoso
+        if (getNotificationPermission() === 'granted') {
+            try {
+                new Notification(
+                    '¡Canje realizado!',
+                    {
+                        body: `Has canjeado ${campaign.CampaCantPSCanje} puntos por: ${campaign.CampaRecompensa}`,
+                        icon: business?.NegocioImagenUrl || '/favicon.ico'
+                    }
+                );
+            } catch (error) {
+                console.error('Error al enviar notificación de canje:', error);
+            }
+        }
+
         // Simular procesamiento del canje
         setTimeout(() => {
-            // Generar código de canje
             const newCode = generateRedeemCode();
             setRedeemCode(newCode);
-            
-            // Mostrar modal con el código
             setShowRedeemModal(true);
             setIsRedeeming(false);
-        }, 1500); // 1.5 segundos de procesamiento
+        }, 1500);
     };
 
     // Función para cerrar modal
@@ -125,10 +255,24 @@ const PointsClient = () => {
             });
 
             if (hasEnoughPointsForAnyCampaign) {
-                // Pequeño delay para que la página termine de cargar
                 const timer = setTimeout(() => {
                     launchConfetti();
                     setHasShownWelcomeConfetti(true);
+                    
+                    // Notificar sobre promociones disponibles
+                    if (getNotificationPermission() === 'granted') {
+                        try {
+                            new Notification(
+                                '¡Tienes promociones disponibles!',
+                                {
+                                    body: `Tienes ${userPoints} puntos y promociones para canjear`,
+                                    icon: business?.NegocioImagenUrl || '/favicon.ico'
+                                }
+                            );
+                        } catch (error) {
+                            console.error('Error al enviar notificación de promoción:', error);
+                        }
+                    }
                 }, 1000);
 
                 return () => clearTimeout(timer);
@@ -142,6 +286,21 @@ const PointsClient = () => {
             navigate('/points-loyalty/stamps');
         }
     }, [businessType, navigate]);
+
+    // Función para forzar el envío de una notificación (útil para testing)
+    const testNotification = () => {
+        if (getNotificationPermission() === 'granted') {
+            sendPointsNotification(true);
+        }
+    };
+
+    // Manejar el cambio de permiso
+    const handlePermissionChange = async (granted) => {
+        setShowNotificationPrompt(false);
+        if (granted) {
+            await sendPointsNotification(true);
+        }
+    };
 
     if (isLoading) {
         return (
@@ -180,6 +339,28 @@ const PointsClient = () => {
             />
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                {/* Notificación Prompt */}
+                {showNotificationPrompt && getNotificationPermission() === 'default' && (
+                    <div className="mb-6 animate-fade-in">
+                        <NotificationPermission 
+                            onPermissionChange={handlePermissionChange}
+                        />
+                    </div>
+                )}
+
+                {/* Botón de prueba de notificación (solo para desarrollo) */}
+                {process.env.NODE_ENV === 'development' && getNotificationPermission() === 'granted' && (
+                    <div className="mb-4">
+                        <button
+                            onClick={testNotification}
+                            className="flex items-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm"
+                        >
+                            <Bell className="w-4 h-4" />
+                            Probar notificación
+                        </button>
+                    </div>
+                )}
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
 
                     {/* Columna Principal - Puntos */}
@@ -271,7 +452,6 @@ const PointsClient = () => {
                             </div>
                         </div>
 
-                        {/* Resto del código permanece igual... */}
                         {/* Campañas Activas de Puntos */}
                         {pointsCampaigns.length > 0 && (
                             <div 
