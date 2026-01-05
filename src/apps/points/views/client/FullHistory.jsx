@@ -5,7 +5,7 @@ import { useAuth } from '../../../../contexts/AuthContext';
 import { useBusiness } from '../../../../contexts/BusinessContext';
 import { useClientAccount } from '../../../../hooks/useClientAccount';
 import ClientHeader from '../../components/ClientHeader';
-import Footer from '../../components/Footer';
+import ClientFooter from '../../components/ClientFooter';
 
 const FullHistory = () => {
     const { user } = useAuth();
@@ -184,7 +184,7 @@ const FullHistory = () => {
             {/* Espaciado extra para el footer */}
             <div className="h-1"></div> 
         </div>
-        <Footer />
+        <ClientFooter />
         </>
     );
 };
