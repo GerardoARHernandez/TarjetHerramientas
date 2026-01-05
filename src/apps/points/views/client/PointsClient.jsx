@@ -1,6 +1,6 @@
 // src/apps/points-loyalty/views/client/PointsClient.jsx
 import { useNavigate } from 'react-router-dom';
-import { Clock, Coins, TrendingUp, Gift, X, Copy, ArrowRight, Bell } from 'lucide-react';
+import { Clock, Coins, TrendingUp, Gift, X, Copy, ArrowRight, Bell, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { useBusiness } from '../../../../contexts/BusinessContext';
 import { useClientAccount } from '../../../../hooks/useClientAccount';
@@ -24,6 +24,11 @@ const PointsClient = () => {
     const [copied, setCopied] = useState(false);
     const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
     const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
+    const [notificationStatus, setNotificationStatus] = useState({
+      permission: Notification.permission,
+      isTesting: false,
+      lastTestResult: null
+    });
     const notificationCheckRef = useRef(false);
 
     const userName = user?.name || 'Usuario';
@@ -31,9 +36,10 @@ const PointsClient = () => {
     const color1 = business?.NegocioColor1 ? business.NegocioColor1 : '#ffb900';
     const color2 = business?.NegocioColor2 ? business.NegocioColor2 : '#fe9a00';
     const detallesColor = business?.NegocioColor2 || '#FF9800';
-const [notificationScheduler] = useState(() => new SimpleNotificationScheduler(17, 0)); //5pm
-
-   
+    
+    // Inicializar NotificationScheduler (17:00 = 5:00 PM)
+    const [notificationScheduler] = useState(() => new SimpleNotificationScheduler(17, 0));
+    
     const isLoading = businessLoading || accountLoading;
 
     const userPoints = accountData?.puntosDisponibles ? parseInt(accountData.puntosDisponibles) : 0;
@@ -55,113 +61,55 @@ const [notificationScheduler] = useState(() => new SimpleNotificationScheduler(1
         campaign.NegocioTipoPS === 'P'
     );
 
+    // Inicializar NotificationScheduler cuando tengamos los datos
     useEffect(() => {
-    // Inicializar cuando tengamos los datos
-    if (!isLoading && userPoints > 0) {
-      notificationScheduler.init({
-        userName,
-        points: userPoints,
-        businessName: business?.NegocioDesc,
-        businessLogo: business?.NegocioImagenUrl
-      });
-    }
+      if (!isLoading && userPoints > 0) {
+        notificationScheduler.init({
+          userName,
+          points: userPoints,
+          businessName: business?.NegocioDesc,
+          businessLogo: business?.NegocioImagenUrl
+        });
+      }
+      
+      return () => {
+        notificationScheduler.destroy();
+      };
+    }, [isLoading, userName, userPoints, business]);
     
-    return () => {
-      notificationScheduler.destroy();
-    };
-  }, [isLoading, userName, userPoints, business]);
-  
-  // Actualizar datos cuando cambien
-  useEffect(() => {
-    if (userPoints > 0) {
-      notificationScheduler.updateUserData({
-        points: userPoints
-      });
-    }
-  }, [userPoints]);
-
-    // Función para verificar si el navegador soporta notificaciones
-    const isNotificationSupported = () => {
-        return 'Notification' in window;
-    };
-
-    // Función para verificar el permiso
-    const getNotificationPermission = () => {
-        if (!isNotificationSupported()) return 'unsupported';
-        return Notification.permission;
-    };
-
-    // Función para solicitar permiso
-    const requestNotificationPermission = async () => {
-        if (!isNotificationSupported()) return false;
-        
-        try {
-            const permission = await Notification.requestPermission();
-            return permission === 'granted';
-        } catch (error) {
-            console.error('Error al solicitar permiso:', error);
-            return false;
-        }
-    };
-
-    // Función para enviar notificación con los puntos
-    const sendPointsNotification = useCallback(async (force = false) => {
-        if (!isNotificationSupported() || getNotificationPermission() !== 'granted') {
-            return;
-        }
-
-        // Solo enviar si hay puntos y no es la primera carga (o si forzamos)
-        if (userPoints > 0 && (force || !notificationCheckRef.current)) {
-            try {
-                const notification = new Notification(
-                    `¡Hola ${userName}!`,
-                    {
-                        body: `Cuentas con ${userPoints} puntos disponibles`,
-                        icon: business?.NegocioImagenUrl || '/favicon.ico',
-                        badge: business?.NegocioImagenUrl || '/badge.png',
-                        tag: 'points-reminder',
-                        requireInteraction: false,
-                        silent: false
-                    }
-                );
-
-                // Manejar clic en la notificación
-                notification.onclick = () => {
-                    window.focus();
-                    notification.close();
-                };
-
-                notificationCheckRef.current = true;
-                
-                // Programar próximas notificaciones (si fue forzado)
-                if (force) {
-                    setTimeout(() => {
-                        if (getNotificationPermission() === 'granted') {
-                            sendPointsNotification(true);
-                        }
-                    }, 24 * 60 * 60 * 1000); // 24 horas
-                }
-            } catch (error) {
-                console.error('Error al enviar notificación:', error);
-            }
-        }
-    }, [userName, userPoints, business]);
-
-    // Verificar y enviar notificación después de cargar datos
+    // Actualizar datos cuando cambien
     useEffect(() => {
-        if (!isLoading && accountData && getNotificationPermission() === 'granted') {
-            // Pequeño delay para asegurar que todo esté listo
-            const timer = setTimeout(() => {
-                sendPointsNotification();
-            }, 2000);
+      if (userPoints > 0) {
+        notificationScheduler.updateUserData({
+          points: userPoints
+        });
+      }
+    }, [userPoints]);
 
-            return () => clearTimeout(timer);
-        }
-    }, [isLoading, accountData, sendPointsNotification]);
+    // Actualizar estado del permiso
+    useEffect(() => {
+      const checkPermission = () => {
+        setNotificationStatus(prev => ({
+          ...prev,
+          permission: Notification.permission
+        }));
+      };
+      
+      // Verificar periódicamente
+      const interval = setInterval(checkPermission, 5000);
+      
+      // Verificar cuando la página gana foco
+      window.addEventListener('focus', checkPermission);
+      
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener('focus', checkPermission);
+      };
+    }, []);
 
     // Mostrar prompt de notificaciones después de 5 segundos (solo una vez)
     useEffect(() => {
-        if (!isLoading && getNotificationPermission() === 'default' && !notificationCheckRef.current) {
+        if (!isLoading && Notification.permission === 'default' && !notificationCheckRef.current) {
             const timer = setTimeout(() => {
                 setShowNotificationPrompt(true);
                 notificationCheckRef.current = true;
@@ -217,13 +165,14 @@ const [notificationScheduler] = useState(() => new SimpleNotificationScheduler(1
         launchConfetti();
         
         // Enviar notificación de canje exitoso
-        if (getNotificationPermission() === 'granted') {
+        if (Notification.permission === 'granted') {
             try {
                 new Notification(
                     '¡Canje realizado!',
                     {
                         body: `Has canjeado ${campaign.CampaCantPSCanje} puntos por: ${campaign.CampaRecompensa}`,
-                        icon: business?.NegocioImagenUrl || '/favicon.ico'
+                        icon: business?.NegocioImagenUrl || '/favicon.ico',
+                        tag: 'redeem-success-' + Date.now()
                     }
                 );
             } catch (error) {
@@ -260,13 +209,14 @@ const [notificationScheduler] = useState(() => new SimpleNotificationScheduler(1
                     setHasShownWelcomeConfetti(true);
                     
                     // Notificar sobre promociones disponibles
-                    if (getNotificationPermission() === 'granted') {
+                    if (Notification.permission === 'granted') {
                         try {
                             new Notification(
                                 '¡Tienes promociones disponibles!',
                                 {
                                     body: `Tienes ${userPoints} puntos y promociones para canjear`,
-                                    icon: business?.NegocioImagenUrl || '/favicon.ico'
+                                    icon: business?.NegocioImagenUrl || '/favicon.ico',
+                                    tag: 'promotions-available-' + Date.now()
                                 }
                             );
                         } catch (error) {
@@ -287,19 +237,95 @@ const [notificationScheduler] = useState(() => new SimpleNotificationScheduler(1
         }
     }, [businessType, navigate]);
 
-    // Función para forzar el envío de una notificación (útil para testing)
-    const testNotification = () => {
-        if (getNotificationPermission() === 'granted') {
-            sendPointsNotification(true);
+    // Función para probar notificación
+    const testNotification = async () => {
+        // Verificar soporte
+        if (!('Notification' in window)) {
+            alert('Tu navegador no soporta notificaciones');
+            return;
+        }
+
+        setNotificationStatus(prev => ({ ...prev, isTesting: true, lastTestResult: null }));
+
+        try {
+            // Si no hay permiso, solicitarlo
+            if (Notification.permission === 'default') {
+                const granted = await notificationScheduler.requestPermission();
+                if (!granted) {
+                    alert('Necesitas permitir las notificaciones para probar');
+                    setNotificationStatus(prev => ({ 
+                        ...prev, 
+                        isTesting: false,
+                        lastTestResult: 'permission-denied'
+                    }));
+                    return;
+                }
+            }
+
+            // Si el permiso fue denegado
+            if (Notification.permission === 'denied') {
+                alert('Las notificaciones están bloqueadas. Por favor, habilítalas en la configuración de tu navegador.');
+                setNotificationStatus(prev => ({ 
+                    ...prev, 
+                    isTesting: false,
+                    lastTestResult: 'permission-blocked'
+                }));
+                return;
+            }
+
+            // Probar la notificación
+            const success = await notificationScheduler.testNotification();
+            
+            setNotificationStatus(prev => ({ 
+                ...prev, 
+                isTesting: false,
+                lastTestResult: success ? 'success' : 'error'
+            }));
+            
+            if (!success) {
+                alert('No se pudo mostrar la notificación de prueba');
+            }
+            
+        } catch (error) {
+            console.error('Error probando notificación:', error);
+            setNotificationStatus(prev => ({ 
+                ...prev, 
+                isTesting: false,
+                lastTestResult: 'error'
+            }));
+            alert('Error al probar notificación: ' + error.message);
         }
     };
 
-    // Manejar el cambio de permiso
+    // Manejar el cambio de permiso desde NotificationPermission
     const handlePermissionChange = async (granted) => {
         setShowNotificationPrompt(false);
         if (granted) {
-            await sendPointsNotification(true);
+            // Si se concedió permiso, programar notificaciones
+            notificationScheduler.scheduleNextNotification();
         }
+    };
+
+    // Función de debug para problemas
+    const debugNotifications = () => {
+        console.group('DEBUG - Sistema de Notificaciones');
+        console.log('User Agent:', navigator.userAgent);
+        console.log('Soporta Notification API:', 'Notification' in window);
+        console.log('Permiso actual:', Notification.permission);
+        console.log('Soporta Service Worker:', 'serviceWorker' in navigator);
+        console.log('Protocolo:', window.location.protocol);
+        console.log('Hostname:', window.location.hostname);
+        console.log('Datos del usuario:', { userName, userPoints });
+        console.log('NotificationScheduler:', notificationScheduler);
+        console.groupEnd();
+        
+        alert(`DEBUG NOTIFICACIONES:
+• Navegador: ${navigator.userAgent.substring(0, 80)}...
+• Soporta notificaciones: ${'Notification' in window ? 'SÍ' : 'NO'}
+• Permiso: ${Notification.permission}
+• Es HTTPS: ${window.location.protocol === 'https:'}
+• Puntos del usuario: ${userPoints}
+• Nombre: ${userName}`);
     };
 
     if (isLoading) {
@@ -340,7 +366,7 @@ const [notificationScheduler] = useState(() => new SimpleNotificationScheduler(1
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {/* Notificación Prompt */}
-                {showNotificationPrompt && getNotificationPermission() === 'default' && (
+                {showNotificationPrompt && Notification.permission === 'default' && (
                     <div className="mb-6 animate-fade-in">
                         <NotificationPermission 
                             onPermissionChange={handlePermissionChange}
@@ -348,18 +374,117 @@ const [notificationScheduler] = useState(() => new SimpleNotificationScheduler(1
                     </div>
                 )}
 
-                {/* Botón de prueba de notificación (solo para desarrollo) */}
-                { getNotificationPermission() === 'granted' && (
-                    <div className="mb-4">
-                        <button
-                            onClick={testNotification}
-                            className="flex items-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm"
-                        >
-                            <Bell className="w-4 h-4" />
-                            Probar notificación
-                        </button>
+                {/* Sección de prueba de notificaciones */}
+                <div className="mb-6 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200 shadow-sm">
+                    <div className="flex items-start gap-3">
+                        <div className={`p-2 rounded-lg ${
+                            notificationStatus.permission === 'granted' 
+                                ? 'bg-green-100' 
+                                : notificationStatus.permission === 'denied' 
+                                    ? 'bg-red-100' 
+                                    : 'bg-yellow-100'
+                        }`}>
+                            <Bell className={`w-5 h-5 ${
+                                notificationStatus.permission === 'granted' 
+                                    ? 'text-green-600' 
+                                    : notificationStatus.permission === 'denied' 
+                                        ? 'text-red-600' 
+                                        : 'text-yellow-600'
+                            }`} />
+                        </div>
+                        <div className="flex-1">
+                            <h4 className="font-medium text-gray-800 mb-1">Configuración de notificaciones</h4>
+                            <p className="text-sm text-gray-600 mb-3">
+                                {notificationStatus.permission === 'granted' 
+                                    ? `Recibirás recordatorios diarios a las 5:00 PM sobre tus ${userPoints} puntos`
+                                    : notificationStatus.permission === 'denied'
+                                        ? 'Las notificaciones están bloqueadas. Actívalas en configuración del navegador.'
+                                        : 'Activa las notificaciones para recibir recordatorios diarios de tus puntos'}
+                            </p>
+                            
+                            <div className="flex flex-col sm:flex-row gap-3">
+                                <button
+                                    onClick={testNotification}
+                                    disabled={notificationStatus.isTesting || notificationStatus.permission === 'denied'}
+                                    className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 min-w-[160px] ${
+                                        notificationStatus.permission === 'denied'
+                                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                            : 'bg-gradient-to-r from-purple-500 to-purple-600 text-white hover:from-purple-600 hover:to-purple-700 shadow-md hover:shadow-lg'
+                                    }`}
+                                >
+                                    {notificationStatus.isTesting ? (
+                                        <>
+                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                            Probando...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Bell className="w-4 h-4" />
+                                            {notificationStatus.permission === 'default' 
+                                                ? 'Activar y probar' 
+                                                : 'Probar notificación'}
+                                        </>
+                                    )}
+                                </button>
+                                
+                                <div className="flex-1">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-sm ${
+                                            notificationStatus.permission === 'granted' 
+                                                ? 'bg-green-100 text-green-800' 
+                                                : notificationStatus.permission === 'denied' 
+                                                    ? 'bg-red-100 text-red-800' 
+                                                    : 'bg-yellow-100 text-yellow-800'
+                                        }`}>
+                                            <span className={`w-2 h-2 rounded-full ${
+                                                notificationStatus.permission === 'granted' 
+                                                    ? 'bg-green-500' 
+                                                    : notificationStatus.permission === 'denied' 
+                                                        ? 'bg-red-500' 
+                                                        : 'bg-yellow-500'
+                                            }`}></span>
+                                            {notificationStatus.permission === 'granted' 
+                                                ? 'Notificaciones activadas' 
+                                                : notificationStatus.permission === 'denied' 
+                                                    ? 'Notificaciones bloqueadas' 
+                                                    : 'Permiso pendiente'}
+                                        </span>
+                                        
+                                        {notificationStatus.lastTestResult === 'success' && (
+                                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-sm bg-green-100 text-green-800">
+                                                <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                                                Prueba exitosa
+                                            </span>
+                                        )}
+                                    </div>
+                                    
+                                    {notificationStatus.permission === 'denied' && (
+                                        <p className="text-xs text-red-600 mt-1">
+                                            Para activar: Chrome/Edge → Configuración → Privacidad → Notificaciones
+                                        </p>
+                                    )}
+                                    
+                                    {notificationStatus.permission === 'default' && (
+                                        <p className="text-xs text-yellow-600 mt-1">
+                                            Haz clic en "Activar y probar" para permitir notificaciones
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                            
+                            {/* Botón de debug (solo desarrollo) */}
+                            {process.env.NODE_ENV === 'development' && (
+                                <button
+                                    onClick={debugNotifications}
+                                    className="mt-3 text-xs text-gray-500 hover:text-gray-700 underline flex items-center gap-1"
+                                >
+                                    <AlertCircle className="w-3 h-3" />
+                                    Debug notificaciones
+                                </button>
+                            )}
+                        </div>
                     </div>
-                )}
+                </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
 
