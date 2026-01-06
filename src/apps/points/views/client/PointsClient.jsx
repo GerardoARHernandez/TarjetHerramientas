@@ -10,7 +10,7 @@ import confetti from 'canvas-confetti';
 import ClientFooter from '../../components/ClientFooter';
 import RedeemPurchaseModal from '../../components/RedeemPurchaseModal';
 import NotificationPermission from '../../components/NotificationPermission';
-import { SimpleNotificationScheduler } from '../../../../utils/notificationScheduler';
+import { WorkingNotificationScheduler } from '../../../../utils/notificationScheduler';
 
 const PointsClient = () => {
     const { user } = useAuth();
@@ -25,13 +25,17 @@ const PointsClient = () => {
     const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
     const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
     const notificationCheckRef = useRef(false);
+const [notificationStatus, setNotificationStatus] = useState({
+      isTesting: false,
+      lastTestResult: null
+    });
 
     const userName = user?.name || 'Usuario';
     const businessType = business?.NegocioTipoPS;
     const color1 = business?.NegocioColor1 ? business.NegocioColor1 : '#ffb900';
     const color2 = business?.NegocioColor2 ? business.NegocioColor2 : '#fe9a00';
     const detallesColor = business?.NegocioColor2 || '#FF9800';
-const [notificationScheduler] = useState(() => new SimpleNotificationScheduler(17, 0)); //5pm
+const [notificationScheduler] = useState(() => new WorkingNotificationScheduler(17, 0));
 
    
     const isLoading = businessLoading || accountLoading;
@@ -287,12 +291,96 @@ const [notificationScheduler] = useState(() => new SimpleNotificationScheduler(1
         }
     }, [businessType, navigate]);
 
-    // Función para forzar el envío de una notificación (útil para testing)
-    const testNotification = () => {
-        if (getNotificationPermission() === 'granted') {
-            sendPointsNotification(true);
-        }
-    };
+    const testNotification = async () => {
+  console.log('=== INICIANDO PRUEBA DE NOTIFICACIÓN ===');
+  
+  // Verificar soporte
+  if (!('Notification' in window)) {
+    alert('Tu navegador no soporta notificaciones');
+    return;
+  }
+
+  if (!('serviceWorker' in navigator)) {
+    alert('Se requiere Service Worker para notificaciones en Android Chrome');
+    return;
+  }
+
+  setNotificationStatus({ ...notificationStatus, isTesting: true });
+
+  try {
+    // Paso 1: Solicitar permiso si es necesario
+    if (Notification.permission === 'default') {
+      console.log('Solicitando permiso...');
+      const granted = await notificationScheduler.requestPermission();
+      if (!granted) {
+        alert('Debes permitir las notificaciones para probar');
+        setNotificationStatus({ ...notificationStatus, isTesting: false });
+        return;
+      }
+    }
+
+    if (Notification.permission === 'denied') {
+      alert('Notificaciones bloqueadas. Actívalas en configuración del navegador.');
+      setNotificationStatus({ ...notificationStatus, isTesting: false });
+      return;
+    }
+
+    // Paso 2: Probar notificación
+    console.log('Permiso concedido, probando...');
+    await notificationScheduler.testNotification();
+    
+    setNotificationStatus({ 
+      ...notificationStatus, 
+      isTesting: false,
+      lastTestResult: 'success'
+    });
+    
+    console.log('=== PRUEBA EXITOSA ===');
+    
+  } catch (error) {
+    console.error('Error en prueba:', error);
+    
+    // Mensajes de error específicos
+    if (error.message.includes('Service Worker')) {
+      alert('Error con Service Worker. Intenta:\n1. Recargar la página\n2. Verificar conexión HTTPS');
+    } else if (error.message.includes('Illegal constructor')) {
+      alert('Error técnico. Usando método alternativo...');
+      // Fallback: usar método directo del Service Worker
+      await sendNotificationViaServiceWorker();
+    } else {
+      alert('Error: ' + error.message);
+    }
+    
+    setNotificationStatus({ 
+      ...notificationStatus, 
+      isTesting: false,
+      lastTestResult: 'error'
+    });
+  }
+};
+
+// Método alternativo directo al Service Worker
+const sendNotificationViaServiceWorker = async () => {
+  if (!navigator.serviceWorker.controller) {
+    alert('Service Worker no está listo. Recarga la página.');
+    return;
+  }
+
+  try {
+    navigator.serviceWorker.controller.postMessage({
+      type: 'SHOW_POINTS_NOTIFICATION',
+      userName: userName,
+      points: userPoints,
+      title: `¡Hola ${userName}!`,
+      body: `Prueba exitosa. Tienes ${userPoints} puntos disponibles.`
+    });
+    
+    alert('✅ Notificación enviada al Service Worker');
+  } catch (error) {
+    console.error('Error enviando mensaje:', error);
+    alert('Error enviando notificación');
+  }
+};
 
     // Manejar el cambio de permiso
     const handlePermissionChange = async (granted) => {
@@ -348,18 +436,59 @@ const [notificationScheduler] = useState(() => new SimpleNotificationScheduler(1
                     </div>
                 )}
 
-                {/* Botón de prueba de notificación*/}
-                { getNotificationPermission() === 'granted' && (
-                    <div className="mb-4">
-                        <button
-                            onClick={testNotification}
-                            className="flex items-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm"
-                        >
-                            <Bell className="w-4 h-4" />
-                            Probar notificación
-                        </button>
-                    </div>
-                )}
+                <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl border border-blue-200">
+  <div className="flex items-center gap-3 mb-3">
+    <div className="bg-blue-100 p-2 rounded-lg">
+      <Bell className="w-6 h-6 text-blue-600" />
+    </div>
+    <div>
+      <h4 className="font-semibold text-gray-800">Probar notificaciones</h4>
+      <p className="text-sm text-gray-600 mt-1">
+        {Notification.permission === 'granted' 
+          ? 'Haz clic para probar' 
+          : 'Activa las notificaciones para recibir recordatorios'}
+      </p>
+    </div>
+  </div>
+  
+  <button
+    onClick={testNotification}
+    disabled={notificationStatus.isTesting}
+    className={`w-full py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
+      notificationStatus.isTesting
+        ? 'bg-gray-300 text-gray-500'
+        : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700'
+    }`}
+  >
+    {notificationStatus.isTesting ? (
+      <>
+        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+        Probando...
+      </>
+    ) : (
+      <>
+        <Bell className="w-5 h-5" />
+        {Notification.permission === 'default' ? 'Activar y probar' : 'Probar ahora'}
+      </>
+    )}
+  </button>
+  
+  <div className="mt-3 text-center">
+    <span className={`text-xs px-2 py-1 rounded ${
+      Notification.permission === 'granted' 
+        ? 'bg-green-100 text-green-800' 
+        : Notification.permission === 'denied' 
+          ? 'bg-red-100 text-red-800' 
+          : 'bg-yellow-100 text-yellow-800'
+    }`}>
+      {Notification.permission === 'granted' 
+        ? '✅ Notificaciones activas' 
+        : Notification.permission === 'denied' 
+          ? '❌ Notificaciones bloqueadas' 
+          : '⚠️ Permiso pendiente'}
+    </span>
+  </div>
+</div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
 
