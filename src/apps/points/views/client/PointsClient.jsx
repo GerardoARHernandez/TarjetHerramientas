@@ -10,7 +10,7 @@ import confetti from 'canvas-confetti';
 import ClientFooter from '../../components/ClientFooter';
 import RedeemPurchaseModal from '../../components/RedeemPurchaseModal';
 import NotificationPermission from '../../components/NotificationPermission';
-import { SimpleNotificationScheduler } from '../../../../utils/notificationScheduler';
+import { UniversalNotificationScheduler } from '../../../../utils/notificationScheduler';
 
 const PointsClient = () => {
     const { user } = useAuth();
@@ -31,7 +31,13 @@ const PointsClient = () => {
     const color1 = business?.NegocioColor1 ? business.NegocioColor1 : '#ffb900';
     const color2 = business?.NegocioColor2 ? business.NegocioColor2 : '#fe9a00';
     const detallesColor = business?.NegocioColor2 || '#FF9800';
-const [notificationScheduler] = useState(() => new SimpleNotificationScheduler(17, 0)); //5pm
+const [notificationScheduler] = useState(() => new UniversalNotificationScheduler(17, 0)); //5pm
+const [isMobileDevice, setIsMobileDevice] = useState(false);
+const [notificationStatus, setNotificationStatus] = useState({
+  isTesting: false,
+  permission: 'default',
+  lastTestResult: null
+});
 
    
     const isLoading = businessLoading || accountLoading;
@@ -287,12 +293,109 @@ const [notificationScheduler] = useState(() => new SimpleNotificationScheduler(1
         }
     }, [businessType, navigate]);
 
-    // Función para forzar el envío de una notificación (útil para testing)
-    const testNotification = () => {
-        if (getNotificationPermission() === 'granted') {
-            sendPointsNotification(true);
-        }
-    };
+// Detectar si es móvil
+useEffect(() => {
+  const mobileCheck = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  setIsMobileDevice(mobileCheck);
+  
+  if (mobileCheck) {
+    console.log('📱 Dispositivo móvil detectado');
+    console.log('User Agent:', navigator.userAgent);
+  }
+}, []);
+
+// Inicializar scheduler
+useEffect(() => {
+  if (!isLoading && userPoints > 0) {
+    notificationScheduler.init({
+      userName,
+      points: userPoints,
+      businessName: business?.NegocioDesc,
+      businessLogo: business?.NegocioImagenUrl
+    });
+  }
+  
+  return () => {
+    notificationScheduler.destroy();
+  };
+}, [isLoading, userName, userPoints, business]);
+
+// Función testNotification optimizada para móvil
+const testNotification = async () => {
+  console.log('🔔 Iniciando prueba en:', isMobileDevice ? 'Móvil' : 'Escritorio');
+  
+  // Verificar soporte
+  if (!('Notification' in window)) {
+    alert('❌ Tu navegador no soporta notificaciones');
+    return;
+  }
+
+  // Mensaje especial para móviles
+  if (isMobileDevice) {
+    const shouldContinue = window.confirm(
+      '📱 Modo móvil detectado\n\n' +
+      'Para notificaciones en Android/iPhone:\n' +
+      '1. Acepta el permiso cuando aparezca\n' +
+      '2. Si falla, prueba en "modo escritorio"\n' +
+      '3. O instala la app como PWA\n\n' +
+      '¿Continuar con la prueba?'
+    );
+    
+    if (!shouldContinue) return;
+  }
+
+  setNotificationStatus(prev => ({ ...prev, isTesting: true }));
+
+  try {
+    await notificationScheduler.testNotification();
+    
+    setNotificationStatus(prev => ({ 
+      ...prev, 
+      isTesting: false,
+      lastTestResult: 'success'
+    }));
+    
+    // Mensaje especial si es móvil
+    if (isMobileDevice) {
+      setTimeout(() => {
+        alert('✅ Prueba completada\n\n' +
+              'Si no viste la notificación:\n' +
+              '• Verifica la bandeja de notificaciones\n' +
+              '• Prueba en "modo escritorio"\n' +
+              '• O revisa permisos del navegador');
+      }, 1000);
+    }
+    
+  } catch (error) {
+    console.error('Error en prueba:', error);
+    
+    let errorMessage = 'Error: ';
+    
+    if (error.message.includes('Service Worker')) {
+      errorMessage = '🔄 Error técnico en móvil\n\n' +
+                    'Soluciones:\n' +
+                    '1. Recarga la página\n' +
+                    '2. Activa "modo escritorio"\n' +
+                    '3. Usa Chrome > Configuración > Notificaciones';
+    } else if (error.message.includes('Illegal constructor')) {
+      errorMessage = '⚡ Restricción de Android Chrome\n\n' +
+                    'En móvil necesitas:\n' +
+                    '• HTTPS (no HTTP)\n' +
+                    '• O usar "modo escritorio"\n' +
+                    '• O instalar como PWA';
+    } else {
+      errorMessage += error.message;
+    }
+    
+    alert(errorMessage);
+    
+    setNotificationStatus(prev => ({ 
+      ...prev, 
+      isTesting: false,
+      lastTestResult: 'error'
+    }));
+  }
+};
 
     // Manejar el cambio de permiso
     const handlePermissionChange = async (granted) => {
@@ -348,18 +451,46 @@ const [notificationScheduler] = useState(() => new SimpleNotificationScheduler(1
                     </div>
                 )}
 
-                {/* Botón de prueba de notificación*/}
-                { getNotificationPermission() === 'granted' && (
-                    <div className="mb-4">
-                        <button
-                            onClick={testNotification}
-                            className="flex items-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm"
-                        >
-                            <Bell className="w-4 h-4" />
-                            Probar notificación
-                        </button>
-                    </div>
-                )}
+{isMobileDevice && (
+  <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+    <div className="flex items-center gap-2">
+      <span className="text-yellow-600">📱</span>
+      <div>
+        <p className="text-sm font-medium text-yellow-800">
+          Modo móvil detectado
+        </p>
+        <p className="text-xs text-yellow-700">
+          Para mejor compatibilidad, prueba en "modo escritorio"
+        </p>
+      </div>
+    </div>
+  </div>
+)}
+
+<button
+  onClick={testNotification}
+  disabled={notificationStatus.isTesting || notificationStatus.permission === 'denied'}
+  className={`w-full py-3 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-3 ${
+    notificationStatus.permission === 'denied'
+      ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+      : notificationStatus.isTesting
+        ? 'bg-blue-400 text-white'
+        : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700'
+  } ${isMobileDevice ? 'border-2 border-yellow-300' : ''}`}
+>
+  {notificationStatus.isTesting ? (
+    <>
+      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+      Probando...
+    </>
+  ) : (
+    <>
+      <Bell className="w-5 h-5" />
+      {isMobileDevice ? 'Probar (modo móvil)' : 'Probar notificación'}
+      {isMobileDevice && <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">📱</span>}
+    </>
+  )}
+</button>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
 
