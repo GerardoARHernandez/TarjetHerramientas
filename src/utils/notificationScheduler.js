@@ -1,339 +1,265 @@
-// src/utils/notificationScheduler.js (versión Android)
-export class SimpleNotificationScheduler {
-  constructor(hour = 17, minute = 0) {
-    this.hour = hour;
-    this.minute = minute;
-    this.timeoutId = null;
-    this.userData = null;
-    this.swRegistration = null;
-    this.isAndroid = /Android/.test(navigator.userAgent);
-    this.isChrome = /Chrome/.test(navigator.userAgent);
+// src/utils/notificationScheduler.js
+export class NotificationScheduler {
+  constructor() {
+    this.notificationHour = 16; // 4:00 PM
+    this.notificationMinute = 30; // 15 minutos
+    this.checkInterval = null;
   }
 
-  // Método principal para inicializar
-  async init(userData) {
+  // Inicializar programador
+  init(userData) {
     this.userData = userData;
-    console.log('Inicializando para Android Chrome');
     
-    // Registrar Service Worker SIEMPRE para Android Chrome
-    this.swRegistration = await this.registerServiceWorker();
-    
-    // Guardar datos
-    if (userData) {
-      localStorage.setItem('notificationUserData', JSON.stringify(userData));
-    }
-    
-    // Configurar escucha de mensajes del Service Worker
-    if (navigator.serviceWorker) {
-      navigator.serviceWorker.addEventListener('message', this.handleSWMessage.bind(this));
-    }
-    
-    // Programar notificaciones si hay permiso
-    if (this.hasPermission()) {
-      this.scheduleNextNotification();
-    }
-  }
-
-  // Registrar Service Worker
-  async registerServiceWorker() {
-    if (!('serviceWorker' in navigator)) {
-      console.warn('Service Worker no soportado');
-      return null;
-    }
-
-    try {
-      // Para desarrollo local, permitir HTTP
-      if (window.location.protocol !== 'https:' && 
-          window.location.hostname !== 'localhost' && 
-          window.location.hostname !== '127.0.0.1') {
-        console.warn('Service Worker requiere HTTPS en producción');
-        return null;
-      }
-
-      const registration = await navigator.serviceWorker.register('/service-worker.js', {
-        scope: '/',
-        updateViaCache: 'none'
-      });
-
-      console.log('Service Worker registrado:', registration);
-      
-      // Esperar activación
-      if (registration.installing) {
-        await new Promise((resolve) => {
-          registration.installing.addEventListener('statechange', (e) => {
-            if (e.target.state === 'activated') {
-              console.log('Service Worker activado');
-              resolve();
-            }
-          });
-        });
-      }
-      
-      return registration;
-    } catch (error) {
-      console.error('Error registrando Service Worker:', error);
-      return null;
-    }
-  }
-
-  // Método universal para mostrar notificaciones en Android
-  async showNotification(title, options = {}) {
+    // Verificar permiso
     if (!this.hasPermission()) {
-      throw new Error('No hay permiso para notificaciones');
+      this.requestPermission();
+      return;
     }
 
-    const defaultOptions = {
-      icon: this.userData?.businessLogo || '/favicon.ico',
-      badge: '/favicon.ico',
-      requireInteraction: false,
-      vibrate: [200, 100, 200],
-      silent: false
-    };
-
-    const mergedOptions = { ...defaultOptions, ...options };
-
-    console.log('Intentando mostrar notificación:', { title, mergedOptions });
-
-    // ESTRATEGIA 1: Service Worker (recomendado para Android)
-    if (this.swRegistration) {
-      try {
-        console.log('Usando Service Worker para notificación');
-        await this.swRegistration.showNotification(title, mergedOptions);
-        return true;
-      } catch (swError) {
-        console.log('Error con Service Worker, intentando fallback:', swError);
-      }
-    }
-
-    // ESTRATEGIA 2: Notification API directa (solo si el contexto lo permite)
-    try {
-      if (typeof Notification !== 'undefined' && document.visibilityState === 'visible') {
-        console.log('Usando Notification API directa');
-        const notification = new Notification(title, mergedOptions);
-        
-        notification.onclick = () => {
-          window.focus();
-          notification.close();
-        };
-        
-        // Auto-cerrar
-        setTimeout(() => notification.close(), 8000);
-        return true;
-      }
-    } catch (directError) {
-      console.log('Error con Notification API:', directError);
-    }
-
-    // ESTRATEGIA 3: Mensaje al Service Worker activo
-    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-      try {
-        console.log('Enviando mensaje al Service Worker');
-        navigator.serviceWorker.controller.postMessage({
-          type: 'TEST_NOTIFICATION',
-          title,
-          options: mergedOptions
-        });
-        return true;
-      } catch (msgError) {
-        console.error('Error enviando mensaje:', msgError);
-      }
-    }
-
-    throw new Error('No se pudo mostrar la notificación');
+    // Programar chequeos
+    this.scheduleChecks();
+    
+    // Verificar inmediatamente
+    this.checkAndShowNotification();
   }
 
-  // Método de prueba específico para Android
-  async testNotification() {
-    console.log('testNotification iniciado en Android');
-    
-    // Verificar soporte
-    if (!('Notification' in window)) {
-      throw new Error('Este navegador no soporta notificaciones');
-    }
-
-    // Solicitar permiso si es necesario
-    if (Notification.permission === 'default') {
-      console.log('Solicitando permiso...');
-      const granted = await this.requestPermission();
-      if (!granted) {
-        throw new Error('Permiso no concedido por el usuario');
-      }
-    }
-
-    if (Notification.permission !== 'granted') {
-      throw new Error('Permiso denegado para notificaciones');
-    }
-
-    // Preparar datos
-    const data = this.getNotificationData();
-    
-    console.log('Datos para notificación:', data);
-
-    // Mostrar notificación de prueba
-    try {
-      await this.showNotification(
-        `¡Hola ${data.displayName}!`,
-        {
-          body: `✅ Prueba exitosa. Tienes ${data.displayPoints} puntos en ${data.displayBusiness}.`,
-          icon: data.displayLogo,
-          tag: 'test-' + Date.now(),
-          requireInteraction: true
-        }
-      );
-      
-      console.log('Notificación de prueba mostrada exitosamente');
-      return true;
-    } catch (error) {
-      console.error('Error en testNotification:', error);
-      
-      // Fallback para Android específico
-      if (this.isAndroid) {
-        console.log('Intentando fallback para Android...');
-        
-        // Fallback 1: Alert nativo
-        if (window.alert) {
-          alert(`🔔 Notificación de prueba:\n\nHola ${data.displayName}, tienes ${data.displayPoints} puntos disponibles.`);
-          return true;
-        }
-        
-        // Fallback 2: Toast (si tienes una librería)
-        this.showToast(`Prueba: ${data.displayPoints} puntos disponibles`);
-      }
-      
-      throw error;
-    }
-  }
-
-  // Obtener datos para notificación
-  getNotificationData() {
-    let displayName = 'Usuario';
-    let displayPoints = 0;
-    let displayBusiness = 'nuestro establecimiento';
-    let displayLogo = '/favicon.ico';
-
-    if (this.userData) {
-      displayName = this.userData.userName || displayName;
-      displayPoints = this.userData.points || displayPoints;
-      displayBusiness = this.userData.businessName || displayBusiness;
-      displayLogo = this.userData.businessLogo || displayLogo;
-    } else {
-      const savedData = localStorage.getItem('notificationUserData');
-      if (savedData) {
-        try {
-          const parsedData = JSON.parse(savedData);
-          displayName = parsedData.userName || displayName;
-          displayPoints = parsedData.points || displayPoints;
-          displayBusiness = parsedData.businessName || displayBusiness;
-          displayLogo = parsedData.businessLogo || displayLogo;
-        } catch (e) {
-          console.error('Error parseando datos guardados:', e);
-        }
-      }
-    }
-
-    return { displayName, displayPoints, displayBusiness, displayLogo };
-  }
-
-  // Toast simple para fallback
-  showToast(message) {
-    const toast = document.createElement('div');
-    toast.textContent = message;
-    toast.style.cssText = `
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0,0,0,0.8);
-      color: white;
-      padding: 12px 24px;
-      border-radius: 8px;
-      z-index: 10000;
-      font-size: 14px;
-    `;
-    
-    document.body.appendChild(toast);
-    
-    setTimeout(() => {
-      document.body.removeChild(toast);
-    }, 3000);
-  }
-
-  // Métodos auxiliares
   hasPermission() {
     return Notification.permission === 'granted';
   }
 
   async requestPermission() {
     try {
-      // En Android Chrome, requestPermission puede fallar si no es desde un evento de usuario
       const permission = await Notification.requestPermission();
-      console.log('Resultado permiso:', permission);
-      
       if (permission === 'granted') {
-        // Reprogramar notificaciones
-        this.scheduleNextNotification();
-        return true;
+        this.scheduleChecks();
+        this.checkAndShowNotification();
       }
-      return false;
     } catch (error) {
       console.error('Error solicitando permiso:', error);
-      
-      // Fallback para navegadores antiguos
-      if (typeof Notification.requestPermission === 'function') {
-        return new Promise((resolve) => {
-          Notification.requestPermission((permission) => {
-            resolve(permission === 'granted');
-          });
-        });
-      }
-      
-      return false;
     }
   }
 
-  // Programar notificación diaria
-  scheduleNextNotification() {
-    if (this.timeoutId) clearTimeout(this.timeoutId);
-    
-    const timeUntil = this.calculateTimeUntilNextNotification();
-    console.log(`Programando notificación en ${Math.round(timeUntil/1000/60)} minutos`);
-    
-    this.timeoutId = setTimeout(() => {
-      this.showDailyNotification();
-      this.scheduleNextNotification();
-    }, timeUntil);
+  scheduleChecks() {
+    // Limpiar intervalo anterior
+    if (this.checkInterval) {
+      clearInterval(this.checkInterval);
+    }
+
+    // Verificar cada minuto para mayor precisión
+    this.checkInterval = setInterval(() => {
+      this.checkAndShowNotification();
+    }, 60 * 1000); // Cada minuto
+
+    // También verificar cuando la página se vuelve visible
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        this.checkAndShowNotification();
+      }
+    });
+
+    // Calcular tiempo hasta la próxima notificación
+    this.scheduleNextCheck();
   }
 
-  async showDailyNotification() {
-    if (!this.hasPermission() || !this.userData) return;
+  // Calcular tiempo exacto para la próxima verificación
+  scheduleNextCheck() {
+    const now = new Date();
+    const nextCheck = this.getNextNotificationTime();
+    const timeUntilNextCheck = nextCheck.getTime() - now.getTime();
+
+    // Si ya pasó la hora de hoy, programar para mañana
+    if (timeUntilNextCheck < 0) {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(this.notificationHour, this.notificationMinute, 0, 0);
+      
+      const timeUntilTomorrow = tomorrow.getTime() - now.getTime();
+      
+      console.log(`Próxima notificación programada para mañana a las ${tomorrow.getHours()}:${tomorrow.getMinutes()}`);
+      
+      // Programar chequeo para mañana
+      setTimeout(() => {
+        this.checkAndShowNotification();
+      }, timeUntilTomorrow);
+    } else {
+      console.log(`Próxima notificación programada para hoy a las ${nextCheck.getHours()}:${nextCheck.getMinutes()}`);
+      
+      // Programar chequeo para hoy
+      setTimeout(() => {
+        this.checkAndShowNotification();
+      }, timeUntilNextCheck);
+    }
+  }
+
+  // Obtener la próxima hora de notificación
+  getNextNotificationTime() {
+    const now = new Date();
+    const nextTime = new Date();
     
-    const { userName, points, businessName } = this.userData;
-    const today = new Date().toDateString();
-    const lastNotification = localStorage.getItem('lastDailyNotification');
+    // Establecer la hora objetivo (16:15)
+    nextTime.setHours(this.notificationHour, this.notificationMinute, 0, 0);
     
-    if (lastNotification === today || points <= 0) return;
+    // Si ya pasó la hora de hoy, devolver mañana
+    if (now > nextTime) {
+      nextTime.setDate(nextTime.getDate() + 1);
+    }
     
-    try {
-      await this.showNotification(
+    return nextTime;
+  }
+
+  checkAndShowNotification() {
+    const now = new Date();
+    const today = now.toDateString();
+    const lastNotificationDate = localStorage.getItem('lastNotificationDate');
+    
+    // Solo mostrar una notificación por día
+    if (lastNotificationDate === today) {
+      return;
+    }
+
+    // Verificar si es hora exacta de la notificación (16:15)
+    if (now.getHours() === this.notificationHour && now.getMinutes() === this.notificationMinute) {
+      this.showNotification();
+      localStorage.setItem('lastNotificationDate', today);
+      
+      // Reprogramar para mañana
+      this.scheduleNextCheck();
+    }
+  }
+
+  // Versión mejorada con margen de error (opcional)
+  checkAndShowNotificationWithMargin() {
+    const now = new Date();
+    const today = now.toDateString();
+    const lastNotificationDate = localStorage.getItem('lastNotificationDate');
+    
+    // Solo mostrar una notificación por día
+    if (lastNotificationDate === today) {
+      return;
+    }
+
+    // Margen de +/- 1 minuto para evitar perder la notificación
+    const targetHour = this.notificationHour;
+    const targetMinute = this.notificationMinute;
+    
+    // Crear tiempo objetivo
+    const targetTime = new Date();
+    targetTime.setHours(targetHour, targetMinute, 0, 0);
+    
+    // Calcular diferencia en minutos
+    const diffInMinutes = Math.abs(now - targetTime) / (1000 * 60);
+    
+    // Mostrar notificación si estamos dentro de 1 minuto del tiempo objetivo
+    if (diffInMinutes <= 1) {
+      this.showNotification();
+      localStorage.setItem('lastNotificationDate', today);
+      
+      // Reprogramar para mañana
+      this.scheduleNextCheck();
+    }
+  }
+
+  showNotification() {
+    if (!this.userData || !this.hasPermission()) return;
+
+    const { userName, points, businessName, businessLogo } = this.userData;
+    
+    if (points > 0) {
+      const notification = new Notification(
         `¡Hola ${userName}!`,
         {
           body: `Recuerda que tienes ${points} puntos disponibles en ${businessName}`,
-          tag: 'daily-reminder',
-          requireInteraction: true
+          icon: businessLogo || '/favicon.ico',
+          badge: '/badge.png',
+          tag: 'daily-points-reminder',
+          requireInteraction: true,
+          // Opcional: vibrar en dispositivos móviles
+          vibrate: [200, 100, 200]
         }
       );
-      
-      localStorage.setItem('lastDailyNotification', today);
+
+      notification.onclick = () => {
+        window.focus();
+        notification.close();
+        
+        // Navegar a la página de puntos si es posible
+        if (window.location.pathname !== '/points-loyalty/points') {
+          window.location.href = '/points-loyalty/points';
+        }
+      };
+
+      // Cerrar automáticamente después de 10 segundos
+      setTimeout(() => {
+        notification.close();
+      }, 10000);
+    }
+  }
+
+  updateUserData(newData) {
+    this.userData = { ...this.userData, ...newData };
+    
+    // Guardar en localStorage para persistencia
+    if (this.userData.points > 0) {
+      localStorage.setItem('notificationUserData', JSON.stringify(this.userData));
+    }
+  }
+
+  destroy() {
+    if (this.checkInterval) {
+      clearInterval(this.checkInterval);
+    }
+    
+    // Remover event listeners
+    document.removeEventListener('visibilitychange', this.checkAndShowNotification);
+  }
+}
+
+// Versión alternativa más simple
+export class SimpleNotificationScheduler {
+  constructor(hour = 16, minute = 15) {
+    this.hour = hour;
+    this.minute = minute;
+    this.intervalId = null;
+    this.timeoutId = null;
+  }
+
+  init(userData) {
+    this.userData = userData;
+    
+    if (!this.hasPermission()) {
+      this.requestPermission();
+      return;
+    }
+
+    // Calcular tiempo hasta la próxima notificación
+    this.scheduleNextNotification();
+    
+    // También verificar cada vez que la página se hace visible
+    document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
+  }
+
+  hasPermission() {
+    return Notification.permission === 'granted';
+  }
+
+  async requestPermission() {
+    try {
+      const permission = await Notification.requestPermission();
+      return permission === 'granted';
     } catch (error) {
-      console.error('Error mostrando notificación diaria:', error);
+      console.error('Error solicitando permiso:', error);
+      return false;
     }
   }
 
   calculateTimeUntilNextNotification() {
     const now = new Date();
     const target = new Date();
+    
+    // Establecer hora objetivo (16:15)
     target.setHours(this.hour, this.minute, 0, 0);
     
+    // Si ya pasó la hora de hoy, programar para mañana
     if (now > target) {
       target.setDate(target.getDate() + 1);
     }
@@ -341,19 +267,100 @@ export class SimpleNotificationScheduler {
     return target.getTime() - now.getTime();
   }
 
-  updateUserData(newData) {
-    this.userData = { ...this.userData, ...newData };
-    localStorage.setItem('notificationUserData', JSON.stringify(this.userData));
+  scheduleNextNotification() {
+    // Limpiar timeout anterior
+    if (this.timeoutId) {
+      clearTimeout(this.timeoutId);
+    }
+
+    const timeUntilNotification = this.calculateTimeUntilNextNotification();
+    const nextNotificationTime = new Date(Date.now() + timeUntilNotification);
+    
+    console.log(`Notificación programada para: ${nextNotificationTime.toLocaleTimeString()}`);
+    
+    this.timeoutId = setTimeout(() => {
+      this.showNotification();
+      
+      // Programar la siguiente notificación para mañana
+      this.scheduleNextNotification();
+    }, timeUntilNotification);
   }
 
-  destroy() {
-    if (this.timeoutId) clearTimeout(this.timeoutId);
-    if (navigator.serviceWorker) {
-      navigator.serviceWorker.removeEventListener('message', this.handleSWMessage);
+  handleVisibilityChange() {
+    if (!document.hidden) {
+      // Cuando la página se vuelve visible, verificar si deberíamos mostrar notificación
+      const now = new Date();
+      const today = now.toDateString();
+      const lastNotificationDate = localStorage.getItem('lastNotificationDate');
+      
+      // Si no hemos mostrado notificación hoy y es después de las 16:15
+      if (lastNotificationDate !== today) {
+        const targetHour = this.hour;
+        const targetMinute = this.minute;
+        
+        // Verificar si ya pasó la hora de hoy
+        if (
+          now.getHours() > targetHour || 
+          (now.getHours() === targetHour && now.getMinutes() >= targetMinute)
+        ) {
+          this.showNotification();
+          localStorage.setItem('lastNotificationDate', today);
+        }
+      }
     }
   }
 
-  handleSWMessage(event) {
-    console.log('Mensaje del Service Worker:', event.data);
+  showNotification() {
+    if (!this.userData || !this.hasPermission()) return;
+
+    const { userName, points, businessName, businessLogo } = this.userData;
+    
+    if (points > 0) {
+      const today = new Date().toDateString();
+      localStorage.setItem('lastNotificationDate', today);
+      
+      const notification = new Notification(
+        `¡Hola ${userName}!`,
+        {
+          body: `Recuerda que tienes ${points} puntos disponibles en ${businessName} xd`,
+          icon: businessLogo || '/favicon.ico',
+          badge: '/badge.png',
+          tag: `daily-reminder-${today}`,
+          requireInteraction: true
+        }
+      );
+
+      notification.onclick = () => {
+        window.focus();
+        notification.close();
+        
+        if (window.location.pathname !== '/points-loyalty/points') {
+          window.location.href = '/points-loyalty/points';
+        }
+      };
+
+      // Cerrar después de 8 segundos
+      setTimeout(() => notification.close(), 8000);
+    }
+  }
+
+  updateUserData(newData) {
+    this.userData = { ...this.userData, ...newData };
+    
+    if (this.userData.points > 0) {
+      localStorage.setItem('notificationUserData', JSON.stringify(this.userData));
+    }
+  }
+
+  destroy() {
+    if (this.timeoutId) {
+      clearTimeout(this.timeoutId);
+    }
+    
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+    }
+    
+    document.removeEventListener('visibilitychange', this.handleVisibilityChange);
   }
 }
