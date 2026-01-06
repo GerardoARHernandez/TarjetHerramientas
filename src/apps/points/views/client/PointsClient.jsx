@@ -287,12 +287,137 @@ const [notificationScheduler] = useState(() => new SimpleNotificationScheduler(1
         }
     }, [businessType, navigate]);
 
-    // Función para forzar el envío de una notificación (útil para testing)
-    const testNotification = () => {
-        if (getNotificationPermission() === 'granted') {
-            sendPointsNotification(true);
+    const [isAndroidChrome, setIsAndroidChrome] = useState(false);
+
+// Detectar Android Chrome al cargar
+useEffect(() => {
+  const isAndroid = /Android/.test(navigator.userAgent);
+  const isChrome = /Chrome/.test(navigator.userAgent);
+  setIsAndroidChrome(isAndroid && isChrome);
+  
+  if (isAndroid && isChrome) {
+    console.log('Android Chrome detectado, usando Service Worker obligatorio');
+  }
+}, []);
+
+// Función testNotification optimizada para Android
+const testNotification = async () => {
+  console.log('Iniciando testNotification en Android Chrome');
+  
+  // Verificar soporte básico
+  if (!('Notification' in window)) {
+    alert('❌ Tu navegador no soporta notificaciones');
+    return;
+  }
+
+  setNotificationStatus(prev => ({ ...prev, isTesting: true }));
+
+  try {
+    // Mensaje informativo para Android Chrome
+    if (isAndroidChrome && Notification.permission === 'default') {
+      const userConfirmed = window.confirm(
+        '📱 Notificaciones en Android Chrome:\n\n' +
+        '1. Haz clic en "PERMITIR" cuando aparezca el diálogo\n' +
+        '2. Asegúrate de que Chrome tenga permisos en Configuración > Notificaciones\n' +
+        '3. La primera notificación puede tardar unos segundos\n\n' +
+        '¿Continuar con la prueba?'
+      );
+      
+      if (!userConfirmed) {
+        setNotificationStatus(prev => ({ ...prev, isTesting: false }));
+        return;
+      }
+    }
+
+    // Manejar permisos
+    if (Notification.permission === 'default') {
+      console.log('Solicitando permiso...');
+      
+      // En Android Chrome, a veces requestPermission necesita un pequeño delay
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const granted = await notificationScheduler.requestPermission();
+      if (!granted) {
+        alert('🔕 No se concedió permiso para notificaciones.\n\n' +
+              'Para activar manualmente:\n' +
+              '1. Haz clic en el candado 🔒 en la barra de URL\n' +
+              '2. Selecciona "Permisos del sitio"\n' +
+              '3. Activa "Notificaciones"\n' +
+              '4. Recarga la página');
+        setNotificationStatus(prev => ({ ...prev, isTesting: false }));
+        return;
+      }
+    }
+
+    if (Notification.permission === 'denied') {
+      alert('🚫 Notificaciones bloqueadas permanentemente.\n\n' +
+            'Para reactivar:\n' +
+            '1. Configuración de Chrome > Sitios web > Notificaciones\n' +
+            '2. Busca "tarjet-fid.site" y activa notificaciones\n' +
+            '3. O borra datos del sitio y vuelve a intentar');
+      setNotificationStatus(prev => ({ ...prev, isTesting: false }));
+      return;
+    }
+
+    // Probar notificación
+    console.log('Permiso concedido, probando notificación...');
+    const success = await notificationScheduler.testNotification();
+    
+    if (success) {
+      setNotificationStatus(prev => ({ 
+        ...prev, 
+        isTesting: false,
+        lastTestResult: 'success'
+      }));
+      
+      // Feedback adicional
+      setTimeout(() => {
+        if (isAndroidChrome) {
+          alert('✅ Prueba completada.\n\n' +
+                'Si no ves la notificación:\n' +
+                '• Verifica la bandeja de notificaciones\n' +
+                '• Asegúrate de no tener "No molestar" activado\n' +
+                '• La app debe estar en primer plano para esta prueba');
         }
-    };
+      }, 1500);
+    }
+    
+  } catch (error) {
+    console.error('Error completo en testNotification:', error);
+    
+    // Mensajes de error específicos para Android Chrome
+    let errorMessage = 'Error en la prueba: ';
+    
+    if (error.message.includes('Illegal constructor')) {
+      errorMessage = '⚠️ Problema técnico en Android Chrome.\n\n' +
+                    'Soluciones:\n' +
+                    '1. Actualiza Chrome a la última versión\n' +
+                    '2. Reinicia el navegador\n' +
+                    '3. Prueba en modo incógnito\n' +
+                    '4. Usa Firefox para Android como alternativa';
+    } else if (error.message.includes('ServiceWorker')) {
+      errorMessage = '🔄 Error con Service Worker.\n\n' +
+                    'Intenta:\n' +
+                    '1. Recargar la página completamente (Ctrl+F5)\n' +
+                    '2. Limpiar caché de Chrome\n' +
+                    '3. Verificar conexión HTTPS';
+    } else if (error.message.includes('permiso') || error.message.includes('permission')) {
+      errorMessage = '🔐 Problema de permisos.\n\n' +
+                    'Ve a: Configuración Chrome > Sitios web > Notificaciones\n' +
+                    'Y activa notificaciones para este sitio.';
+    } else {
+      errorMessage += error.message;
+    }
+    
+    alert(errorMessage);
+    
+    setNotificationStatus(prev => ({ 
+      ...prev, 
+      isTesting: false,
+      lastTestResult: 'error'
+    }));
+  }
+};
 
     // Manejar el cambio de permiso
     const handlePermissionChange = async (granted) => {
@@ -791,6 +916,19 @@ const [notificationScheduler] = useState(() => new SimpleNotificationScheduler(1
                         Guarda una captura de pantalla o copia este código
                     </p>
                 </div>
+
+                {isAndroidChrome && Notification.permission === 'default' && (
+  <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
+    <p className="text-blue-700 font-medium">
+      💡 En Android Chrome, asegúrate de:
+    </p>
+    <ul className="text-blue-600 list-disc list-inside mt-1">
+      <li>Permitir notificaciones cuando aparezca el diálogo</li>
+      <li>No tener bloqueadas las notificaciones del sitio</li>
+      <li>Mantener la app en primer plano durante la prueba</li>
+    </ul>
+  </div>
+)}
             </div>
         )}
         
