@@ -73,20 +73,27 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const loginAdmin = async (credentials) => {
+  const loginAdmin = async (credentials, negocioId = null) => {
     setIsLoading(true);
     setError('');
 
     try {
+      const payload = {
+        Usuario: credentials.username,
+        Password: credentials.password
+      };
+      
+      // Agregar el NegocioId si está disponible
+      if (negocioId) {
+        payload.NegocioId = parseInt(negocioId);
+      }
+
       const response = await fetch('https://souvenir-site.com/WebPuntos/API1/Login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          Usuario: credentials.username,
-          Password: credentials.password
-        })
+        body: JSON.stringify(payload)
       });
 
       const data = await response.json();
@@ -100,7 +107,9 @@ export const AuthProvider = ({ children }) => {
           username: credentials.username,
           name: data.nombre,
           role: data.UsuRol.toLowerCase(),
-          rawData: data
+          rawData: data,
+          // AGREGAR EL NEGOCIOID AL USUARIO
+          negocioId: parseInt(negocioId) || data.NegocioId // Priorizar el negocioId de la URL
         };
         
         setIsAuthenticated(true);
@@ -112,8 +121,9 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('userType', 'admin');
         
         // Obtener datos del negocio si está disponible el NegocioId
-        if (data.NegocioId) {
-          const businessData = await fetchBusinessData(data.NegocioId);
+        const businessIdToFetch = negocioId || data.NegocioId;
+        if (businessIdToFetch) {
+          const businessData = await fetchBusinessData(parseInt(businessIdToFetch));
           if (!businessData) {
             console.warn('No se pudieron obtener los datos del negocio');
           }

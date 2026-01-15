@@ -69,7 +69,8 @@ const Login = () => {
   }, [error]);
 
   const handleAdminLogin = async (credentials) => {
-    const result = await loginAdmin(credentials);
+    // Pasar el negocioId al loginAdmin
+    const result = await loginAdmin(credentials, negocioId);
     
     if (!result.success) {
       setMessage(result.error || 'Error al iniciar sesión');
@@ -120,15 +121,16 @@ const Login = () => {
             onLogin={handleAdminLogin}
             isLoading={isLoading}
             onSwitchToClient={() => setLoginType('client')}
-            negocioInfo={negocioInfo} // Pasar info del negocio
+            negocioInfo={negocioInfo}
+            negocioId={negocioId}
           />
         ) : (
           <ClientLogin 
             onLogin={handleClientLogin}
             isLoading={isLoading}
             onSwitchToAdmin={() => setLoginType('admin')}
-            negocioInfo={negocioInfo} // Pasar info del negocio
-            negocioId={negocioId} // Pasar negocioId al componente
+            negocioInfo={negocioInfo}
+            negocioId={negocioId}
           />
         )}
 

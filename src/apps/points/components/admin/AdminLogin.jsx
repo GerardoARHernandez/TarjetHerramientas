@@ -1,9 +1,8 @@
-// components/AdminLogin.jsx
 import { useState } from 'react';
 import { User, Lock, Eye, EyeOff } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-const AdminLogin = ({ onLogin, isLoading, onSwitchToClient, negocioInfo }) => {
+const AdminLogin = ({ onLogin, isLoading, onSwitchToClient, negocioInfo, negocioId }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -12,26 +11,6 @@ const AdminLogin = ({ onLogin, isLoading, onSwitchToClient, negocioInfo }) => {
     e.preventDefault();
     onLogin({ username, password });
   };
-
-  // Obtener negocioId para el enlace de registro
-  const getNegocioId = () => {
-    // Intentar obtener el negocioId de diferentes formas:
-    // 1. De la info del negocio
-    if (negocioInfo && negocioInfo.NegocioId) {
-      return negocioInfo.NegocioId;
-    }
-    
-    // 2. De la URL actual
-    const pathParts = window.location.pathname.split('/');
-    const negocioIndex = pathParts.indexOf('negocio');
-    if (negocioIndex !== -1 && pathParts[negocioIndex + 1]) {
-      return pathParts[negocioIndex + 1];
-    }
-    
-    return null;
-  };
-
-  const negocioId = getNegocioId();
 
   return (
     <div className="bg-white rounded-2xl shadow-2xl p-8">
@@ -44,6 +23,15 @@ const AdminLogin = ({ onLogin, isLoading, onSwitchToClient, negocioInfo }) => {
           <p className="text-sm text-gray-500 mt-1">
             Negocio: <span className="font-semibold">{negocioInfo.NegocioDesc}</span>
           </p>
+        )}
+        
+        {/* Mostrar advertencia si no hay negocioId */}
+        {!negocioId && (
+          <div className="mt-2 p-2 bg-yellow-100 rounded border border-yellow-300">
+            <p className="text-sm text-yellow-800">
+              ⚠️ Acceso inválido. Por favor, usa el enlace proporcionado por el negocio.
+            </p>
+          </div>
         )}
       </div>
 
@@ -60,6 +48,7 @@ const AdminLogin = ({ onLogin, isLoading, onSwitchToClient, negocioInfo }) => {
               onChange={(e) => setUsername(e.target.value)}
               className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Usuario administrador"
+              disabled={!negocioId}
             />
           </div>
         </div>
@@ -76,11 +65,13 @@ const AdminLogin = ({ onLogin, isLoading, onSwitchToClient, negocioInfo }) => {
               onChange={(e) => setPassword(e.target.value)}
               className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Ingresa tu contraseña"
+              disabled={!negocioId}
             />
             <button
               type="button"
               className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 hover:cursor-pointer"
               onClick={() => setShowPassword(!showPassword)}
+              disabled={!negocioId}
             >
               {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </button>
@@ -89,14 +80,16 @@ const AdminLogin = ({ onLogin, isLoading, onSwitchToClient, negocioInfo }) => {
         
         <button
           type="submit"
-          disabled={!username || !password || isLoading}
-          className={`w-full py-3 rounded-lg font-semibold text-white transition-colors hover:cursor-pointer ${
-            isLoading 
-              ? 'bg-gray-400 cursor-not-allowed' 
-              : 'bg-blue-600 hover:bg-blue-700 cursor-pointer'
+          disabled={!username || !password || isLoading || !negocioId}
+          className={`w-full py-3 rounded-lg font-semibold transition-colors ${
+            isLoading || !negocioId
+              ? 'bg-gray-400 text-white cursor-not-allowed' 
+              : (username && password)
+                ? 'bg-blue-600 text-white hover:bg-blue-700 cursor-pointer'
+                : 'bg-gray-200 text-gray-500 cursor-not-allowed'
           }`}
         >
-          {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión como Admin'}
+          {isLoading ? 'Iniciando sesión...' : !negocioId ? 'Enlace inválido' : 'Iniciar Sesión como Admin'}
         </button>
       </form>
 
