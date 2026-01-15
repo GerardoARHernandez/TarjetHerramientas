@@ -481,7 +481,7 @@ const Stamps = () => {
 
                             {/* Sección de Reglas/Observaciones */}
                             {rules?.ReglasObservaciones && (
-                                <div className="mt-4 pt-3 border-t border-gray-200">
+                                <div className="mt-4 pt-3 border-t-2 border-gray-600">
                                     <div className="flex items-center gap-2 mb-3">
                                         <Info className="w-5 h-5" style={{ color: detallesColor }} />
                                         <h4 className="text-lg font-bold text-gray-900">Nota Importante</h4>
