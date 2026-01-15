@@ -82,10 +82,21 @@ const FullHistory = () => {
                             <h1 className="text-2xl font-bold text-gray-800 mb-2">
                                 Historial de {businessType === 'P' ? 'Puntos' : 'Sellos'}
                             </h1>
-                            <p className="text-gray-600">
+                            <p className="text-blue-600">
                                 {userName} - {business?.NegocioDesc}
                             </p>
                         </div>
+
+                        <button
+                            onClick={() => navigate('/points-loyalty/points')}
+                            className="font-semibold text-base px-4 py-2 rounded-xl transition-colors duration-200 hover:bg-opacity-20 hover:cursor-pointer"
+                            style={{
+                                color: color1,
+                                backgroundColor: 'transparent'
+                            }}
+                        >
+                            Regresar
+                        </button>
                     </div>
 
                     {/* Resumen */}

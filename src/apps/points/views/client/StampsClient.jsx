@@ -1,6 +1,6 @@
 // src/apps/points-loyalty/views/client/Stamps.jsx
 import { useNavigate } from 'react-router-dom';
-import { Star, Clock, Gift, Award, Coins } from 'lucide-react';
+import { Star, Clock, Gift, Award, Coins, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { useBusiness } from '../../../../contexts/BusinessContext';
 import { useClientAccount } from '../../../../hooks/useClientAccount';
@@ -71,6 +71,19 @@ const Stamps = () => {
         campaign.NegocioTipoPS === 'S'
     );
 
+    // Obtener solo las primeras 2 campañas para mostrar
+    const displayedCampaigns = stampsCampaigns.slice(0, 2);
+    const hasMoreCampaigns = stampsCampaigns.length > 2;
+
+    const formatDate = (dateString) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('es-MX', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
+        });
+    };
+
     // Función para lanzar confeti
     const launchConfetti = () => {
         confetti({
@@ -97,6 +110,11 @@ const Stamps = () => {
         setTimeout(() => {
             setIsRedeeming(false);
         }, 2000); // 2 segundos de bloqueo
+    };
+
+    // Función para navegar a todas las promociones
+    const handleViewAllRewards = () => {
+        navigate('/points-loyalty/promos');
     };
 
     // Verificar si el usuario tiene suficientes sellos para alguna campaña al cargar
@@ -261,15 +279,17 @@ const Stamps = () => {
                             </div>
                         </div>
 
-                        {/* Rewards Section - MUESTRA TODAS LAS CAMPAÑAS ACTIVAS */}
+                        {/* Rewards Section - MUESTRA SOLO 2 CAMPAÑAS ACTIVAS */}
                         <div className="space-y-6">
-                            <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                                <Gift className="w-6 h-6" style={{ color: detallesColor }}/>
-                                Recompensas Disponibles
-                            </h3>
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                    <Gift className="w-6 h-6" style={{ color: detallesColor }}/>
+                                    Recompensas Disponibles
+                                </h3>
+                            </div>
 
-                            {stampsCampaigns.length > 0 ? (
-                                stampsCampaigns.map((campaign) => {
+                            {displayedCampaigns.length > 0 ? (
+                                displayedCampaigns.map((campaign) => {
                                     const requiredStamps = parseInt(campaign.CampaCantPSCanje) || 10;
                                     const hasEnoughStamps = userStamps >= requiredStamps;
 
@@ -289,7 +309,7 @@ const Stamps = () => {
                                                 <div className="flex-1">
                                                     <h4 className="font-bold text-lg text-gray-800">{campaign.CampaNombre}</h4>
                                                     <p className="text-xs font-medium" style={{ color: detallesColor }}>
-                                                        Válida hasta: {new Date(campaign.CampaVigeFin).toLocaleDateString()}
+                                                        Válida hasta: {formatDate(campaign.CampaVigeFin)}
                                                     </p>
                                                 </div>
                                             </div>
@@ -370,6 +390,26 @@ const Stamps = () => {
                                     <Gift className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                                     <p className="text-gray-500">No hay promociones de sellos activas en este momento</p>
                                     <p className="text-sm text-gray-400 mt-2">Vuelve pronto para nuevas promociones</p>
+                                </div>
+                            )}
+
+                            {/* Botón para ver todas las recompensas (si hay más de 2) */}
+                            {hasMoreCampaigns && (
+                                <div className="text-center pt-2">
+                                    <button
+                                        onClick={handleViewAllRewards}
+                                        className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200 hover:shadow-lg active:scale-95"
+                                        style={{
+                                            backgroundImage: `linear-gradient(to right, ${color1}, ${color2})`,
+                                            color: 'white'
+                                        }}
+                                    >
+                                        <Gift className="w-4 h-4" />
+                                        Ver todas las recompensas
+                                        <span className="text-xs bg-white/30 px-2 py-0.5 rounded-full">
+                                            +{stampsCampaigns.length - 2} más
+                                        </span>
+                                    </button>
                                 </div>
                             )}
                         </div>

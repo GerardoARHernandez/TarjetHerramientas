@@ -1,10 +1,21 @@
 //src/apps/points/components/Points/PointsCampaigns.jsx 
-import { Coins, Gift } from 'lucide-react';
+import { Coins, Gift, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import confetti from 'canvas-confetti';
 
 const PointsCampaigns = ({ campaigns, userPoints, business, color1, color2, detallesColor, onRedeem }) => {
     const [isRedeeming, setIsRedeeming] = useState(false);
+    const navigate = useNavigate();
+
+    // Obtener solo las primeras 2 campañas para mostrar
+    const displayedCampaigns = campaigns.slice(0, 2);
+    const hasMoreCampaigns = campaigns.length > 2;
+
+    // Función para navegar a todas las promociones
+    const handleViewAllRewards = () => {
+        navigate('/points-loyalty/promos');
+    };
 
     const launchConfetti = () => {
         confetti({
@@ -69,13 +80,15 @@ const PointsCampaigns = ({ campaigns, userPoints, business, color1, color2, deta
                 borderColor: `${detallesColor}30`
             }}
         >
-            <h3 className="text-xl font-bold mb-6 text-gray-800 flex items-center gap-2">
-                <Coins className="w-6 h-6" style={{ color: detallesColor }}/>
-                Promociones Activas
-            </h3>
+            <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <Coins className="w-6 h-6" style={{ color: detallesColor }}/>
+                    Promociones Activas
+                </h3>
+            </div>
 
             <div className="space-y-6">
-                {campaigns.map((campaign) => {
+                {displayedCampaigns.map((campaign) => {
                     const isCanjeable = userPoints >= campaign.CampaCantPSCanje;
                     
                     return (
@@ -171,6 +184,26 @@ const PointsCampaigns = ({ campaigns, userPoints, business, color1, color2, deta
                         </div>
                     );
                 })}
+
+                {/* Botón para ver todas las recompensas (si hay más de 2) */}
+                {hasMoreCampaigns && (
+                    <div className="text-center pt-4">
+                        <button
+                            onClick={handleViewAllRewards}
+                            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200 hover:shadow-lg active:scale-95"
+                            style={{
+                                backgroundImage: `linear-gradient(to right, ${color1}, ${color2})`,
+                                color: 'white'
+                            }}
+                        >
+                            <Gift className="w-4 h-4" />
+                            Ver todas las recompensas
+                            <span className="text-xs bg-white/30 px-2 py-0.5 rounded-full">
+                                +{campaigns.length - 2} más
+                            </span>
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );

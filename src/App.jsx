@@ -18,10 +18,7 @@ const App = () => {
                 <Route index element={<Navigate to="/points-loyalty" replace />} />
                 
                 {/* Página 1: Administración de Puntos */}
-                <Route 
-                  path='/points-loyalty/*' 
-                  element={<PointsRoutes />} 
-                />
+                <Route path="/points-loyalty/*" element={<PointsRoutes />} />
 
                 {/* Página 2: Menús Digitales (para implementar después) */}
                 <Route 
