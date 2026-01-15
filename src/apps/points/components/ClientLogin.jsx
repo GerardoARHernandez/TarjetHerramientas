@@ -114,7 +114,6 @@ const ClientLogin = ({ onLogin, isLoading, onSwitchToAdmin, negocioInfo }) => {
             className="text-blue-600 hover:text-blue-800 text-sm font-medium hover:cursor-pointer flex items-center"
           >
             <MdOutlineAdminPanelSettings className='text-lg mr-1' />
-            Acceso administrador
           </button>
         </div>
 
