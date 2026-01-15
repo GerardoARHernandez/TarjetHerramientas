@@ -321,7 +321,7 @@ const RegisterClient = () => {
           <div className="mt-8 text-center">
             <p className="text-sm text-gray-600">¿Ya tienes cuenta?</p>
             <button
-              onClick={() => navigate('/points-loyalty/login')}
+              onClick={() => navigate(`/points-loyalty/login/${negocioId}`)}
               className="mt-2 text-red-600 hover:text-red-700 font-semibold hover:cursor-pointer"
             >
               INICIAR SESIÓN
