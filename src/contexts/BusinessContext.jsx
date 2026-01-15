@@ -1,4 +1,3 @@
-// src/contexts/BusinessContext.js
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 
@@ -95,10 +94,23 @@ export const BusinessProvider = ({ children }) => {
   // Cargar datos cuando el usuario se autentique
   useEffect(() => {
     const loadBusinessData = async () => {
-      if (isAuthenticated && user?.rawData?.NegocioId) {
-        const businessData = await fetchBusinessData(user.rawData.NegocioId);
-        if (businessData) {
-          await fetchCampaigns(user.rawData.NegocioId);
+      if (isAuthenticated) {
+        let businessId = null;
+        
+        // OBTENER EL NEGOCIOID SEGÚN EL TIPO DE USUARIO
+        if (userType === 'admin') {
+          // Para admin: usar el NegocioId de rawData
+          businessId = user?.rawData?.NegocioId;
+        } else if (userType === 'client') {
+          // Para cliente: usar el negocioId almacenado en el usuario
+          businessId = user?.negocioId || user?.rawData?.NegocioId;
+        }
+        
+        if (businessId) {
+          const businessData = await fetchBusinessData(businessId);
+          if (businessData) {
+            await fetchCampaigns(businessId);
+          }
         }
       }
     };
@@ -120,7 +132,7 @@ export const BusinessProvider = ({ children }) => {
 
     // Luego cargar datos frescos
     loadBusinessData();
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, userType]);
 
   const refreshData = async () => {
     if (user?.rawData?.NegocioId) {

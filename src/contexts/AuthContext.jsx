@@ -136,7 +136,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const loginClient = async (credentials) => {
+  const loginClient = async (credentials, negocioId = null) => {
     setIsLoading(true);
     setError('');
 
@@ -146,6 +146,11 @@ export const AuthProvider = ({ children }) => {
       // Solo incluir los campos que están presentes
       if (credentials.phone) payload.UsuarioTelefono = credentials.phone;
       if (credentials.email) payload.UsuarioCorreo = credentials.email;
+      
+      // Agregar el NegocioId si está disponible
+      if (negocioId) {
+        payload.NegocioId = parseInt(negocioId);
+      }
 
       const response = await fetch('https://souvenir-site.com/WebPuntos/API1/LoginCliente', {
         method: 'POST',
@@ -167,8 +172,9 @@ export const AuthProvider = ({ children }) => {
           name: data.nombre || 'Cliente',
           role: 'client',
           rawData: data,
-          // Agregar el ID del cliente para usar en las consultas
-          clienteId: data.usuarioId
+          clienteId: data.usuarioId,
+          // AGREGAR EL NEGOCIOID AL USUARIO
+          negocioId: parseInt(negocioId) || data.NegocioId // Priorizar el negocioId de la URL
         };
         
         setIsAuthenticated(true);
@@ -178,6 +184,14 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('isAuthenticated', 'true');
         localStorage.setItem('userData', JSON.stringify(userData));
         localStorage.setItem('userType', 'client');
+        
+        // Obtener datos del negocio si está disponible el NegocioId
+        if (negocioId) {
+          const businessData = await fetchBusinessData(parseInt(negocioId));
+          if (!businessData) {
+            console.warn('No se pudieron obtener los datos del negocio');
+          }
+        }
         
         return { success: true };
       } else {
@@ -196,6 +210,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+
   const logout = () => {
     setIsAuthenticated(false);
     setUser(null);
@@ -206,6 +221,9 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('userData');
     localStorage.removeItem('userType');
     localStorage.removeItem('businessData');
+    localStorage.removeItem('campaignsData');
+    localStorage.removeItem('activeCampaignsData');
+    localStorage.removeItem('clientsData');
     
     setError('');
   };
@@ -214,7 +232,7 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated,
     user,
     userType,
-    business, // Añadir business al contexto
+    business,
     isLoading,
     error,
     loginAdmin,

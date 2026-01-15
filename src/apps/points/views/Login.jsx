@@ -1,4 +1,3 @@
-// Login.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -79,7 +78,7 @@ const Login = () => {
   };
 
   const handleClientLogin = async (credentials) => {
-    const result = await loginClient(credentials);
+    const result = await loginClient(credentials, negocioId);
     
     if (!result.success) {
       setMessage(result.error || 'Error al iniciar sesión');
@@ -129,6 +128,7 @@ const Login = () => {
             isLoading={isLoading}
             onSwitchToAdmin={() => setLoginType('admin')}
             negocioInfo={negocioInfo} // Pasar info del negocio
+            negocioId={negocioId} // Pasar negocioId al componente
           />
         )}
 

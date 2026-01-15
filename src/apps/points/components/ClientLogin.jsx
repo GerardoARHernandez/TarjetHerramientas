@@ -1,10 +1,9 @@
-// components/ClientLogin.jsx
 import { useState } from 'react';
 import { Mail, Phone } from 'lucide-react';
 import { MdOutlineAdminPanelSettings } from 'react-icons/md';
 import { Link } from 'react-router-dom';
 
-const ClientLogin = ({ onLogin, isLoading, onSwitchToAdmin, negocioInfo }) => {
+const ClientLogin = ({ onLogin, isLoading, onSwitchToAdmin, negocioInfo, negocioId }) => {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
 
@@ -15,6 +14,11 @@ const ClientLogin = ({ onLogin, isLoading, onSwitchToAdmin, negocioInfo }) => {
       return;
     }
 
+    if (!negocioId) {
+      alert('Error: No se ha especificado el negocio. Por favor, accede a través de un enlace válido.');
+      return;
+    }
+
     // Siempre enviar ambos campos, incluso si están vacíos
     onLogin({ 
       email: email || '', 
@@ -22,27 +26,7 @@ const ClientLogin = ({ onLogin, isLoading, onSwitchToAdmin, negocioInfo }) => {
     });
   };
 
-  const isFormValid = email || phone; // Al menos uno debe estar lleno
-
-  // Obtener negocioId para el enlace de registro
-  const getNegocioId = () => {
-    // Intentar obtener el negocioId de diferentes formas:
-    // 1. De la info del negocio
-    if (negocioInfo && negocioInfo.NegocioId) {
-      return negocioInfo.NegocioId;
-    }
-    
-    // 2. De la URL actual
-    const pathParts = window.location.pathname.split('/');
-    const negocioIndex = pathParts.indexOf('negocio');
-    if (negocioIndex !== -1 && pathParts[negocioIndex + 1]) {
-      return pathParts[negocioIndex + 1];
-    }
-    
-    return null;
-  };
-
-  const negocioId = getNegocioId();
+  const isFormValid = (email || phone) && negocioId; // Al menos uno debe estar lleno y tener negocioId
 
   return (
     <div className="bg-white rounded-2xl shadow-2xl p-8">
@@ -55,6 +39,15 @@ const ClientLogin = ({ onLogin, isLoading, onSwitchToAdmin, negocioInfo }) => {
           <p className="text-sm text-gray-500 mt-1">
             Negocio: <span className="font-semibold">{negocioInfo.NegocioDesc}</span>
           </p>
+        )}
+        
+        {/* Mostrar advertencia si no hay negocioId */}
+        {!negocioId && (
+          <div className="mt-2 p-2 bg-yellow-100 rounded border border-yellow-300">
+            <p className="text-sm text-yellow-800">
+              ⚠️ Acceso inválido. Por favor, usa el enlace proporcionado por el negocio.
+            </p>
+          </div>
         )}
       </div>
 
@@ -72,6 +65,7 @@ const ClientLogin = ({ onLogin, isLoading, onSwitchToAdmin, negocioInfo }) => {
               onChange={(e) => setEmail(e.target.value)}
               className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="correo@ejemplo.com"
+              disabled={!negocioId}
             />
           </div>
         </div>
@@ -89,6 +83,7 @@ const ClientLogin = ({ onLogin, isLoading, onSwitchToAdmin, negocioInfo }) => {
               onChange={(e) => setPhone(e.target.value)}
               className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="5555555555"
+              disabled={!negocioId}
             />
           </div>
         </div>
@@ -96,13 +91,15 @@ const ClientLogin = ({ onLogin, isLoading, onSwitchToAdmin, negocioInfo }) => {
         <button
           type="submit"
           disabled={!isFormValid || isLoading}
-          className={`w-full py-3 rounded-lg font-semibold text-lg text-white transition-colors ${
-            isLoading 
-              ? 'bg-gray-400 cursor-not-allowed' 
-              : 'bg-green-600 hover:bg-green-700 cursor-pointer'
+          className={`w-full py-3 rounded-lg font-semibold text-lg transition-colors ${
+            isLoading || !negocioId
+              ? 'bg-gray-400 text-white cursor-not-allowed' 
+              : isFormValid
+                ? 'bg-green-600 text-white hover:bg-green-700 cursor-pointer'
+                : 'bg-gray-200 text-gray-500 cursor-not-allowed'
           }`}
         >
-          {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+          {isLoading ? 'Iniciando sesión...' : !negocioId ? 'Enlace inválido' : 'Iniciar Sesión'}
         </button>
       </form>
 
