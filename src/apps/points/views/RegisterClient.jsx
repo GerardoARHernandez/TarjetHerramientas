@@ -99,7 +99,7 @@ const RegisterClient = () => {
       setMessage('Este número de teléfono ya está registrado. Por favor inicie sesión.');
       setTimeout(() => {
         setMessage('');
-        navigate('/points-loyalty/login');
+        navigate(`/points-loyalty/login/${negocioId}`);
       }, 3000);
       return;
     }
@@ -110,7 +110,7 @@ const RegisterClient = () => {
       setMessage('Este correo electrónico ya está registrado. Por favor inicie sesión.');
       setTimeout(() => {
         setMessage('');
-        navigate('/points-loyalty/login');
+        navigate(`/points-loyalty/login/${negocioId}`);
       }, 3000);
       return;
     }
@@ -186,7 +186,7 @@ const RegisterClient = () => {
 
       setTimeout(() => {
         setMessage('');
-        navigate('/points-loyalty/login');
+        navigate(`/points-loyalty/login/${negocioId}`);
       }, 3000);
       
     } catch (error) {
