@@ -53,6 +53,19 @@ const PointsRoutes = () => {
             )
           } 
         />
+
+        <Route 
+          path="login/:negocioId" 
+          element={
+            !isAuthenticated ? (
+              <Login />
+            ) : isAdmin ? (
+              <Navigate to="/points-loyalty" replace />
+            ) : (
+              <Navigate to="/points-loyalty/points" replace />
+            )
+          } 
+        />
         
         {/* Registro de cliente */}
         <Route 
