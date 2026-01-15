@@ -1,7 +1,7 @@
 //src/apps/points/components/Points/PointsHistory.jsx
-import { Clock } from 'lucide-react';
+import { Clock, Info } from 'lucide-react';
 
-const PointsHistory = ({ accountData, detallesColor, onViewFullHistory }) => {
+const PointsHistory = ({ accountData, detallesColor, onViewFullHistory, rules }) => {
     const pointsHistory = accountData?.Movimientos ? accountData.Movimientos.map(mov => {
         const dateLocalString = `${mov.TransaccionFecha}T00:00:00`;
         return {
@@ -67,7 +67,7 @@ const PointsHistory = ({ accountData, detallesColor, onViewFullHistory }) => {
                 <div className="mt-6 text-center">
                     <button 
                         onClick={onViewFullHistory}
-                        className="font-medium text-sm px-4 py-2 rounded-xl transition-colors duration-200 hover:bg-opacity-20"
+                        className="font-medium text-sm px-4 py-2 rounded-xl transition-colors duration-200 hover:bg-opacity-20 hover:cursor-pointer"
                         style={{
                             color: detallesColor,
                             backgroundColor: 'transparent'
@@ -81,6 +81,25 @@ const PointsHistory = ({ accountData, detallesColor, onViewFullHistory }) => {
                     >
                         Ver historial completo →
                     </button>
+                </div>
+            )}
+
+            {/* Sección de Reglas/Observaciones */}
+            {rules?.ReglasObservaciones && (
+                <div className="mt-4 pt-3 border-t border-gray-200">
+                    <div className="flex items-center gap-2 mb-3">
+                        <Info className="w-5 h-5" style={{ color: detallesColor }} />
+                        <h4 className="text-lg font-bold text-gray-900">Nota Importante</h4>
+                    </div>
+                    <div 
+                        className="rounded-xl p-4 text-sm"
+                        style={{
+                            backgroundColor: `${detallesColor}15`,
+                            borderColor: `${detallesColor}30`
+                        }}
+                    >
+                        <p className="text-gray-800 font-semibold whitespace-pre-line">{rules.ReglasObservaciones}</p>
+                    </div>
                 </div>
             )}
         </div>

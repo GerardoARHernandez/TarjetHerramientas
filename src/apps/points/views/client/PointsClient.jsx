@@ -2,6 +2,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { useBusiness } from '../../../../contexts/BusinessContext';
+import { useBusinessRules } from '../../../../hooks/useBusinessRules';
 import { useClientAccount } from '../../../../hooks/useClientAccount';
 import ClientHeader from '../../components/ClientHeader';
 import { useEffect, useState } from 'react';
@@ -23,6 +24,7 @@ import { ArrowRight } from 'lucide-react';
 const PointsClient = () => {
     const { user } = useAuth();
     const { business, activeCampaigns, isLoading: businessLoading } = useBusiness();
+    const { rules } = useBusinessRules(business?.NegocioId);
     const { accountData, isLoading: accountLoading } = useClientAccount();
     const navigate = useNavigate();
     
@@ -41,7 +43,7 @@ const PointsClient = () => {
     const color1 = business?.NegocioColor1 ? business.NegocioColor1 : '#ffb900';
     const color2 = business?.NegocioColor2 ? business.NegocioColor2 : '#fe9a00';
     const detallesColor = business?.NegocioColor2 || '#FF9800';
-    
+
     const userPoints = accountData?.puntosDisponibles ? parseInt(accountData.puntosDisponibles) : 0;
     const pointsCampaigns = activeCampaigns.filter(campaign => campaign.NegocioTipoPS === 'P');
 
@@ -209,6 +211,7 @@ const PointsClient = () => {
                                 accountData={accountData}
                                 detallesColor={detallesColor}
                                 onViewFullHistory={() => navigate('/points-loyalty/full-history')}
+                                rules={rules}
                             />
                         </div>
                     </div>

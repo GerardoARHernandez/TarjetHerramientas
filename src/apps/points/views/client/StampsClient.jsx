@@ -1,8 +1,9 @@
 // src/apps/points-loyalty/views/client/Stamps.jsx
 import { useNavigate } from 'react-router-dom';
-import { Star, Clock, Gift, Award, Coins, ChevronRight } from 'lucide-react';
+import { Star, Clock, Gift, Award, Coins, ChevronRight, Info } from 'lucide-react';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { useBusiness } from '../../../../contexts/BusinessContext';
+import { useBusinessRules } from '../../../../hooks/useBusinessRules';
 import { useClientAccount } from '../../../../hooks/useClientAccount';
 import ClientHeader from '../../components/ClientHeader';
 import { useEffect, useState } from 'react';
@@ -12,6 +13,7 @@ import ClientFooter from '../../components/ClientFooter';
 const Stamps = () => {
     const { user } = useAuth();
     const { business, activeCampaigns, isLoading: businessLoading } = useBusiness();
+    const { rules } = useBusinessRules(business?.NegocioId);
     const { accountData, isLoading: accountLoading } = useClientAccount();
     const navigate = useNavigate();
     const [calculatedStamps, setCalculatedStamps] = useState(0);
@@ -418,7 +420,7 @@ const Stamps = () => {
                     {/* Sidebar - Historial */}
                     <div className="lg:col-span-1">
                         <div className="bg-white rounded-3xl p-6 shadow-lg border border-orange-100 sticky top-8">
-                            <h3 className="text-xl font-bold mb-6 text-gray-800 flex items-center gap-2">
+                            <h3 className="text-xl font-bold mb-6 text-gray-900 flex items-center gap-2">
                                 <Clock className="w-6 h-6" style={{ color: detallesColor }}/>
                                 Actividad Reciente
                             </h3>
@@ -475,6 +477,25 @@ const Stamps = () => {
                                     >
                                     Ver historial completo →
                                 </button>
+                            )}
+
+                            {/* Sección de Reglas/Observaciones */}
+                            {rules?.ReglasObservaciones && (
+                                <div className="mt-4 pt-3 border-t border-gray-200">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <Info className="w-5 h-5" style={{ color: detallesColor }} />
+                                        <h4 className="text-lg font-bold text-gray-900">Nota Importante</h4>
+                                    </div>
+                                    <div 
+                                        className="rounded-xl p-4 text-sm"
+                                        style={{
+                                            backgroundColor: `${detallesColor}15`,
+                                            borderColor: `${detallesColor}30`
+                                        }}
+                                    >
+                                        <p className="text-gray-800 font-semibold whitespace-pre-line">{rules.ReglasObservaciones}</p>
+                                    </div>
+                                </div>
                             )}
                         </div>
                     </div>
