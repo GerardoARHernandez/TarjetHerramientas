@@ -160,6 +160,11 @@ const Stamps = () => {
         return <Star className={`${size} fill-current`} />;
     };
 
+    // Calcular el progreso basado en 10 círculos (siempre 10)
+    const totalCircles = 10;
+    const filledCircles = Math.min(userStamps, totalCircles);
+    const progressPercentage = (filledCircles / totalCircles) * 100;
+
     return (
         <>
         <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50">
@@ -191,87 +196,72 @@ const Stamps = () => {
                             </div>
                         </div>
 
-                        {/* Mostrar campañas activas de sellos */}
-                        {stampsCampaigns.length > 0 ? (
-                            stampsCampaigns.map((campaign) => {
-                                const requiredStamps = parseInt(campaign.CampaCantPSCanje) || 10;
-                                const progressPercentage = Math.min((userStamps / requiredStamps) * 100, 100);
-
-                                return (
-                                    <div key={campaign.CampaId} className="bg-white rounded-3xl p-8 shadow-lg border border-orange-100">
-                                        <div className="text-center mb-8">
-                                            <h3 className="text-xl font-bold mb-4 text-gray-800 flex items-center justify-center gap-2">
-                                                <Award 
-                                                className="w-6 h-6" 
-                                                style={{ color: detallesColor }}
-                                                />
-                                                Mi Progreso de Sellos
-                                            </h3>
-                                            <div className="bg-orange-100 rounded-2xl p-4 mb-4">
-                                                <div className="text-4xl font-bold mb-2" style={{ color: detallesColor }}>
-                                                    {userStamps}/{requiredStamps}
-                                                </div>
-                                                <div className="text-gray-600">Sellos completados</div>
-                                            </div>
-
-                                            {/* Progress Bar */}
-                                            <div className="w-full bg-gray-200 rounded-full h-3 mb-6">
-                                                <div
-                                                    className="h-3 rounded-full transition-all duration-500"
-                                                    style={{
-                                                        width: `${progressPercentage}%`,
-                                                        backgroundImage: `linear-gradient(to right, ${color1}, ${color2})`,
-                                                    }}
-                                                ></div>
-                                            </div>
-                                        </div>
-
-                                        {/* Stamps Grid */}
-                                        <h4 className="text-lg font-semibold mb-4 text-gray-800">Mis Sellos</h4>
-                                        <div className="grid grid-cols-5 sm:grid-cols-10 gap-3 mb-6">
-                                            {Array.from({ length: requiredStamps }, (_, index) => (
-                                                <div
-                                                    key={index}
-                                                    className={`aspect-square rounded-full border-3 flex items-center justify-center transition-all duration-300 transform hover:scale-105
-                                                        ${index < userStamps
-                                                        ? 'border-transparent text-white shadow-lg'
-                                                        : 'hover:bg-opacity-20'
-                                                        }`}
-                                                    style={index < userStamps ? {
-                                                        backgroundImage: `linear-gradient(to bottom right, ${color1}, ${color2})`,
-                                                    } : {
-                                                        backgroundColor: `${detallesColor}15`,
-                                                        borderColor: `${detallesColor}30`,
-                                                        color: detallesColor
-                                                    }}
-                                                    >
-                                                    {index < userStamps && renderStampIcon()}
-                                                </div>
-                                            ))}
-                                        </div>
-
-                                        <div 
-                                            className="rounded-2xl p-4 text-sm border"
-                                            style={{ 
-                                                backgroundColor: `${detallesColor}15`,
-                                                color: detallesColor,
-                                                borderColor: `${detallesColor}30`
-                                            }}
-                                            >
-                                            <p>✨ ¡Obtén más sellos comprando en {business?.NegocioDesc}!</p>
-                                        </div>
+                        {/* ÚNICA SECCIÓN DE PROGRESO DE SELLOS - SIN MAPEO */}
+                        <div className="bg-white rounded-3xl p-8 shadow-lg border border-orange-100">
+                            <div className="text-center mb-8">
+                                <h3 className="text-xl font-bold mb-4 text-gray-800 flex items-center justify-center gap-2">
+                                    <Award 
+                                    className="w-6 h-6" 
+                                    style={{ color: detallesColor }}
+                                    />
+                                    Mi Progreso de Sellos
+                                </h3>
+                                <div className="bg-orange-100 rounded-2xl p-4 mb-4">
+                                    <div className="text-4xl font-bold mb-2" style={{ color: detallesColor }}>
+                                        {userStamps} Sellos
                                     </div>
-                                );
-                            })
-                        ) : (
-                            <div className="bg-white rounded-3xl p-8 shadow-lg border border-orange-100 text-center">
-                                <Award className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                                <h3 className="text-xl font-bold mb-2 text-gray-800">No hay campañas de sellos activas</h3>
-                                <p className="text-gray-600">Actualmente no hay promociones de sellos disponibles.</p>
-                            </div>
-                        )}
+                                    <div className="text-gray-600">Tus sellos acumulados</div>
+                                </div>
 
-                        {/* Rewards Section */}
+                                {/* Progress Bar */}
+                                <div className="w-full bg-gray-200 rounded-full h-3 mb-6">
+                                    <div
+                                        className="h-3 rounded-full transition-all duration-500"
+                                        style={{
+                                            width: `${progressPercentage}%`,
+                                            backgroundImage: `linear-gradient(to right, ${color1}, ${color2})`,
+                                        }}
+                                    ></div>
+                                </div>
+                            </div>
+
+                            {/* Stamps Grid - Siempre 10 círculos */}
+                            <h4 className="text-lg font-semibold mb-4 text-gray-800 text-center">Mis Sellos</h4>
+                            <div className="grid grid-cols-5 sm:grid-cols-10 gap-3 mb-6">
+                                {Array.from({ length: totalCircles }, (_, index) => (
+                                    <div
+                                        key={index}
+                                        className={`aspect-square rounded-full border-3 flex items-center justify-center transition-all duration-300 transform hover:scale-105
+                                            ${index < filledCircles
+                                            ? 'border-transparent text-white shadow-lg'
+                                            : 'hover:bg-opacity-20'
+                                            }`}
+                                        style={index < filledCircles ? {
+                                            backgroundImage: `linear-gradient(to bottom right, ${color1}, ${color2})`,
+                                        } : {
+                                            backgroundColor: `${detallesColor}15`,
+                                            borderColor: `${detallesColor}30`,
+                                            color: detallesColor
+                                        }}
+                                        >
+                                        {index < filledCircles && renderStampIcon()}
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div 
+                                className="rounded-2xl p-4 text-sm border"
+                                style={{ 
+                                    backgroundColor: `${detallesColor}15`,
+                                    color: detallesColor,
+                                    borderColor: `${detallesColor}30`
+                                }}
+                                >
+                                <p>✨ ¡Obtén más sellos comprando en {business?.NegocioDesc}!</p>
+                            </div>
+                        </div>
+
+                        {/* Rewards Section - MUESTRA TODAS LAS CAMPAÑAS ACTIVAS */}
                         <div className="space-y-6">
                             <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
                                 <Gift className="w-6 h-6" style={{ color: detallesColor }}/>
@@ -329,7 +319,7 @@ const Stamps = () => {
                                                     ></div>
                                                 </div>
                                                 <p className="text-xs text-gray-500 mt-1 font-medium">
-                                                    Progreso actual: {userStamps}/{requiredStamps} sellos
+                                                    Tu progreso: {userStamps}/{requiredStamps} sellos
                                                 </p>
                                             </div>
 
