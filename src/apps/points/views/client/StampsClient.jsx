@@ -1,6 +1,6 @@
 // src/apps/points-loyalty/views/client/Stamps.jsx
 import { useNavigate } from 'react-router-dom';
-import { Star, Clock, Gift, Award, Coins, ChevronRight, Info } from 'lucide-react';
+import { Star, Clock, Gift, Award, Info } from 'lucide-react';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { useBusiness } from '../../../../contexts/BusinessContext';
 import { useBusinessRules } from '../../../../hooks/useBusinessRules';
@@ -73,10 +73,6 @@ const Stamps = () => {
         campaign.NegocioTipoPS === 'S'
     );
 
-    // Obtener solo las primeras 2 campañas para mostrar
-    const displayedCampaigns = stampsCampaigns.slice(0, 2);
-    const hasMoreCampaigns = stampsCampaigns.length > 2;
-
     const formatDate = (dateString) => {
         const date = new Date(dateString);
         return date.toLocaleDateString('es-MX', {
@@ -112,11 +108,6 @@ const Stamps = () => {
         setTimeout(() => {
             setIsRedeeming(false);
         }, 2000); // 2 segundos de bloqueo
-    };
-
-    // Función para navegar a todas las promociones
-    const handleViewAllRewards = () => {
-        navigate('/points-loyalty/promos');
     };
 
     // Verificar si el usuario tiene suficientes sellos para alguna campaña al cargar
@@ -216,7 +207,7 @@ const Stamps = () => {
                             </div>
                         </div>
 
-                        {/* ÚNICA SECCIÓN DE PROGRESO DE SELLOS - SIN MAPEO */}
+                        {/* ÚNICA SECCIÓN DE PROGRESO DE SELLOS */}
                         <div className="bg-white rounded-3xl p-8 shadow-lg border border-orange-100">
                             <div className="text-center mb-8">
                                 <h3 className="text-xl font-bold mb-4 text-gray-800 flex items-center justify-center gap-2">
@@ -281,137 +272,126 @@ const Stamps = () => {
                             </div>
                         </div>
 
-                        {/* Rewards Section - MUESTRA SOLO 2 CAMPAÑAS ACTIVAS */}
+                        {/* Rewards Section - MUESTRA TODAS LAS CAMPAÑAS ACTIVAS */}
                         <div className="space-y-6">
                             <div className="flex items-center justify-between">
                                 <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
                                     <Gift className="w-6 h-6" style={{ color: detallesColor }}/>
                                     Recompensas Disponibles
                                 </h3>
+                                <span className="text-sm font-medium px-3 py-1 rounded-full"
+                                    style={{
+                                        backgroundColor: `${detallesColor}15`,
+                                        color: detallesColor
+                                    }}>
+                                    {stampsCampaigns.length} {stampsCampaigns.length === 1 ? 'promoción' : 'promociones'}
+                                </span>
                             </div>
 
-                            {displayedCampaigns.length > 0 ? (
-                                displayedCampaigns.map((campaign) => {
-                                    const requiredStamps = parseInt(campaign.CampaCantPSCanje) || 10;
-                                    const hasEnoughStamps = userStamps >= requiredStamps;
+                            {stampsCampaigns.length > 0 ? (
+                                <div className="space-y-6">
+                                    {stampsCampaigns.map((campaign) => {
+                                        const requiredStamps = parseInt(campaign.CampaCantPSCanje) || 10;
+                                        const hasEnoughStamps = userStamps >= requiredStamps;
 
-                                    return (
-                                        <div 
-                                            key={campaign.CampaId} 
-                                            className="rounded-2xl p-6 border-2"
-                                            style={{
-                                                backgroundImage: `linear-gradient(to bottom right, ${detallesColor}15, ${detallesColor}08)`,
-                                                borderColor: `${detallesColor}30`
-                                            }}
-                                        >
-                                            <div className="flex items-center gap-3 mb-4">
-                                                <div className="p-2 rounded-xl" style={{ backgroundColor: color1 }}>
-                                                    <Gift className="w-5 h-5 text-white" />
-                                                </div>
-                                                <div className="flex-1">
-                                                    <h4 className="font-bold text-lg text-gray-800">{campaign.CampaNombre}</h4>
-                                                    <p className="text-xs font-medium" style={{ color: detallesColor }}>
-                                                        Válida hasta: {formatDate(campaign.CampaVigeFin)}
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            <div className="mb-4">
-                                                <p className="text-sm text-gray-700 leading-relaxed">
-                                                    {campaign.CampaDesc}
-                                                </p>
-                                            </div>
-
-                                            <div className="bg-white/60 rounded-xl p-4 mb-4">
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <span className="text-sm font-medium text-gray-700">Sellos necesarios:</span>
-                                                    <div className="flex items-center gap-1">
-                                                        {renderStampIcon('w-4 h-4')}
-                                                        <span className="font-bold" style={{ color: color2 }}>{requiredStamps}</span>
-                                                    </div>
-                                                </div>
-
-                                                <div className="w-full bg-gray-200 rounded-full h-2">
-                                                    <div
-                                                        className="h-2 rounded-full transition-all duration-500"
-                                                        style={{
-                                                            width: `${Math.min((userStamps / requiredStamps) * 100, 100)}%`,
-                                                            backgroundImage: `linear-gradient(to right, ${color1}, ${color2})`,
-                                                        }}
-                                                    ></div>
-                                                </div>
-                                                <p className="text-xs text-gray-500 mt-1 font-medium">
-                                                    Tu progreso: {userStamps}/{requiredStamps} sellos
-                                                </p>
-                                            </div>
-
+                                        return (
                                             <div 
-                                                className="rounded-xl p-4 border mb-4"
+                                                key={campaign.CampaId} 
+                                                className="rounded-2xl p-6 border-2"
                                                 style={{
-                                                    backgroundColor: `${detallesColor}15`,
+                                                    backgroundImage: `linear-gradient(to bottom right, ${detallesColor}15, ${detallesColor}08)`,
                                                     borderColor: `${detallesColor}30`
                                                 }}
                                             >
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <Award className="w-4 h-4" style={{ color: detallesColor }} />
-                                                    <span className="text-sm font-medium" style={{ color: detallesColor }}>Tu recompensa:</span>
+                                                <div className="flex items-center gap-3 mb-4">
+                                                    <div className="p-2 rounded-xl" style={{ backgroundColor: color1 }}>
+                                                        <Gift className="w-5 h-5 text-white" />
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <h4 className="font-bold text-lg text-gray-800">{campaign.CampaNombre}</h4>
+                                                        <p className="text-xs font-medium" style={{ color: detallesColor }}>
+                                                            Válida hasta: {formatDate(campaign.CampaVigeFin)}
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                                <p className="font-bold" style={{ color: detallesColor }}>{campaign.CampaRecompensa}</p>
-                                            </div>
 
-                                            <div className="flex items-center justify-center">
-                                                <button
-                                                    onClick={() => hasEnoughStamps && handleRedeem(campaign)}
-                                                    disabled={!hasEnoughStamps || isRedeeming}
-                                                    className={`px-6 py-3 rounded-2xl font-semibold transition-all duration-200 relative overflow-hidden
-                                                        ${hasEnoughStamps && !isRedeeming
-                                                            ? 'text-white shadow-lg transform hover:-translate-y-0.5 hover:shadow-xl active:scale-95'
-                                                            : 'bg-gray-200 text-gray-500 cursor-not-allowed font-medium'
-                                                        }`}
-                                                    style={hasEnoughStamps && !isRedeeming ? {
-                                                        backgroundImage: `linear-gradient(to right, ${color1}, ${color2})`,
-                                                    } : {}}
-                                                >
-                                                    {isRedeeming ? (
-                                                        <div className="flex items-center justify-center gap-2">
-                                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                                            Procesando...
+                                                <div className="mb-4">
+                                                    <p className="text-sm text-gray-700 leading-relaxed">
+                                                        {campaign.CampaDesc}
+                                                    </p>
+                                                </div>
+
+                                                <div className="bg-white/60 rounded-xl p-4 mb-4">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <span className="text-sm font-medium text-gray-700">Sellos necesarios:</span>
+                                                        <div className="flex items-center gap-1">
+                                                            {renderStampIcon('w-4 h-4')}
+                                                            <span className="font-bold" style={{ color: color2 }}>{requiredStamps}</span>
                                                         </div>
-                                                    ) : hasEnoughStamps ? (
-                                                        'Canjear Ahora'
-                                                    ) : (
-                                                        `Necesitas ${requiredStamps - userStamps} sellos más`
-                                                    )}
-                                                </button>
+                                                    </div>
+
+                                                    <div className="w-full bg-gray-200 rounded-full h-2">
+                                                        <div
+                                                            className="h-2 rounded-full transition-all duration-500"
+                                                            style={{
+                                                                width: `${Math.min((userStamps / requiredStamps) * 100, 100)}%`,
+                                                                backgroundImage: `linear-gradient(to right, ${color1}, ${color2})`,
+                                                            }}
+                                                        ></div>
+                                                    </div>
+                                                    <p className="text-xs text-gray-500 mt-1 font-medium">
+                                                        Tu progreso: {userStamps}/{requiredStamps} sellos
+                                                    </p>
+                                                </div>
+
+                                                <div 
+                                                    className="rounded-xl p-4 border mb-4"
+                                                    style={{
+                                                        backgroundColor: `${detallesColor}15`,
+                                                        borderColor: `${detallesColor}30`
+                                                    }}
+                                                >
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <Award className="w-4 h-4" style={{ color: detallesColor }} />
+                                                        <span className="text-sm font-medium" style={{ color: detallesColor }}>Tu recompensa:</span>
+                                                    </div>
+                                                    <p className="font-bold" style={{ color: detallesColor }}>{campaign.CampaRecompensa}</p>
+                                                </div>
+
+                                                <div className="flex items-center justify-center">
+                                                    <button
+                                                        onClick={() => hasEnoughStamps && handleRedeem(campaign)}
+                                                        disabled={!hasEnoughStamps || isRedeeming}
+                                                        className={`px-6 py-3 rounded-2xl font-semibold transition-all duration-200 relative overflow-hidden
+                                                            ${hasEnoughStamps && !isRedeeming
+                                                                ? 'text-white shadow-lg transform hover:-translate-y-0.5 hover:shadow-xl active:scale-95'
+                                                                : 'bg-gray-200 text-gray-500 cursor-not-allowed font-medium'
+                                                            }`}
+                                                        style={hasEnoughStamps && !isRedeeming ? {
+                                                            backgroundImage: `linear-gradient(to right, ${color1}, ${color2})`,
+                                                        } : {}}
+                                                    >
+                                                        {isRedeeming ? (
+                                                            <div className="flex items-center justify-center gap-2">
+                                                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                                Procesando...
+                                                            </div>
+                                                        ) : hasEnoughStamps ? (
+                                                            'Canjear Ahora'
+                                                        ) : (
+                                                            `Necesitas ${requiredStamps - userStamps} sellos más`
+                                                        )}
+                                                    </button>
+                                                </div>
                                             </div>
-                                        </div>
-                                    );
-                                })
+                                        );
+                                    })}
+                                </div>
                             ) : (
                                 <div className="text-center py-12">
                                     <Gift className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                                     <p className="text-gray-500">No hay promociones de sellos activas en este momento</p>
                                     <p className="text-sm text-gray-400 mt-2">Vuelve pronto para nuevas promociones</p>
-                                </div>
-                            )}
-
-                            {/* Botón para ver todas las recompensas (si hay más de 2) */}
-                            {hasMoreCampaigns && (
-                                <div className="text-center pt-2">
-                                    <button
-                                        onClick={handleViewAllRewards}
-                                        className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200 hover:shadow-lg active:scale-95"
-                                        style={{
-                                            backgroundImage: `linear-gradient(to right, ${color1}, ${color2})`,
-                                            color: 'white'
-                                        }}
-                                    >
-                                        <Gift className="w-4 h-4" />
-                                        Ver todas las recompensas
-                                        <span className="text-xs bg-white/30 px-2 py-0.5 rounded-full">
-                                            +{stampsCampaigns.length - 2} más
-                                        </span>
-                                    </button>
                                 </div>
                             )}
                         </div>
@@ -481,7 +461,7 @@ const Stamps = () => {
 
                             {/* Sección de Reglas/Observaciones */}
                             {rules?.ReglasObservaciones && (
-                                <div className="mt-4 pt-3 border-t-2 border-gray-600">
+                                <div className="mt-8 pt-6 border-t border-gray-200">
                                     <div className="flex items-center gap-2 mb-3">
                                         <Info className="w-5 h-5" style={{ color: detallesColor }} />
                                         <h4 className="text-lg font-bold text-gray-900">Nota Importante</h4>

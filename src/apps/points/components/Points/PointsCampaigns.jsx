@@ -1,22 +1,12 @@
 //src/apps/points/components/Points/PointsCampaigns.jsx 
-import { Coins, Gift, ChevronRight } from 'lucide-react';
+import { Coins, Gift } from 'lucide-react';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import confetti from 'canvas-confetti';
 
 const PointsCampaigns = ({ campaigns, userPoints, business, color1, color2, detallesColor, onRedeem }) => {
     const [isRedeeming, setIsRedeeming] = useState(false);
-    const navigate = useNavigate();
 
-    // Obtener solo las primeras 2 campañas para mostrar
-    const displayedCampaigns = campaigns.slice(0, 2);
-    const hasMoreCampaigns = campaigns.length > 2;
-
-    // Función para navegar a todas las promociones
-    const handleViewAllRewards = () => {
-        navigate('/points-loyalty/promos');
-    };
-
+    // FUNCIÓN PARA LANZAR CONFETI
     const launchConfetti = () => {
         confetti({
             particleCount: 950,
@@ -29,6 +19,7 @@ const PointsCampaigns = ({ campaigns, userPoints, business, color1, color2, deta
         });
     };
 
+    // FUNCIÓN PARA GENERAR CÓDIGO DE CANJE
     const generateRedeemCode = () => {
         const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
         let code = '';
@@ -39,15 +30,16 @@ const PointsCampaigns = ({ campaigns, userPoints, business, color1, color2, deta
         return code;
     };
 
+    // FUNCIÓN PARA MANEJAR EL CANJE
     const handleRedeem = async (campaign) => {
         if (isRedeeming) return;
         
         setIsRedeeming(true);
         
-        // Lanzar confeti
+        // LANZAR CONFETI
         launchConfetti();
         
-        // Enviar notificación de canje exitoso
+        // ENVIAR NOTIFICACIÓN DE CANJE EXITOSO
         if ('Notification' in window && Notification.permission === 'granted') {
             try {
                 new Notification(
@@ -62,7 +54,7 @@ const PointsCampaigns = ({ campaigns, userPoints, business, color1, color2, deta
             }
         }
 
-        // Simular procesamiento del canje
+        // SIMULAR PROCESAMIENTO DEL CANJE
         setTimeout(() => {
             const newCode = generateRedeemCode();
             onRedeem(campaign, newCode);
@@ -85,10 +77,17 @@ const PointsCampaigns = ({ campaigns, userPoints, business, color1, color2, deta
                     <Coins className="w-6 h-6" style={{ color: detallesColor }}/>
                     Promociones Activas
                 </h3>
+                <span className="text-sm font-medium px-3 py-1 rounded-full"
+                    style={{
+                        backgroundColor: `${detallesColor}15`,
+                        color: detallesColor
+                    }}>
+                    {campaigns.length} {campaigns.length === 1 ? 'promoción' : 'promociones'}
+                </span>
             </div>
 
             <div className="space-y-6">
-                {displayedCampaigns.map((campaign) => {
+                {campaigns.map((campaign) => {
                     const isCanjeable = userPoints >= campaign.CampaCantPSCanje;
                     
                     return (
@@ -184,26 +183,6 @@ const PointsCampaigns = ({ campaigns, userPoints, business, color1, color2, deta
                         </div>
                     );
                 })}
-
-                {/* Botón para ver todas las recompensas (si hay más de 2) */}
-                {hasMoreCampaigns && (
-                    <div className="text-center pt-4">
-                        <button
-                            onClick={handleViewAllRewards}
-                            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200 hover:shadow-lg active:scale-95"
-                            style={{
-                                backgroundImage: `linear-gradient(to right, ${color1}, ${color2})`,
-                                color: 'white'
-                            }}
-                        >
-                            <Gift className="w-4 h-4" />
-                            Ver todas las recompensas
-                            <span className="text-xs bg-white/30 px-2 py-0.5 rounded-full">
-                                +{campaigns.length - 2} más
-                            </span>
-                        </button>
-                    </div>
-                )}
             </div>
         </div>
     );

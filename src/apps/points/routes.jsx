@@ -14,7 +14,6 @@ import FullHistory from './views/client/FullHistory';
 import RedeemPromo from './views/admin/RedeemPromo';
 import RegistrarClienteFromAdmin from './views/admin/RegistrarClienteFromAdmin';
 import Ruleta from './views/client/Ruleta';
-import Promos from './views/client/Promos';
 
 const PointsRoutes = () => {
   const { isAuthenticated, user } = useAuth();
@@ -154,18 +153,6 @@ const PointsRoutes = () => {
           element={
             isAuthenticated && !isAdmin ? (
               <FullHistory />
-            ) : (
-              <Navigate to="/points-loyalty/login" replace />
-            )
-          } 
-        />
-
-        {/* Ruta de historial completo */}
-        <Route 
-          path="promos" 
-          element={
-            isAuthenticated ? (
-              <Promos />
             ) : (
               <Navigate to="/points-loyalty/login" replace />
             )
