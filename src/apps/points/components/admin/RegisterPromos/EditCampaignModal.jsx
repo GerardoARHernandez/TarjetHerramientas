@@ -1,6 +1,6 @@
 // src/apps/points-loyalty/views/admin/RegisterPromotion/components/admin/EditCampaignModal.jsx
 import { useState } from 'react';
-import { X, Save, Calendar, Gift, FileText, Star, Award, Loader } from 'lucide-react';
+import { X, Save, Calendar, Gift, FileText, Star, Award, Loader, Image as ImageIcon } from 'lucide-react';
 
 const EditCampaignModal = ({ campaign, business, onClose, onUpdateSuccess }) => {
     const [formData, setFormData] = useState({
@@ -13,6 +13,8 @@ const EditCampaignModal = ({ campaign, business, onClose, onUpdateSuccess }) => 
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
+    const [imageFile, setImageFile] = useState(null);
+    const [imagePreview, setImagePreview] = useState(null);
 
     // Obtener la fecha actual en formato YYYY-MM-DD
     const today = new Date().toISOString().split('T')[0];
@@ -30,6 +32,25 @@ const EditCampaignModal = ({ campaign, business, onClose, onUpdateSuccess }) => 
             [name]: value
         }));
         setError('');
+    };
+
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setImageFile(file);
+            
+            // Crear preview
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImagePreview(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleRemoveImage = () => {
+        setImageFile(null);
+        setImagePreview(null);
     };
 
     const handleSubmit = async (e) => {
@@ -63,6 +84,12 @@ const EditCampaignModal = ({ campaign, business, onClose, onUpdateSuccess }) => 
                     CampaRecompensa: formData.CampaRecompensa
                 }
             };
+
+            // Por ahora no enviamos la imagen, solo mostramos mensaje
+            if (imageFile && business?.NegocioId == 3) {
+                console.log('Imagen lista para subir (cuando la API esté disponible):', imageFile.name);
+                alert('Función de imagen disponible próximamente. La imagen se actualizará cuando la API esté lista.');
+            }
 
             const response = await fetch('https://souvenir-site.com/WebPuntos/API1/ModificarCampana', {
                 method: 'POST',
@@ -183,7 +210,6 @@ const EditCampaignModal = ({ campaign, business, onClose, onUpdateSuccess }) => 
                                 name="CampaVigeInico"
                                 value={formData.CampaVigeInico}
                                 onChange={handleChange}
-                                // Remover la restricción min={today} para permitir fechas pasadas
                                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                                 required
                             />
@@ -204,7 +230,6 @@ const EditCampaignModal = ({ campaign, business, onClose, onUpdateSuccess }) => 
                                 name="CampaVigeFin"
                                 value={formData.CampaVigeFin}
                                 onChange={handleChange}
-                                // Solo validar que no sea menor que la fecha de inicio
                                 min={formData.CampaVigeInico}
                                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                                 required
@@ -254,11 +279,75 @@ const EditCampaignModal = ({ campaign, business, onClose, onUpdateSuccess }) => 
                         </div>
                     </div>
 
+                    {/* Sección de Imagen - Solo para NegocioId == 3 */}
+                    {business?.NegocioId == 3 && (
+                        <div className="space-y-2 pt-4 border-t border-gray-200">
+                            <div className="flex items-center gap-2">
+                                <ImageIcon className="w-5 h-5 text-purple-500" />
+                                <label className="text-sm font-semibold text-gray-700">
+                                    Imagen de la Promoción (Opcional)
+                                </label>
+                            </div>
+                            
+                            <div className="border-2 border-dashed border-gray-300 rounded-2xl p-6 text-center hover:border-purple-400 transition-colors duration-200">
+                                {imagePreview ? (
+                                    <div className="space-y-4">
+                                        <div className="relative mx-auto w-48 h-48 rounded-xl overflow-hidden">
+                                            <img 
+                                                src={imagePreview} 
+                                                alt="Preview" 
+                                                className="w-full h-full object-cover"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={handleRemoveImage}
+                                                className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                        <p className="text-sm text-gray-600">Nueva imagen seleccionada</p>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <ImageIcon className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                                        <p className="text-sm text-gray-600 mb-2">
+                                            Haz clic para agregar o cambiar la imagen
+                                        </p>
+                                        <p className="text-xs text-gray-500 mb-4">
+                                            Recomendado: 400x400px, formato JPG o PNG
+                                        </p>
+                                    </>
+                                )}
+                                
+                                <input
+                                    type="file"
+                                    id="edit-promotion-image"
+                                    accept="image/*"
+                                    onChange={handleImageChange}
+                                    className="hidden"
+                                />
+                                <label
+                                    htmlFor="edit-promotion-image"
+                                    className="inline-block bg-purple-50 text-purple-700 px-4 py-2 rounded-lg cursor-pointer hover:bg-purple-100 transition-colors duration-200 text-sm font-medium"
+                                >
+                                    {imagePreview ? 'Cambiar Imagen' : 'Agregar Imagen'}
+                                </label>
+                            </div>
+                            
+                        </div>
+                    )}
+
                     {/* Información adicional */}
                     <div className="bg-blue-50 rounded-2xl p-4 border border-blue-200">
                         <p className="text-sm text-blue-800">
                             <strong>💡 Nota:</strong> Puedes editar campañas con fechas pasadas para 
                             corregir información histórica o reactivar promociones.
+                            {business?.NegocioId == 3 && (
+                                <span className="block mt-1">
+                                    <strong>✨ Nueva función:</strong> Ahora puedes agregar una imagen opcional a tus promociones.
+                                </span>
+                            )}
                         </p>
                     </div>
 

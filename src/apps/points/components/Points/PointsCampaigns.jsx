@@ -1,5 +1,5 @@
-//src/apps/points/components/Points/PointsCampaigns.jsx 
-import { Coins, Gift } from 'lucide-react';
+// src/apps/points/components/Points/PointsCampaigns.jsx 
+import { Coins, Gift, Image as ImageIcon } from 'lucide-react';
 import { useState } from 'react';
 import confetti from 'canvas-confetti';
 
@@ -64,6 +64,9 @@ const PointsCampaigns = ({ campaigns, userPoints, business, color1, color2, deta
 
     if (campaigns.length === 0) return null;
 
+    // URL de imagen para NegocioId == 3
+    const defaultImageUrl = "https://i0.wp.com/pizza-christian.mexicowebs.com/wp-content/uploads/2023/12/Papas-Oduladas.jpg?fit=984%2C984&ssl=1";
+
     return (
         <div 
             className="rounded-3xl p-8 shadow-lg border"
@@ -93,12 +96,49 @@ const PointsCampaigns = ({ campaigns, userPoints, business, color1, color2, deta
                     return (
                         <div 
                             key={campaign.CampaId} 
-                            className="rounded-2xl p-6 border-2"
+                            className="rounded-2xl p-6 border-2 overflow-hidden"
                             style={{
                                 backgroundImage: `linear-gradient(to bottom right, ${detallesColor}15, ${detallesColor}08)`,
                                 borderColor: `${detallesColor}30`
                             }}
                         >
+                            {/* Sección de Imagen - Solo para NegocioId == 3 */}
+                            {business?.NegocioId == 3 && (
+                                <div className="mb-4">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <ImageIcon className="w-4 h-4" style={{ color: detallesColor }} />
+                                        <span className="text-xs font-medium" style={{ color: detallesColor }}>
+                                            Vista previa de la promoción
+                                        </span>
+                                    </div>
+                                    <div className="relative rounded-xl overflow-hidden border-2" style={{ borderColor: `${detallesColor}30` }}>
+                                        <div className="relative h-48 md:h-56 lg:h-64 w-full">
+                                            <img
+                                                src={defaultImageUrl}
+                                                alt={`Imagen de promoción: ${campaign.CampaNombre}`}
+                                                className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                                                onError={(e) => {
+                                                    e.target.style.display = 'none';
+                                                    e.target.parentElement.innerHTML = `
+                                                        <div class="w-full h-full flex flex-col items-center justify-center" style="background: linear-gradient(135deg, ${detallesColor}20, ${detallesColor}10)">
+                                                            <ImageIcon class="w-12 h-12 mb-2" style="color: ${detallesColor}60" />
+                                                            <p class="text-sm font-medium" style="color: ${detallesColor}80">Imagen de la promoción</p>
+                                                            <p class="text-xs mt-1" style="color: ${detallesColor}60">${campaign.CampaNombre}</p>
+                                                        </div>
+                                                    `;
+                                                }}
+                                            />
+                                            {/* Overlay sutil */}
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent"></div>
+                                        </div>
+                                        {/* Badge en esquina */}
+                                        <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-lg px-2 py-1 shadow-sm">
+                                            <span className="text-xs font-bold" style={{ color: detallesColor }}>PROMO</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="flex justify-between items-start mb-3">
                                 <div>
                                     <h4 className="font-bold text-lg text-gray-800">{campaign.CampaNombre}</h4>
