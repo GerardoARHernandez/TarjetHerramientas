@@ -1,5 +1,5 @@
 // src/apps/admin-puntos/components/admin/AdminHeader.jsx
-import { NavLink } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { useState } from 'react';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { 
@@ -53,7 +53,7 @@ const AdminHeader = () => {
           <div className="flex items-center space-x-4">
             <div className="flex-shrink-0">
               <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-3 rounded-xl shadow-lg">
-                <Gift className="h-6 w-6" />
+                <Link to="/points-loyalty/registrar-compra"><Gift className="h-6 w-6" /></Link>
               </div>
             </div>
             <div>

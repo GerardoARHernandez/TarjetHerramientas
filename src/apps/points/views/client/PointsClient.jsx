@@ -47,6 +47,8 @@ const PointsClient = () => {
     const userPoints = accountData?.puntosDisponibles ? parseInt(accountData.puntosDisponibles) : 0;
     const pointsCampaigns = activeCampaigns.filter(campaign => campaign.NegocioTipoPS === 'P');
 
+    console.log('PuntosClient Renderizado:', accountData);
+
     // Redirigir si el negocio no usa puntos
     useEffect(() => {
         if (businessType === 'S') {
