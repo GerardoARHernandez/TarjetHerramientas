@@ -182,7 +182,7 @@ const PointsClient = () => {
                             <PointsDisplay
                                 userPoints={userPoints}
                                 accountData={accountData}
-                                businessName={business?.NegocioDesc}
+                                business={business}
                                 color1={color1}
                                 color2={color2}
                                 detallesColor={detallesColor}
