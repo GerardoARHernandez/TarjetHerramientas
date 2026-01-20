@@ -13,11 +13,16 @@ export const useBusiness = () => {
 
 export const BusinessProvider = ({ children }) => {
   const [business, setBusiness] = useState(null);
-  const [campaigns, setCampaigns] = useState([]);
-  const [activeCampaigns, setActiveCampaigns] = useState([]);
+  const [campaigns, setCampaigns] = useState([]); // TODAS las campañas, sin filtrar
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const { user, isAuthenticated, userType } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+
+  // Función simplificada para obtener businessId
+  const getBusinessId = () => {
+    if (!user) return null;
+    return user?.rawData?.NegocioId || user?.negocioId;
+  };
 
   // Obtener datos del negocio
   const fetchBusinessData = async (businessId) => {
@@ -25,7 +30,7 @@ export const BusinessProvider = ({ children }) => {
       setIsLoading(true);
       setError('');
       
-      const timestamp = new Date().getTime();
+      const timestamp = Date.now();
       const response = await fetch(`https://souvenir-site.com/WebPuntos/API1/Negocio/${businessId}?t=${timestamp}`);
       const data = await response.json();
 
@@ -36,7 +41,6 @@ export const BusinessProvider = ({ children }) => {
       if (data.listNegocio && !data.error) {
         const businessData = data.listNegocio;
         setBusiness(businessData);
-        localStorage.setItem('businessData', JSON.stringify(businessData));
         return businessData;
       } else {
         throw new Error(data.Mensaje || 'Error en los datos del negocio');
@@ -50,13 +54,13 @@ export const BusinessProvider = ({ children }) => {
     }
   };
 
-  // Obtener campañas del negocio
+  // Obtener TODAS las campañas del negocio (sin filtrar)
   const fetchCampaigns = async (businessId) => {
     try {
       setIsLoading(true);
       setError('');
       
-      const timestamp = new Date().getTime();
+      const timestamp = Date.now();
       const response = await fetch(`https://souvenir-site.com/WebPuntos/API1/Campanias/negocioid/${businessId}?t=${timestamp}`);
       const data = await response.json();
 
@@ -65,20 +69,9 @@ export const BusinessProvider = ({ children }) => {
       }
 
       if (data.ListCampanias && !data.error) {
-        // Filtrar solo campañas activas
-        const activeCampaigns = data.ListCampanias.filter(campaign => 
-          campaign.CampaActiva === 'S'
-        );
-        
+        // NO FILTRAR AQUÍ - devolver todas las campañas
         setCampaigns(data.ListCampanias);
-        setActiveCampaigns(activeCampaigns);
-        localStorage.setItem('campaignsData', JSON.stringify(data.ListCampanias));
-        localStorage.setItem('activeCampaignsData', JSON.stringify(activeCampaigns));
-        
-        return {
-          all: data.ListCampanias,
-          active: activeCampaigns
-        };
+        return data.ListCampanias;
       } else {
         throw new Error(data.Mensaje || 'Error en los datos de campañas');
       }
@@ -93,58 +86,32 @@ export const BusinessProvider = ({ children }) => {
 
   // Cargar datos cuando el usuario se autentique
   useEffect(() => {
-    const loadBusinessData = async () => {
+    const loadData = async () => {
       if (isAuthenticated) {
-        let businessId = null;
-        
-        // OBTENER EL NEGOCIOID SEGÚN EL TIPO DE USUARIO
-        if (userType === 'admin') {
-          // Para admin: usar el NegocioId de rawData
-          businessId = user?.rawData?.NegocioId;
-        } else if (userType === 'client') {
-          // Para cliente: usar el negocioId almacenado en el usuario
-          businessId = user?.negocioId || user?.rawData?.NegocioId;
-        }
+        const businessId = getBusinessId();
         
         if (businessId) {
-          const businessData = await fetchBusinessData(businessId);
-          if (businessData) {
-            await fetchCampaigns(businessId);
-          }
+          await fetchBusinessData(businessId);
+          await fetchCampaigns(businessId);
         }
       }
     };
 
-    // Si hay datos en localStorage, cargarlos primero
-    const storedBusiness = localStorage.getItem('businessData');
-    const storedCampaigns = localStorage.getItem('campaignsData');
-    const storedActiveCampaigns = localStorage.getItem('activeCampaignsData');
+    loadData();
+  }, [isAuthenticated]); // Solo depende de isAuthenticated
 
-    if (storedBusiness) {
-      setBusiness(JSON.parse(storedBusiness));
-    }
-    if (storedCampaigns) {
-      setCampaigns(JSON.parse(storedCampaigns));
-    }
-    if (storedActiveCampaigns) {
-      setActiveCampaigns(JSON.parse(storedActiveCampaigns));
-    }
-
-    // Luego cargar datos frescos
-    loadBusinessData();
-  }, [isAuthenticated, user, userType]);
-
+  // Función para recargar datos manualmente
   const refreshData = async () => {
-    if (user?.rawData?.NegocioId) {
-      await fetchBusinessData(user.rawData.NegocioId);
-      await fetchCampaigns(user.rawData.NegocioId);
+    const businessId = getBusinessId();
+    if (businessId) {
+      await fetchBusinessData(businessId);
+      await fetchCampaigns(businessId);
     }
   };
 
   const value = {
     business,
-    campaigns,
-    activeCampaigns,
+    campaigns, // TODAS las campañas, sin filtrar
     isLoading,
     error,
     refreshData,
