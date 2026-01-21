@@ -12,7 +12,7 @@ import ClientFooter from '../../components/ClientFooter';
 
 const Stamps = () => {
     const { user } = useAuth();
-    const { business, activeCampaigns, isLoading: businessLoading } = useBusiness();
+    const { business, campaigns, isLoading: businessLoading } = useBusiness(); 
     const { rules } = useBusinessRules(business?.NegocioId);
     const { accountData, isLoading: accountLoading } = useClientAccount();
     const navigate = useNavigate();
@@ -69,6 +69,8 @@ const Stamps = () => {
         importe: mov.TransaccionImporte
     })).reverse() : [];
 
+    // Filtrar campañas activas de sellos localmente
+    const activeCampaigns = campaigns?.filter(campaign => campaign.CampaActiva === 'S') || [];
     const stampsCampaigns = activeCampaigns.filter(campaign =>
         campaign.NegocioTipoPS === 'S'
     );
