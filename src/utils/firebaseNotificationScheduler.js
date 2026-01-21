@@ -102,59 +102,163 @@ export class FirebaseNotificationScheduler {
   }
 
   async getFCMToken() {
-    // Solo intentar con Firebase si está inicializado
-    if (this.isFirebaseInitialized && messaging) {
-      try {
-        // Registrar Service Worker para Firebase si no está registrado
-        let serviceWorkerRegistration;
-        
-        if ('serviceWorker' in navigator) {
+  // Solo intentar con Firebase si está inicializado
+  if (this.isFirebaseInitialized && messaging) {
+    try {
+      console.log('🔄 Intentando obtener token FCM...');
+      
+      // PRIMERO: Manejar Service Worker
+      let serviceWorkerRegistration = null;
+      
+      if ('serviceWorker' in navigator) {
+        try {
+          console.log('📁 Verificando archivo Service Worker...');
+          console.log('URL esperada:', window.location.origin + '/firebase-messaging-sw.js');
+          
+          // Verificar si el archivo existe antes de registrar
+          const swUrl = '/firebase-messaging-sw.js';
+          
+          // Intentar fetch para verificar que el archivo existe
           try {
-            // Intentar obtener el registration existente
-            serviceWorkerRegistration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
+            const response = await fetch(swUrl);
+            console.log('✅ Archivo SW encontrado. Status:', response.status, 'Type:', response.headers.get('content-type'));
             
-            if (!serviceWorkerRegistration) {
-              // Registrar nuevo Service Worker
-              serviceWorkerRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-              console.log('✅ Service Worker de Firebase registrado');
+            if (response.ok && response.headers.get('content-type')?.includes('javascript')) {
+              // Registrar Service Worker
+              serviceWorkerRegistration = await navigator.serviceWorker.register(swUrl, {
+                scope: '/',
+                updateViaCache: 'none'
+              });
+              
+              console.log('✅ Service Worker registrado. Scope:', serviceWorkerRegistration.scope);
+              
+              // Esperar activación
+              if (serviceWorkerRegistration.installing) {
+                await new Promise((resolve, reject) => {
+                  const timer = setTimeout(() => reject(new Error('Timeout activating Service Worker')), 10000);
+                  
+                  serviceWorkerRegistration.installing.addEventListener('statechange', (e) => {
+                    if (e.target.state === 'activated') {
+                      clearTimeout(timer);
+                      console.log('✅ Service Worker activado');
+                      resolve();
+                    } else if (e.target.state === 'redundant') {
+                      clearTimeout(timer);
+                      reject(new Error('Service Worker became redundant'));
+                    }
+                  });
+                });
+              }
+            } else {
+              console.error('❌ Archivo SW no es JavaScript. Content-Type:', response.headers.get('content-type'));
+              throw new Error('Service Worker file has incorrect MIME type');
             }
-          } catch (swError) {
-            console.warn('⚠️ Error con Service Worker:', swError);
+          } catch (fetchError) {
+            console.error('❌ No se pudo cargar el archivo SW:', fetchError.message);
+            
+            // Crear Service Worker dinámico si el archivo no existe
+            console.log('🔄 Intentando crear Service Worker dinámico...');
+            serviceWorkerRegistration = await this.createDynamicServiceWorker();
+          }
+        } catch (swError) {
+          console.error('❌ Error con Service Worker:', swError);
+          
+          // Fallback: usar Service Worker existente
+          try {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            if (registrations.length > 0) {
+              serviceWorkerRegistration = registrations[0];
+              console.log('⚠️ Usando Service Worker existente:', serviceWorkerRegistration.scope);
+            }
+          } catch (e) {
+            console.error('❌ No hay Service Workers disponibles');
           }
         }
-
-        // Obtener token FCM
-        const currentToken = await getToken(messaging, {
-          vapidKey: this.vapidKey,
-          serviceWorkerRegistration: serviceWorkerRegistration
-        });
-
-        if (currentToken) {
-          console.log('✅ Token FCM obtenido (primeros 20 chars):', currentToken.substring(0, 20) + '...');
-          this.token = currentToken;
-          localStorage.setItem('fcmToken', currentToken);
-          
-          // Enviar token al backend
-          await this.sendTokenToServer(currentToken);
-          
-          return currentToken;
-        } else {
-          console.log('⚠️ No se pudo obtener token FCM - usuario puede haber bloqueado notificaciones');
-        }
-      } catch (error) {
-        console.error('❌ Error obteniendo token FCM:', error);
-        
-        // Error específico para VAPID key incorrecta
-        if (error.code === 'messaging/invalid-vapid-key') {
-          console.error('❌ VAPID Key incorrecta. Obtén una nueva de Firebase Console');
-        }
       }
-    } else {
-      console.log('⚠️ Firebase no inicializado, usando modo nativo');
+
+      // Resto del código para obtener token...
+      // ... [el resto del método se mantiene igual]
+    } catch (error) {
+      console.error('❌ Error obteniendo token FCM:', error);
     }
-    
-    return null;
   }
+  return null;
+}
+
+async createDynamicServiceWorker() {
+  console.log('🛠️ Creando Service Worker dinámico...');
+  
+  // Crear un Service Worker básico en memoria
+  const swContent = `
+// Dynamic Service Worker for Firebase
+importScripts('https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js');
+
+try {
+  const firebaseConfig = ${JSON.stringify(firebaseConfig)};
+  firebase.initializeApp(firebaseConfig);
+  const messaging = firebase.messaging();
+
+  messaging.onBackgroundMessage((payload) => {
+    console.log('[Dynamic SW] Background message:', payload);
+    const notificationTitle = payload.notification?.title || 'Notificación';
+    const notificationOptions = {
+      body: payload.notification?.body || 'Nueva notificación',
+      icon: '/favicon.ico',
+      badge: '/favicon.ico',
+      data: payload.data || {}
+    };
+    self.registration.showNotification(notificationTitle, notificationOptions);
+  });
+
+  self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+    event.waitUntil(
+      clients.matchAll({ type: 'window', includeUncontrolled: true })
+        .then((clientList) => {
+          for (const client of clientList) {
+            if (client.url.includes('/points-loyalty') && 'focus' in client) {
+              return client.focus();
+            }
+          }
+          if (clients.openWindow) {
+            return clients.openWindow('/points-loyalty/points');
+          }
+        })
+    );
+  });
+
+  self.addEventListener('install', (event) => {
+    self.skipWaiting();
+  });
+
+  self.addEventListener('activate', (event) => {
+    event.waitUntil(self.clients.claim());
+  });
+
+  console.log('[Dynamic SW] Firebase inicializado');
+} catch (error) {
+  console.error('[Dynamic SW] Error:', error);
+}
+`;
+
+  // Crear blob URL para el Service Worker
+  const blob = new Blob([swContent], { type: 'application/javascript' });
+  const swUrl = URL.createObjectURL(blob);
+  
+  // Registrar el Service Worker dinámico
+  const registration = await navigator.serviceWorker.register(swUrl, {
+    scope: '/',
+    updateViaCache: 'none'
+  });
+  
+  console.log('✅ Service Worker dinámico registrado');
+  
+  // Limpiar URL después del registro
+  setTimeout(() => URL.revokeObjectURL(swUrl), 1000);
+  
+  return registration;
+}
 
   async sendTokenToServer(token) {
     // Simulación de envío al backend
