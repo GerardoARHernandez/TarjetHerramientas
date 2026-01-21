@@ -13,7 +13,7 @@ const PointsNotificationManager = ({
 
     // Inicializar scheduler
     useEffect(() => {
-        const scheduler = new FirebaseNotificationScheduler(17, 0);
+        const scheduler = new FirebaseNotificationScheduler();
         setNotificationScheduler(scheduler);
 
         return () => {

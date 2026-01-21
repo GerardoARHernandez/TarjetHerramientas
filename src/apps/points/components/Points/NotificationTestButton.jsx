@@ -18,7 +18,7 @@ const NotificationTestButton = () => {
         const mobileCheck = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         setIsMobileDevice(mobileCheck);
 
-        const scheduler = new FirebaseNotificationScheduler(17, 0);
+        const scheduler = new FirebaseNotificationScheduler();
         setNotificationScheduler(scheduler);
 
         return () => {

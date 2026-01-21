@@ -3,7 +3,7 @@ import { firebaseConfig, messaging, checkFirebaseSupport } from '../firebase/con
 import { getToken, onMessage, deleteToken } from 'firebase/messaging';
 
 export class FirebaseNotificationScheduler {
-  constructor(hour = 17, minute = 33) {
+  constructor(hour = 17, minute = 44) {
     this.hour = hour;
     this.minute = minute;
     this.timeoutId = null;
@@ -798,18 +798,42 @@ ${!this.token ? `
   }
 
   calculateTimeUntilNextNotification() {
-    const now = new Date();
-    const target = new Date();
-    
-    target.setHours(this.hour, this.minute, 0, 0);
-    
-    // Si ya pasó la hora de hoy, programar para mañana
-    if (now > target) {
-      target.setDate(target.getDate() + 1);
-    }
-    
-    return target.getTime() - now.getTime();
+  const now = new Date();
+  const target = new Date();
+  
+  console.log('🔧 CALCULANDO HORA OBJETIVO:');
+  console.log('Configuración - hour:', this.hour, 'minute:', this.minute);
+  
+  // OPCIÓN 1: Usar hora local (normal)
+  target.setHours(this.hour, this.minute, 0, 0, 0);
+  
+  // OPCIÓN 2: Usar hora UTC (si hay problemas de zona)
+  // target.setUTCHours(this.hour, this.minute, 0, 0, 0);
+  
+  console.log('📅 Fecha actual:', now.toLocaleString());
+  console.log('🎯 Fecha objetivo:', target.toLocaleString());
+  console.log('🕐 Hora actual (local):', now.getHours() + ':' + now.getMinutes());
+  console.log('🎯 Hora objetivo (local):', target.getHours() + ':' + target.getMinutes());
+  
+  // Calcular si ya pasó hoy
+  if (now > target) {
+    console.log('⏭️ La hora objetivo YA PASÓ hoy, programando para mañana');
+    target.setDate(target.getDate() + 1);
+    console.log('📅 Nueva fecha objetivo:', target.toLocaleString());
+  } else {
+    console.log('✅ Programando para hoy mismo');
   }
+  
+  const timeUntil = target.getTime() - now.getTime();
+  const minutes = Math.round(timeUntil / 1000 / 60);
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  
+  console.log(`⏰ Próxima notificación en: ${hours}h ${remainingMinutes}m`);
+  console.log(`⏰ Eso sería a las: ${target.toLocaleTimeString()}`);
+  
+  return timeUntil;
+}
 
   async unsubscribe() {
     try {
