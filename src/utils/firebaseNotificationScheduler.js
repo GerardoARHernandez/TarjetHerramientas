@@ -102,88 +102,140 @@ export class FirebaseNotificationScheduler {
   }
 
   async getFCMToken() {
-  // Solo intentar con Firebase si está inicializado
-  if (this.isFirebaseInitialized && messaging) {
-    try {
-      console.log('🔄 Intentando obtener token FCM...');
-      
-      // PRIMERO: Manejar Service Worker
-      let serviceWorkerRegistration = null;
-      
-      if ('serviceWorker' in navigator) {
-        try {
-          console.log('📁 Verificando archivo Service Worker...');
-          console.log('URL esperada:', window.location.origin + '/firebase-messaging-sw.js');
-          
-          // Verificar si el archivo existe antes de registrar
-          const swUrl = '/firebase-messaging-sw.js';
-          
-          // Intentar fetch para verificar que el archivo existe
+    if (this.isFirebaseInitialized && messaging) {
+      try {
+        console.log('🔄 Intentando obtener token FCM...');
+        console.log('VAPID Key configurada:', !!this.vapidKey);
+        
+        let serviceWorkerRegistration = null;
+        
+        if ('serviceWorker' in navigator) {
           try {
-            const response = await fetch(swUrl);
-            console.log('✅ Archivo SW encontrado. Status:', response.status, 'Type:', response.headers.get('content-type'));
+            // Obtener el Service Worker registrado
+            serviceWorkerRegistration = await navigator.serviceWorker.ready;
+            console.log('✅ Service Worker listo:', serviceWorkerRegistration);
             
-            if (response.ok && response.headers.get('content-type')?.includes('javascript')) {
-              // Registrar Service Worker
-              serviceWorkerRegistration = await navigator.serviceWorker.register(swUrl, {
-                scope: '/',
-                updateViaCache: 'none'
-              });
-              
-              console.log('✅ Service Worker registrado. Scope:', serviceWorkerRegistration.scope);
-              
-              // Esperar activación
-              if (serviceWorkerRegistration.installing) {
-                await new Promise((resolve, reject) => {
-                  const timer = setTimeout(() => reject(new Error('Timeout activating Service Worker')), 10000);
-                  
-                  serviceWorkerRegistration.installing.addEventListener('statechange', (e) => {
-                    if (e.target.state === 'activated') {
-                      clearTimeout(timer);
-                      console.log('✅ Service Worker activado');
-                      resolve();
-                    } else if (e.target.state === 'redundant') {
-                      clearTimeout(timer);
-                      reject(new Error('Service Worker became redundant'));
-                    }
-                  });
-                });
-              }
-            } else {
-              console.error('❌ Archivo SW no es JavaScript. Content-Type:', response.headers.get('content-type'));
-              throw new Error('Service Worker file has incorrect MIME type');
-            }
-          } catch (fetchError) {
-            console.error('❌ No se pudo cargar el archivo SW:', fetchError.message);
-            
-            // Crear Service Worker dinámico si el archivo no existe
-            console.log('🔄 Intentando crear Service Worker dinámico...');
-            serviceWorkerRegistration = await this.createDynamicServiceWorker();
-          }
-        } catch (swError) {
-          console.error('❌ Error con Service Worker:', swError);
-          
-          // Fallback: usar Service Worker existente
-          try {
+            // Verificar que tenemos el Service Worker correcto
             const registrations = await navigator.serviceWorker.getRegistrations();
-            if (registrations.length > 0) {
-              serviceWorkerRegistration = registrations[0];
-              console.log('⚠️ Usando Service Worker existente:', serviceWorkerRegistration.scope);
+            console.log('📋 Service Workers registrados:', registrations.length);
+            
+            for (const reg of registrations) {
+              console.log(`SW: ${reg.scope}, Estado: ${reg.active?.state}`);
+              if (reg.active && reg.active.scriptURL.includes('firebase-messaging')) {
+                serviceWorkerRegistration = reg;
+                console.log('✅ Firebase Service Worker encontrado');
+                break;
+              }
             }
-          } catch (e) {
-            console.error('❌ No hay Service Workers disponibles');
+            
+          } catch (swError) {
+            console.error('❌ Error obteniendo Service Worker:', swError);
+            return null;
           }
         }
-      }
 
-      // Resto del código para obtener token...
-      // ... [el resto del método se mantiene igual]
-    } catch (error) {
-      console.error('❌ Error obteniendo token FCM:', error);
+        if (serviceWorkerRegistration) {
+          console.log('🔑 Solicitando token FCM con Service Worker...');
+          
+          try {
+            // IMPORTANTE: Usar getToken con la configuración correcta
+            const currentToken = await getToken(messaging, {
+              vapidKey: this.vapidKey,
+              serviceWorkerRegistration: serviceWorkerRegistration
+            });
+
+            if (currentToken) {
+              console.log('✅✅✅ TOKEN FCM OBTENIDO EXITOSAMENTE');
+              console.log('Token (primeros 30):', currentToken.substring(0, 30) + '...');
+              console.log('Longitud:', currentToken.length);
+              
+              this.token = currentToken;
+              localStorage.setItem('fcmToken', currentToken);
+              
+              // Mostrar información del token
+              this.showTokenDebugInfo(currentToken);
+              
+              return currentToken;
+            } else {
+              console.log('⚠️ getToken() devolvió null/undefined');
+              console.log('Posibles causas:');
+              console.log('1. Permisos de notificación no concedidos');
+              console.log('2. VAPID Key incorrecta');
+              console.log('3. Service Worker no tiene permisos');
+              
+              // Diagnosticar el error
+              await this.diagnoseFCMError();
+            }
+          } catch (tokenError) {
+            console.error('❌ Error en getToken():', tokenError);
+            console.error('Código de error:', tokenError.code);
+            console.error('Mensaje:', tokenError.message);
+            
+            if (tokenError.code === 'messaging/invalid-vapid-key') {
+              console.error('🔥 ERROR: VAPID Key incorrecta!');
+              console.error('Tu VAPID Key:', this.vapidKey);
+              alert('❌ Error: VAPID Key incorrecta. Verifica en Firebase Console');
+            }
+          }
+        } else {
+          console.log('⚠️ No hay Service Worker disponible');
+        }
+      } catch (error) {
+        console.error('❌ Error general obteniendo token FCM:', error);
+      }
+    } else {
+      console.log('⚠️ Firebase no inicializado para obtener token');
+      console.log('isFirebaseInitialized:', this.isFirebaseInitialized);
+      console.log('messaging:', !!messaging);
     }
+    
+    return null;
   }
-  return null;
-}
+
+  async diagnoseFCMError() {
+    console.log('🔍 DIAGNÓSTICO FCM:');
+    
+    // 1. Verificar permisos
+    console.log('Permiso notificaciones:', Notification.permission);
+    
+    // 2. Verificar Service Worker
+    if ('serviceWorker' in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      console.log('Service Workers:', registrations.length);
+      registrations.forEach(reg => {
+        console.log('- Scope:', reg.scope);
+        console.log('  Estado:', reg.active?.state);
+        console.log('  Script:', reg.active?.scriptURL);
+      });
+    }
+    
+    // 3. Verificar Firebase
+    console.log('Firebase configurado:', this.isFirebaseInitialized);
+    console.log('VAPID Key longitud:', this.vapidKey?.length || 0);
+    
+    // 4. Verificar localStorage
+    const savedToken = localStorage.getItem('fcmToken');
+    console.log('Token guardado anteriormente:', savedToken ? 'Sí' : 'No');
+    
+    // 5. Verificar HTTPS
+    console.log('HTTPS:', window.location.protocol === 'https:');
+  }
+
+  showTokenDebugInfo(token) {
+    console.log('📊 INFORMACIÓN DEL TOKEN FCM:');
+    console.log('Token completo:', token);
+    console.log('Longitud:', token.length);
+    console.log('Comienza con:', token.substring(0, 3));
+    console.log('Formato válido:', /^[A-Za-z0-9_-]+$/.test(token));
+    
+    // Guardar para debugging
+    localStorage.setItem('fcmTokenDebug', JSON.stringify({
+      tokenPreview: token.substring(0, 20) + '...',
+      length: token.length,
+      timestamp: new Date().toISOString(),
+      url: window.location.href
+    }));
+  }
 
 async createDynamicServiceWorker() {
   console.log('🛠️ Creando Service Worker dinámico...');
@@ -291,35 +343,36 @@ try {
   }
 
   async requestPermission() {
-    try {
-      const permission = await Notification.requestPermission();
+  try {
+    console.log('🔄 Solicitando permiso para notificaciones...');
+    
+    const permission = await Notification.requestPermission();
+    console.log('Permiso resultante:', permission);
+    
+    if (permission === 'granted') {
+      console.log('✅ Permiso concedido');
       
-      if (permission === 'granted') {
-        console.log('✅ Permiso concedido');
+      // Obtener token FCM inmediatamente después del permiso
+      let token = null;
+      if (this.isFirebaseInitialized) {
+        console.log('🔄 Obteniendo token FCM después del permiso...');
+        token = await this.getFCMToken();
         
-        // Obtener token FCM si Firebase está disponible
-        let token = null;
-        if (this.isFirebaseInitialized) {
-          token = await this.getFCMToken();
+        if (token) {
+          console.log('✅ Token FCM obtenido después del permiso');
+          // Programar notificaciones ahora que tenemos token
+          this.scheduleNextNotification();
         }
-        
-        return {
-          granted: true,
-          token,
-          isFirebase: this.isFirebaseInitialized,
-          canReceiveInBackground: this.isFirebaseInitialized
-        };
-      } else {
-        console.log('❌ Permiso denegado');
-        return {
-          granted: false,
-          token: null,
-          isFirebase: false,
-          canReceiveInBackground: false
-        };
       }
-    } catch (error) {
-      console.error('❌ Error solicitando permiso:', error);
+      
+      return {
+        granted: true,
+        token,
+        isFirebase: this.isFirebaseInitialized,
+        canReceiveInBackground: !!token // Solo true si tenemos token
+      };
+    } else {
+      console.log('❌ Permiso denegado:', permission);
       return {
         granted: false,
         token: null,
@@ -327,7 +380,16 @@ try {
         canReceiveInBackground: false
       };
     }
+  } catch (error) {
+    console.error('❌ Error solicitando permiso:', error);
+    return {
+      granted: false,
+      token: null,
+      isFirebase: false,
+      canReceiveInBackground: false
+    };
   }
+}
 
   async showNotification(title, options = {}) {
     // Verificar permisos
@@ -567,6 +629,18 @@ showToastInPage(title, body) {
     console.log('- Token obtenido:', result.token ? 'Sí' : 'No');
   } else if (Notification.permission !== 'granted') {
     throw new Error('Permiso denegado previamente. Revise configuración del navegador.');
+  }
+
+  if (Notification.permission === 'granted' && this.isFirebaseInitialized) {
+    console.log('🔄 Verificando token FCM...');
+    
+    if (!this.token) {
+      console.log('🔄 No hay token, obteniendo uno...');
+      await this.getFCMToken();
+    } else {
+      console.log('✅ Token ya disponible');
+      console.log('Token:', this.token.substring(0, 30) + '...');
+    }
   }
 
   // Si ya teníamos permiso, obtener token ahora
