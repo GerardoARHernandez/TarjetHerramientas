@@ -1,6 +1,5 @@
-//src/apps/points/components/Points/PointsNotificationManager.jsx
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { UniversalNotificationScheduler } from '../../../../utils/notificationScheduler';
+import { useState, useEffect, useRef } from 'react';
+import { FirebaseNotificationScheduler } from '../../../../utils/firebaseNotificationScheduler';
 
 const PointsNotificationManager = ({ 
     isLoading, 
@@ -10,36 +9,36 @@ const PointsNotificationManager = ({
     onPermissionPrompt 
 }) => {
     const notificationCheckRef = useRef(false);
-    const [notificationScheduler] = useState(() => new UniversalNotificationScheduler(17, 0));
-
-    const isNotificationSupported = () => {
-        return 'Notification' in window;
-    };
-
-    const getNotificationPermission = () => {
-        if (!isNotificationSupported()) return 'unsupported';
-        return Notification.permission;
-    };
+    const [notificationScheduler, setNotificationScheduler] = useState(null);
 
     // Inicializar scheduler
     useEffect(() => {
-        if (!isLoading && userPoints > 0) {
+        const scheduler = new FirebaseNotificationScheduler(17, 0);
+        setNotificationScheduler(scheduler);
+
+        return () => {
+            if (scheduler) {
+                scheduler.destroy();
+            }
+        };
+    }, []);
+
+    // Inicializar con datos del usuario
+    useEffect(() => {
+        if (!isLoading && userPoints > 0 && notificationScheduler) {
             notificationScheduler.init({
                 userName,
                 points: userPoints,
                 businessName: business?.NegocioDesc,
-                businessLogo: business?.NegocioImagenUrl
+                businessLogo: business?.NegocioImagenUrl,
+                userId: localStorage.getItem('userId') // Agrega si tienes userId
             });
         }
-        
-        return () => {
-            notificationScheduler.destroy();
-        };
-    }, [isLoading, userName, userPoints, business]);
+    }, [isLoading, userName, userPoints, business, notificationScheduler]);
 
-    // Mostrar prompt de notificaciones después de 5 segundos
+    // Mostrar prompt después de 5 segundos
     useEffect(() => {
-        if (!isLoading && getNotificationPermission() === 'default' && !notificationCheckRef.current) {
+        if (!isLoading && Notification.permission === 'default' && !notificationCheckRef.current) {
             const timer = setTimeout(() => {
                 onPermissionPrompt();
                 notificationCheckRef.current = true;
@@ -49,7 +48,7 @@ const PointsNotificationManager = ({
         }
     }, [isLoading, onPermissionPrompt]);
 
-    return null; // Este componente no renderiza nada visualmente
+    return null;
 };
 
 export default PointsNotificationManager;
