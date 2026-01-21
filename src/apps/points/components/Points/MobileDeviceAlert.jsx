@@ -1,3 +1,4 @@
+// src/apps/points/components/Points/MobileDeviceAlert.jsx
 import { useEffect, useState } from "react";
 
 const MobileDeviceAlert = () => {

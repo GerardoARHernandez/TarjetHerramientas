@@ -1,8 +1,9 @@
+//src/utils/firebaseNotificationScheduler.js
 import { firebaseConfig, messaging, checkFirebaseSupport } from '../firebase/config';
 import { getToken, onMessage, deleteToken } from 'firebase/messaging';
 
 export class FirebaseNotificationScheduler {
-  constructor(hour = 17, minute = 3) {
+  constructor(hour = 18, minute = 0) {
     this.hour = hour;
     this.minute = minute;
     this.timeoutId = null;
@@ -239,21 +240,72 @@ export class FirebaseNotificationScheduler {
 
     const mergedOptions = { ...defaultOptions, ...options };
 
-    // Estrategia según disponibilidad
-    if (this.isFirebaseInitialized) {
-      console.log('🔥 Usando notificación nativa (FCM para background)');
-      // FCM manejará las notificaciones en background
-      // Aquí solo mostramos en foreground
+    // ESTRATEGIA DIFERENCIADA POR DISPOSITIVO
+    if (this.isMobile) {
+      // EN MÓVIL: Usar Service Worker obligatoriamente
+      console.log('📱 Modo móvil - Usando Service Worker');
+      return await this.showNotificationViaServiceWorker(title, mergedOptions);
+    } else {
+      // EN ESCRITORIO: Usar método más flexible
+      console.log('💻 Modo escritorio - Usando método óptimo');
+      return await this.showNotificationDesktop(title, mergedOptions);
     }
-    
-    return this.showNativeNotification(title, mergedOptions);
   }
 
-  showNativeNotification(title, options) {
-    if (typeof Notification === 'undefined') {
-      throw new Error('API de notificaciones no disponible');
+  async showNotificationViaServiceWorker(title, options) {
+    console.log('🔄 Mostrando notificación vía Service Worker...');
+    
+    if (!('serviceWorker' in navigator)) {
+      throw new Error('Service Worker no soportado en este navegador móvil');
     }
 
+    try {
+      // Obtener o registrar Service Worker
+      let registration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
+      
+      if (!registration) {
+        registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+        console.log('✅ Service Worker registrado para notificación');
+        
+        // Esperar activación
+        if (registration.installing) {
+          await new Promise((resolve) => {
+            registration.installing.addEventListener('statechange', (e) => {
+              if (e.target.state === 'activated') {
+                console.log('✅ Service Worker activado');
+                resolve();
+              }
+            });
+          });
+        }
+      }
+
+      // Usar showNotification del Service Worker
+      await registration.showNotification(title, options);
+      console.log('✅ Notificación mostrada vía Service Worker');
+      return true;
+    } catch (error) {
+      console.error('❌ Error mostrando notificación vía Service Worker:', error);
+      
+      // Fallback para móviles muy restrictivos
+      if (this.isMobile) {
+        console.log('⚠️ Intentando fallback para móvil...');
+        return this.showMobileFallback(title, options.body);
+      }
+      
+      throw error;
+    }
+  }
+
+async showNotificationDesktop(title, options) {
+  console.log('💻 Usando notificación para escritorio...');
+  
+  if (typeof Notification === 'undefined') {
+    throw new Error('API de notificaciones no disponible');
+  }
+
+  try {
+    // Intentar con Notification API directa
     const notification = new Notification(title, options);
 
     notification.onclick = () => {
@@ -274,80 +326,229 @@ export class FirebaseNotificationScheduler {
     }, 8000);
 
     return true;
+  } catch (error) {
+    console.error('❌ Error con Notification API:', error);
+    
+    // Si falla en escritorio, intentar con Service Worker también
+    if ('serviceWorker' in navigator) {
+      console.log('🔄 Fallback a Service Worker en escritorio');
+      return await this.showNotificationViaServiceWorker(title, options);
+    }
+    
+    throw error;
   }
+}
+
+showMobileFallback(title, body) {
+  console.log('📱 Usando fallback móvil (alert/UI)');
+  
+  // Opción 1: Alert nativo (funciona en todos los móviles)
+  if (typeof alert !== 'undefined') {
+    alert(`${title}\n\n${body}`);
+    return true;
+  }
+  
+  // Opción 2: Toast/Modal en la página
+  this.showToastInPage(title, body);
+  return true;
+}
+
+showToastInPage(title, body) {
+  const toast = document.createElement('div');
+  toast.className = 'mobile-notification-fallback';
+  toast.innerHTML = `
+    <div style="
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 16px 24px;
+      border-radius: 12px;
+      z-index: 99999;
+      max-width: 90%;
+      width: 350px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      animation: slideDown 0.3s ease;
+    ">
+      <div style="font-weight: bold; font-size: 16px; margin-bottom: 8px;">${title}</div>
+      <div style="font-size: 14px; opacity: 0.9;">${body}</div>
+      <button style="
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: none;
+        border: none;
+        color: white;
+        font-size: 20px;
+        cursor: pointer;
+      " onclick="this.parentElement.remove()">×</button>
+    </div>
+  `;
+  
+  // Agregar animación CSS
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes slideDown {
+      from { transform: translateX(-50%) translateY(-20px); opacity: 0; }
+      to { transform: translateX(-50%) translateY(0); opacity: 1; }
+    }
+  `;
+  document.head.appendChild(style);
+  
+  document.body.appendChild(toast);
+  
+  // Auto-remover después de 5 segundos
+  setTimeout(() => {
+    if (toast.parentNode) {
+      toast.parentNode.removeChild(toast);
+    }
+  }, 5000);
+  
+  return true;
+}
 
   async testNotification() {
-    console.log('🧪 Iniciando prueba completa de notificaciones...');
+  console.log('🧪 Iniciando prueba completa de notificaciones...');
+  console.log('📱 Es móvil:', this.isMobile);
+  console.log('🌐 Protocolo:', window.location.protocol);
 
-    if (!('Notification' in window)) {
-      throw new Error('Tu navegador no soporta notificaciones');
-    }
-
-    // Verificar/obtener permisos
-    if (Notification.permission === 'default') {
-      const result = await this.requestPermission();
-      if (!result.granted) {
-        throw new Error('Permiso no concedido por el usuario');
-      }
-      
-      console.log('📱 Capacidades:', {
-        firebase: result.isFirebase,
-        background: result.canReceiveInBackground
-      });
-    } else if (Notification.permission !== 'granted') {
-      throw new Error('Permiso denegado previamente. Revise configuración del navegador.');
-    }
-
-    // Obtener datos
-    const data = this.getNotificationData();
-    
-    // Información sobre capacidades
-    const capabilities = {
-      platform: this.isMobile ? 'mobile' : 'desktop',
-      firebaseEnabled: this.isFirebaseInitialized,
-      canReceiveInBackground: this.isFirebaseInitialized,
-      token: this.token ? 'Disponible' : 'No disponible'
-    };
-    
-    console.log('🔧 Capacidades del sistema:', capabilities);
-    
-    // Mostrar notificación de prueba
-    await this.showNotification(
-      `🧪 Prueba ${this.isMobile ? 'Móvil' : 'PC'}`,
-      {
-        body: `✅ Sistema ${this.isFirebaseInitialized ? 'FCM' : 'Nativo'} activo\n` +
-              `Puntos: ${data.displayPoints}\n` +
-              `Background: ${this.isFirebaseInitialized ? '✅ Sí' : '❌ Solo con app abierta'}`,
-        tag: 'test-' + Date.now(),
-        requireInteraction: true,
-        icon: this.userData?.businessLogo || '/favicon.ico'
-      }
-    );
-
-    console.log('✅ Prueba completada');
-    
-    // Información para el usuario
-    if (this.isMobile) {
-      setTimeout(() => {
-        alert(
-          `📱 Prueba completada en ${this.isMobile ? 'Móvil' : 'PC'}\n\n` +
-          `Firebase FCM: ${this.isFirebaseInitialized ? '✅ ACTIVADO' : '❌ DESACTIVADO'}\n` +
-          `Notificaciones en background: ${this.isFirebaseInitialized ? '✅ POSIBLE' : '❌ Solo con app abierta'}\n\n` +
-          `Para habilitar notificaciones en background:\n` +
-          `1. Asegúrate de usar HTTPS (no localhost)\n` +
-          `2. Verifica la VAPID Key en Firebase\n` +
-          `3. Instala como PWA para mejor experiencia`
-        );
-      }, 1000);
-    }
-
-    return {
-      success: true,
-      method: this.isFirebaseInitialized ? 'firebase' : 'native',
-      canReceiveInBackground: this.isFirebaseInitialized,
-      token: this.token
-    };
+  if (!('Notification' in window)) {
+    throw new Error('Tu navegador no soporta notificaciones');
   }
+
+  // Información específica para móviles
+  if (this.isMobile) {
+    console.log('📱 MODO MÓVIL DETECTADO - Configuración especial:');
+    console.log('• Usará Service Worker obligatoriamente');
+    console.log('• HTTPS requerido:', window.location.protocol === 'https:');
+    console.log('• Service Worker soportado:', 'serviceWorker' in navigator);
+    
+    // Verificar HTTPS en móvil
+    if (window.location.protocol !== 'https:' && 
+        !window.location.hostname.includes('localhost')) {
+      console.warn('⚠️ Móvil requiere HTTPS para notificaciones confiables');
+    }
+  }
+
+  // Verificar/obtener permisos
+  if (Notification.permission === 'default') {
+    console.log('🔄 Solicitando permiso...');
+    
+    // En móvil, mostrar mensaje especial antes de pedir permiso
+    if (this.isMobile) {
+      const shouldContinue = confirm(
+        '📱 Modo móvil detectado\n\n' +
+        'Para notificaciones en móvil:\n' +
+        '1. Acepta el permiso cuando aparezca\n' +
+        '2. Permite las notificaciones\n' +
+        '3. Para mejor experiencia, instala como PWA\n\n' +
+        '¿Continuar con la prueba?'
+      );
+      
+      if (!shouldContinue) {
+        throw new Error('Prueba cancelada por el usuario');
+      }
+    }
+    
+    const result = await this.requestPermission();
+    if (!result.granted) {
+      throw new Error('Permiso no concedido por el usuario');
+    }
+    
+    console.log('✅ Permiso concedido');
+    console.log('- Firebase activo:', result.isFirebase);
+    console.log('- Background disponible:', result.canReceiveInBackground);
+    console.log('- Token obtenido:', result.token ? 'Sí' : 'No');
+  } else if (Notification.permission !== 'granted') {
+    throw new Error('Permiso denegado previamente. Revise configuración del navegador.');
+  }
+
+  // Si ya teníamos permiso, obtener token ahora
+  if (Notification.permission === 'granted' && this.isFirebaseInitialized && !this.token) {
+    console.log('🔄 Obteniendo token FCM...');
+    await this.getFCMToken();
+  }
+
+  // Obtener datos
+  const data = this.getNotificationData();
+  
+  // Información sobre capacidades
+  const capabilities = {
+    platform: this.isMobile ? 'mobile' : 'desktop',
+    firebaseEnabled: this.isFirebaseInitialized,
+    canReceiveInBackground: this.isFirebaseInitialized && !!this.token,
+    token: this.token ? 'Disponible' : 'No disponible',
+    notificationMethod: this.isMobile ? 'Service Worker' : 'Notification API'
+  };
+  
+  console.log('🔧 Capacidades del sistema:', capabilities);
+  
+  // Mostrar notificación de prueba
+  console.log('🔄 Mostrando notificación de prueba...');
+  
+  await this.showNotification(
+    `🧪 Prueba ${this.isMobile ? 'Móvil' : 'PC'}`,
+    {
+      body: `✅ Sistema ${this.isFirebaseInitialized ? 'FCM' : 'Nativo'} activo\n` +
+            `Puntos: ${data.displayPoints}\n` +
+            `Método: ${this.isMobile ? 'Service Worker' : 'API nativa'}\n` +
+            `Background: ${this.isFirebaseInitialized && this.token ? '✅ Sí' : '❌ Solo foreground'}`,
+      tag: 'test-' + Date.now(),
+      requireInteraction: true,
+      icon: this.userData?.businessLogo || '/favicon.ico',
+      data: {
+        test: 'true',
+        platform: this.isMobile ? 'mobile' : 'desktop',
+        timestamp: new Date().toISOString()
+      }
+    }
+  );
+
+  console.log('✅✅✅ Prueba completada exitosamente');
+  
+  // Mensaje informativo para móvil
+  if (this.isMobile) {
+    const mobileInfo = `
+📱 PRUEBA MÓVIL COMPLETADA
+────────────────────────
+• Método usado: Service Worker ✅
+• Firebase FCM: ${this.isFirebaseInitialized ? 'ACTIVADO' : 'DESACTIVADO'}
+• Token FCM: ${this.token ? 'OBTENIDO' : 'NO OBTENIDO'}
+• Background: ${this.isFirebaseInitialized && this.token ? 'POSIBLE' : 'Solo foreground'}
+
+${!this.token ? `
+⚠️ PARA NOTIFICACIONES EN BACKGROUND:
+────────────────────────
+1. Necesitas HTTPS (no HTTP)
+2. Configura correctamente Firebase
+3. Instala como PWA para mejor experiencia
+` : '✅ Listo para notificaciones en background'}
+
+💡 CONSEJOS PARA MÓVIL:
+────────────────────────
+• Para pruebas, usa "Modo escritorio" en Chrome móvil
+• O instala la app como PWA
+• Asegúrate de aceptar todos los permisos
+    `;
+    
+    console.log(mobileInfo);
+    
+    // Mostrar alerta informativa
+    setTimeout(() => {
+      alert(mobileInfo);
+    }, 1500);
+  }
+
+  return {
+    success: true,
+    method: this.isFirebaseInitialized ? 'firebase' : 'native',
+    canReceiveInBackground: this.isFirebaseInitialized && !!this.token,
+    token: this.token,
+    platform: this.isMobile ? 'mobile' : 'desktop'
+  };
+}
 
   getNotificationData() {
     let displayName = 'Usuario';

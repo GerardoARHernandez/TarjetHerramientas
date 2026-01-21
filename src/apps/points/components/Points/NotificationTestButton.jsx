@@ -1,3 +1,4 @@
+// src/apps/points/components/Points/NotificationTestButton.jsx
 import { Bell, Cloud, Smartphone, Check, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { FirebaseNotificationScheduler } from '../../../../utils/firebaseNotificationScheduler';
