@@ -23,7 +23,7 @@ import { ArrowRight } from 'lucide-react';
 
 const PointsClient = () => {
     const { user } = useAuth();
-    const { business, activeCampaigns, isLoading: businessLoading } = useBusiness();
+    const { business, campaigns, isLoading: businessLoading } = useBusiness();
     const { rules } = useBusinessRules(business?.NegocioId);
     const { accountData, isLoading: accountLoading } = useClientAccount();
     const navigate = useNavigate();
@@ -45,6 +45,7 @@ const PointsClient = () => {
     const detallesColor = business?.NegocioColor2 || '#FF9800';
 
     const userPoints = accountData?.puntosDisponibles ? parseInt(accountData.puntosDisponibles) : 0;
+    const activeCampaigns = campaigns?.filter(campaign => campaign.CampaActiva === 'S') || [];
     const pointsCampaigns = activeCampaigns.filter(campaign => campaign.NegocioTipoPS === 'P');
 
     console.log('PuntosClient Renderizado:', accountData);
