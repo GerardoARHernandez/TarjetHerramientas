@@ -3,7 +3,7 @@ import { firebaseConfig, messaging, checkFirebaseSupport } from '../firebase/con
 import { getToken, onMessage, deleteToken } from 'firebase/messaging';
 
 export class FirebaseNotificationScheduler {
-  constructor(hour = 17, minute = 54) {
+  constructor(hour = 18, minute = 8) {
     this.hour = hour;
     this.minute = minute;
     this.timeoutId = null;
@@ -392,8 +392,16 @@ try {
 }
 
   async showNotification(title, options = {}) {
+  console.log('🎬 showNotification() INICIADO');
+  console.log('Título:', title);
+  console.log('Opciones:', options);
+  
+  try {
     // Verificar permisos
-    if (!(await this.hasPermission())) {
+    const hasPerm = await this.hasPermission();
+    console.log('✅ Permiso verificado en showNotification:', hasPerm);
+    
+    if (!hasPerm) {
       throw new Error('No hay permiso para notificaciones');
     }
 
@@ -405,18 +413,29 @@ try {
     };
 
     const mergedOptions = { ...defaultOptions, ...options };
+    console.log('⚙️ Opciones combinadas:', mergedOptions);
 
     // ESTRATEGIA DIFERENCIADA POR DISPOSITIVO
     if (this.isMobile) {
-      // EN MÓVIL: Usar Service Worker obligatoriamente
-      console.log('📱 Modo móvil - Usando Service Worker');
-      return await this.showNotificationViaServiceWorker(title, mergedOptions);
+      console.log('📱 Dispositivo móvil detectado');
+      console.log('🔄 Usando showNotificationViaServiceWorker()');
+      const result = await this.showNotificationViaServiceWorker(title, mergedOptions);
+      console.log('✅ showNotificationViaServiceWorker retornó:', result);
+      return result;
     } else {
-      // EN ESCRITORIO: Usar método más flexible
-      console.log('💻 Modo escritorio - Usando método óptimo');
-      return await this.showNotificationDesktop(title, mergedOptions);
+      console.log('💻 Dispositivo escritorio detectado');
+      console.log('🔄 Usando showNotificationDesktop()');
+      const result = await this.showNotificationDesktop(title, mergedOptions);
+      console.log('✅ showNotificationDesktop retornó:', result);
+      return result;
     }
+    
+  } catch (error) {
+    console.error('❌ Error en showNotification():', error);
+    console.error('Stack:', error.stack);
+    throw error;
   }
+}
 
   async showNotificationViaServiceWorker(title, options) {
     console.log('🔄 Mostrando notificación vía Service Worker...');
@@ -770,32 +789,90 @@ ${!this.token ? `
   }
 
   async showDailyNotification() {
-    if (!(await this.hasPermission()) || !this.userData) return;
+  console.log('🔔 EJECUTANDO showDailyNotification() - INICIO');
+  
+  try {
+    // 1. Verificar permisos
+    const hasPerm = await this.hasPermission();
+    console.log('✅ Permiso verificado:', hasPerm);
+    
+    if (!hasPerm) {
+      console.log('❌ No tiene permisos para notificaciones');
+      return;
+    }
+    
+    // 2. Verificar datos de usuario
+    console.log('📋 Datos de usuario:', this.userData);
+    
+    if (!this.userData) {
+      console.log('❌ No hay datos de usuario');
+      return;
+    }
     
     const { userName, points, businessName } = this.userData;
     const today = new Date().toDateString();
     const lastNotification = localStorage.getItem('lastDailyNotification');
     
-    // Verificar si ya se mostró hoy o si no hay puntos
-    if (lastNotification === today || points <= 0) return;
+    console.log('📊 Información detallada:');
+    console.log('- Usuario:', userName);
+    console.log('- Puntos:', points);
+    console.log('- Negocio:', businessName);
+    console.log('- Hoy:', today);
+    console.log('- Última notificación en localStorage:', lastNotification || 'Nunca');
     
-    try {
-      await this.showNotification(
-        `📅 Recordatorio Diario`,
-        {
-          body: `¡Hola ${userName}! Recuerda que tienes ${points} puntos disponibles en ${businessName}`,
-          tag: 'daily-reminder',
-          icon: this.userData?.businessLogo || '/favicon.ico'
-        }
-      );
-      
-      // Guardar fecha de última notificación
-      localStorage.setItem('lastDailyNotification', today);
-      console.log('✅ Notificación diaria enviada');
-    } catch (error) {
-      console.error('❌ Error mostrando notificación diaria:', error);
+    // IMPORTANTE: Solo verificar si es EXACTAMENTE igual
+    if (lastNotification === today) {
+      console.log('⏭️ Ya se mostró notificación hoy según localStorage');
+      console.log('💡 Para forzar prueba, ejecuta: localStorage.removeItem("lastDailyNotification")');
+      return;
     }
+    
+    // Verificar si hay puntos
+    if (points <= 0) {
+      console.log('⏭️ Usuario no tiene puntos, omitiendo');
+      return;
+    }
+    
+    console.log('✅✅✅ TODAS LAS CONDICIONES PASARON!');
+    console.log('🎯 Preparando notificación...');
+    
+    // Crear opciones de notificación
+    const notificationOptions = {
+      body: `¡Hola ${userName}! Recuerda que tienes ${points} puntos disponibles en ${businessName}`,
+      tag: 'daily-reminder-' + Date.now(),
+      icon: this.userData?.businessLogo || '/favicon.ico',
+      badge: '/favicon.ico',
+      requireInteraction: false,
+      vibrate: [200, 100, 200],
+      data: {
+        type: 'daily-reminder',
+        date: today,
+        points: points,
+        timestamp: new Date().toISOString()
+      }
+    };
+    
+    console.log('📨 Opciones de notificación:', notificationOptions);
+    
+    // MOSTRAR NOTIFICACIÓN PRIMERO, LUEGO GUARDAR
+    console.log('🚀 Llamando a showNotification()...');
+    const result = await this.showNotification(`📅 Recordatorio Diario`, notificationOptions);
+    console.log('✅ showNotification() retornó:', result);
+    
+    if (result) {
+      // SOLO guardar si la notificación se mostró exitosamente
+      localStorage.setItem('lastDailyNotification', today);
+      console.log('✅✅✅ Notificación diaria enviada exitosamente y fecha guardada:', today);
+    } else {
+      console.log('⚠️ showNotification() retornó falso, no guardando fecha');
+    }
+    
+  } catch (error) {
+    console.error('❌❌❌ ERROR CRÍTICO en showDailyNotification():', error);
+    console.error('Stack:', error.stack);
+    console.error('Error completo:', error);
   }
+}
 
   calculateTimeUntilNextNotification() {
   const now = new Date();
