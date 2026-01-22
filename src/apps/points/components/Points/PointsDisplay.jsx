@@ -8,7 +8,7 @@ const PointsDisplay = ({ userPoints, accountData, color1, color2, detallesColor,
     const [qrDataUrl, setQrDataUrl] = useState('');
     const [qrGenerated, setQrGenerated] = useState(false);
     const [copied, setCopied] = useState(false);
-    const phoneNumber = "5532132132";
+    const phoneNumber = accountData.Telefono;
     const businessName = business?.NegocioDesc;
     
     // Generar el código QR
@@ -77,25 +77,23 @@ const PointsDisplay = ({ userPoints, accountData, color1, color2, detallesColor,
                     MIS PUNTOS OBTENIDOS
                 </h3>
                 
-                {/* Botón para generar QR - Solo para NegocioId == 3 */}
-                {business?.NegocioId == 3 && (
-                    <div className="mb-6">
-                        <button
-                            onClick={openQrModal}
-                            className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-medium transition-all duration-200 hover:shadow-lg"
-                            style={{
-                                background: `linear-gradient(135deg, ${color1}, ${color2})`,
-                                color: 'white'
-                            }}
-                        >
-                            <QrCode className="w-5 h-5" />
-                            Generar Mi Código QR
-                        </button>
-                        <p className="text-xs text-gray-500 mt-2">
-                            Muestre este QR al personal para acumular puntos rápidamente
-                        </p>
-                    </div>
-                )}
+                {/* Botón para generar QR */}
+                <div className="mb-6">
+                    <button
+                        onClick={openQrModal}
+                        className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-medium transition-all duration-200 hover:shadow-lg"
+                        style={{
+                            background: `linear-gradient(135deg, ${color1}, ${color2})`,
+                            color: 'white'
+                        }}
+                    >
+                        <QrCode className="w-5 h-5" />
+                        Generar Mi Código QR
+                    </button>
+                    <p className="text-xs text-gray-500 mt-2">
+                        Muestre este QR al personal para acumular puntos rápidamente
+                    </p>
+                </div>
 
                 <div
                     style={{

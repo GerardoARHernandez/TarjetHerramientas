@@ -146,14 +146,16 @@ const PointsClient = () => {
                     )}
 
                     {/* Botón de prueba de notificaciones */}
-                    <div className="mb-6">
-                        <NotificationTestButton />
-                    </div>
-
-                    {/* Botón de Registrar Ticket (solo para negocio 3) */}
                     {business?.NegocioId == 3 && (
                         <div className="mb-6">
-                            <div className="rounded-2xl p-2 shadow-sm border"
+                            <NotificationTestButton />
+                        </div>
+                    )}
+
+                    {/* Botón de Registrar Ticket (solo para negocios PL) */}
+                    {business?.NegocioModo == "PL" && (
+                        <div className="mb-4">
+                            <div className="rounded-2xl shadow-sm border w-fit"
                                 style={{
                                     backgroundColor: 'white',
                                     borderColor: `${detallesColor}30`

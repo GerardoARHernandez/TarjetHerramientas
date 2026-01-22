@@ -8,13 +8,13 @@ import Footer from '../../components/Footer';
 const RedeemPromo = () => {
   const [formData, setFormData] = useState({ 
     clientId: '',
-    campaignId: '',
-    reference: ''
+    campaignId: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [clients, setClients] = useState([]);
   const [apiResponse, setApiResponse] = useState(null);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [transactionId, setTransactionId] = useState('');
   
   const { business, campaigns, isLoading, refreshData } = useBusiness();
   const { user } = useAuth();
@@ -24,20 +24,6 @@ const RedeemPromo = () => {
     campaign.CampaActiva === 'S'
   );
 
-  // Función para generar referencia automática
-  const generateReference = () => {
-    const random = Math.random().toString(36).substring(2, 8).toUpperCase();
-    return `CANJE-${random}`;
-  };
-
-  // Inicializar referencia al montar el componente
-  useEffect(() => {
-    setFormData(prev => ({
-      ...prev,
-      reference: generateReference()
-    }));
-  }, []);
-
   const handleClientsUpdate = useCallback((clientsList) => {
     setClients(clientsList);
   }, []);
@@ -46,16 +32,14 @@ const RedeemPromo = () => {
     setFormData(prev => ({ ...prev, clientId }));
     setApiResponse(null);
     setIsSuccess(false);
+    setTransactionId('');
   }, []);
 
   const handleCampaignChange = (campaignId) => {
     setFormData(prev => ({ ...prev, campaignId }));
     setApiResponse(null);
     setIsSuccess(false);
-  };
-
-  const handleReferenceChange = (reference) => {
-    setFormData(prev => ({ ...prev, reference }));
+    setTransactionId('');
   };
 
   const selectedClient = clients.find(client => client.id.toString() === formData.clientId);
@@ -63,7 +47,7 @@ const RedeemPromo = () => {
     campaign.CampaId === formData.campaignId
   );
 
-  const canSubmit = formData.clientId && formData.campaignId && formData.reference && business;
+  const canSubmit = formData.clientId && formData.campaignId && business;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -73,14 +57,15 @@ const RedeemPromo = () => {
     setIsSubmitting(true);
     setApiResponse(null);
     setIsSuccess(false);
+    setTransactionId('');
 
     try {
       const transactionData = {
         ListTransaccion: {
           UsuarioId: parseInt(formData.clientId),
           NegocioId: parseInt(business?.NegocioId),
-          CampaId: parseInt(formData.campaignId),
-          TransaccionNoReferen: formData.reference
+          CampaId: parseInt(formData.campaignId)
+          // Eliminado: TransaccionNoReferen - ahora lo genera la API
         }
       };
 
@@ -98,13 +83,15 @@ const RedeemPromo = () => {
       setApiResponse(result);
       setIsSuccess(!result.error);
 
-      if (!result.error && result.TransaccionId) {
-        // Éxito - limpiar formulario y generar nueva referencia
-        setFormData(prev => ({
+      if (!result.error && result.TransactionId) {
+        // Éxito - guardar el TransactionId generado por la API
+        setTransactionId(result.TransactionId);
+        
+        // Limpiar formulario
+        setFormData({
           clientId: '',
-          campaignId: '',
-          reference: generateReference()
-        }));
+          campaignId: ''
+        });
         
         // Recargar datos para actualizar información
         refreshData();
@@ -125,11 +112,11 @@ const RedeemPromo = () => {
   const resetForm = () => {
     setFormData({
       clientId: '',
-      campaignId: '',
-      reference: generateReference()
+      campaignId: ''
     });
     setApiResponse(null);
     setIsSuccess(false);
+    setTransactionId('');
   };
 
   const handleRefreshData = () => {
@@ -149,7 +136,6 @@ const RedeemPromo = () => {
               <h2 className="text-2xl font-bold text-gray-950">Canje de Promociones</h2>
               <p className="text-gray-600 text-sm">Canjea puntos o sellos por recompensas</p>
             </div>
-
           </div>          
             {business?.NegocioDesc && (
               <div className="">
@@ -273,24 +259,6 @@ const RedeemPromo = () => {
               </div>
             )}
 
-            {/* Referencia */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Referencia del Canje
-              </label>
-              <input
-                type="text"
-                value={formData.reference}
-                onChange={(e) => handleReferenceChange(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
-                placeholder="Referencia única para el canje"
-                required
-              />
-              <p className="text-sm text-gray-500 mt-1">
-                Esta referencia identificará el canje en el sistema
-              </p>
-            </div>
-
             {/* Información del cliente seleccionado */}
             {selectedClient && (
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
@@ -357,15 +325,15 @@ const RedeemPromo = () => {
                 )}
                 <div className="flex-1">
                   <p className="font-medium">{apiResponse.Mensaje}</p>
-                  {apiResponse.TransaccionId > 0 && (
+                  {transactionId && (
                     <div className="mt-2">
                       <span className="block font-semibold text-lg text-green-900">¡Promoción Canjeada Exitosamente!</span>
                       <div className="mt-2 p-3 bg-green-50 rounded border border-green-200">
                         <p className="text-sm">
-                          <span className="font-medium">Transacción ID:</span> <strong className="text-green-900">{apiResponse.TransaccionId}</strong>
+                          <span className="font-medium">ID de Transacción:</span> <strong className="text-green-900">{transactionId}</strong>
                         </p>
                         <p className="text-xs text-green-700 mt-1">
-                          Referencia: {formData.reference} 
+                          La referencia fue generada automáticamente por el sistema
                         </p>
                       </div>
                     </div>
@@ -381,7 +349,6 @@ const RedeemPromo = () => {
             </div>
           )}
         </div>
-
       </div>
       <Footer />
     </>
