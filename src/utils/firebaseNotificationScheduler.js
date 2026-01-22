@@ -3,7 +3,8 @@ import { firebaseConfig, messaging, checkFirebaseSupport } from '../firebase/con
 import { getToken, onMessage, deleteToken } from 'firebase/messaging';
 
 export class FirebaseNotificationScheduler {
-  constructor(hour = 18, minute = 19) {
+  constructor(intervalMinutes = 1, hour = 18, minute = 20) {
+    this.intervalMinutes = intervalMinutes; // Intervalo en minutos
     this.hour = hour;
     this.minute = minute;
     this.timeoutId = null;
@@ -88,6 +89,7 @@ export class FirebaseNotificationScheduler {
     
     console.log('📱 Dispositivo:', this.isMobile ? 'Móvil' : 'Escritorio');
     console.log('🔥 Firebase:', this.isFirebaseInitialized ? 'Activado' : 'Desactivado');
+    console.log('⏱️  Intervalo de notificaciones:', this.intervalMinutes, 'minuto(s)');
     
     // Guardar datos del usuario
     if (userData) {
@@ -97,8 +99,133 @@ export class FirebaseNotificationScheduler {
     // Si tenemos permisos, obtener token y programar
     if (await this.hasPermission()) {
       await this.getFCMToken();
-      this.scheduleNextNotification();
+      this.startIntervalNotifications();
     }
+  }
+
+  // Nuevo método para notificaciones por intervalo
+  startIntervalNotifications() {
+    console.log(`⏱️  Iniciando notificaciones cada ${this.intervalMinutes} minuto(s)`);
+    
+    // Limpiar timeout anterior si existe
+    if (this.timeoutId) clearTimeout(this.timeoutId);
+    
+    // Mostrar primera notificación inmediatamente (opcional)
+    // setTimeout(() => this.showIntervalNotification(), 2000);
+    
+    // Iniciar intervalo
+    this.scheduleNextIntervalNotification();
+  }
+
+  // Método para programar la próxima notificación del intervalo
+  scheduleNextIntervalNotification() {
+    // Limpiar timeout anterior
+    if (this.timeoutId) clearTimeout(this.timeoutId);
+    
+    const intervalMs = this.intervalMinutes * 60 * 1000; // Convertir minutos a milisegundos
+    
+    console.log(`⏰ Programando próxima notificación en ${this.intervalMinutes} minuto(s)`);
+    
+    this.timeoutId = setTimeout(() => {
+      this.showIntervalNotification();
+      this.scheduleNextIntervalNotification(); // Programar la siguiente
+    }, intervalMs);
+  }
+
+  // Nuevo método para notificaciones de intervalo
+  async showIntervalNotification() {
+    console.log('🔔 EJECUTANDO showIntervalNotification() - INICIO');
+    
+    try {
+      // 1. Verificar permisos
+      const hasPerm = await this.hasPermission();
+      console.log('✅ Permiso verificado:', hasPerm);
+      
+      if (!hasPerm) {
+        console.log('❌ No tiene permisos para notificaciones');
+        return;
+      }
+      
+      // 2. Verificar datos de usuario
+      if (!this.userData) {
+        console.log('❌ No hay datos de usuario');
+        return;
+      }
+      
+      const { userName, points, businessName } = this.userData;
+      const now = new Date();
+      const currentTime = now.toLocaleTimeString();
+      
+      // Crear opciones de notificación con información del intervalo
+      const notificationOptions = {
+        body: `⏱️ Recordatorio cada ${this.intervalMinutes} minuto(s)\n` +
+              `¡Hola ${userName}! Tienes ${points} puntos disponibles en ${businessName}\n` +
+              `Hora: ${currentTime}`,
+        tag: 'interval-reminder-' + Date.now(), // Único cada vez
+        icon: this.userData?.businessLogo || '/favicon.ico',
+        badge: '/favicon.ico',
+        requireInteraction: false,
+        vibrate: [100, 50, 100],
+        data: {
+          type: 'interval-reminder',
+          interval: this.intervalMinutes,
+          timestamp: now.toISOString(),
+          time: currentTime,
+          points: points
+        }
+      };
+      
+      console.log('📨 Opciones de notificación de intervalo:', notificationOptions);
+      
+      // Mostrar notificación
+      console.log('🚀 Llamando a showNotification()...');
+      const result = await this.showNotification(
+        `⏱️ Recordatorio (cada ${this.intervalMinutes} min)`, 
+        notificationOptions
+      );
+      
+      console.log('✅ showNotification() retornó:', result);
+      
+      if (result) {
+        console.log(`✅✅✅ Notificación de intervalo enviada exitosamente (cada ${this.intervalMinutes} min)`);
+        
+        // Opcional: registrar en localStorage para tracking
+        const intervalLog = JSON.parse(localStorage.getItem('intervalNotifications') || '[]');
+        intervalLog.push({
+          timestamp: now.toISOString(),
+          interval: this.intervalMinutes,
+          points: points
+        });
+        localStorage.setItem('intervalNotifications', JSON.stringify(intervalLog.slice(-10))); // Guardar últimas 10
+      } else {
+        console.log('⚠️ showNotification() retornó falso');
+      }
+      
+    } catch (error) {
+      console.error('❌❌❌ ERROR en showIntervalNotification():', error);
+    }
+  }
+
+  // Método para probar manualmente (opcional)
+  async testIntervalNotification() {
+    console.log('🧪 Probando notificación de intervalo...');
+    await this.showIntervalNotification();
+  }
+
+  // Mantener el método scheduleNextNotification original si todavía lo necesitas
+  scheduleNextNotification() {
+    // Limpiar timeout anterior
+    if (this.timeoutId) clearTimeout(this.timeoutId);
+    
+    const timeUntil = this.calculateTimeUntilNextNotification();
+    const minutes = Math.round(timeUntil / 1000 / 60);
+    
+    console.log(`⏰ Programando próxima notificación diaria en ${minutes} minutos`);
+    
+    this.timeoutId = setTimeout(() => {
+      this.showDailyNotification();
+      this.scheduleNextNotification();
+    }, timeUntil);
   }
 
   async getFCMToken() {
@@ -361,7 +488,7 @@ try {
         if (token) {
           console.log('✅ Token FCM obtenido después del permiso');
           // Programar notificaciones ahora que tenemos token
-          this.scheduleNextNotification();
+          this.startIntervalNotifications();
         }
       }
       
@@ -691,7 +818,7 @@ showToastInPage(title, body) {
       body: `✅ Sistema ${this.isFirebaseInitialized ? 'FCM' : 'Nativo'} activo\n` +
             `Puntos: ${data.displayPoints}\n` +
             `Método: ${this.isMobile ? 'Service Worker' : 'API nativa'}\n` +
-            `Background: ${this.isFirebaseInitialized && this.token ? '✅ Sí' : '❌ Solo foreground'}`,
+            `Intervalo: ${this.intervalMinutes} minuto(s)`,
       tag: 'test-' + Date.now(),
       requireInteraction: true,
       icon: this.userData?.businessLogo || '/favicon.ico',
@@ -714,6 +841,7 @@ showToastInPage(title, body) {
 • Firebase FCM: ${this.isFirebaseInitialized ? 'ACTIVADO' : 'DESACTIVADO'}
 • Token FCM: ${this.token ? 'OBTENIDO' : 'NO OBTENIDO'}
 • Background: ${this.isFirebaseInitialized && this.token ? 'POSIBLE' : 'Solo foreground'}
+• Intervalo: ${this.intervalMinutes} minuto(s)
 
 ${!this.token ? `
 ⚠️ PARA NOTIFICACIONES EN BACKGROUND:
@@ -743,7 +871,8 @@ ${!this.token ? `
     method: this.isFirebaseInitialized ? 'firebase' : 'native',
     canReceiveInBackground: this.isFirebaseInitialized && !!this.token,
     token: this.token,
-    platform: this.isMobile ? 'mobile' : 'desktop'
+    platform: this.isMobile ? 'mobile' : 'desktop',
+    interval: this.intervalMinutes
   };
 }
 
@@ -771,21 +900,6 @@ ${!this.token ? `
     }
 
     return { displayName, displayPoints, displayBusiness };
-  }
-
-  scheduleNextNotification() {
-    // Limpiar timeout anterior
-    if (this.timeoutId) clearTimeout(this.timeoutId);
-    
-    const timeUntil = this.calculateTimeUntilNextNotification();
-    const minutes = Math.round(timeUntil / 1000 / 60);
-    
-    console.log(`⏰ Programando próxima notificación en ${minutes} minutos`);
-    
-    this.timeoutId = setTimeout(() => {
-      this.showDailyNotification();
-      this.scheduleNextNotification();
-    }, timeUntil);
   }
 
   async showDailyNotification() {
@@ -910,6 +1024,7 @@ ${!this.token ? `
       // Limpiar localStorage
       localStorage.removeItem('fcmToken');
       localStorage.removeItem('lastDailyNotification');
+      localStorage.removeItem('intervalNotifications');
       
       console.log('✅ Desuscrito de notificaciones');
       return true;
