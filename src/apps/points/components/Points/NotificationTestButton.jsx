@@ -143,28 +143,6 @@ const NotificationTestButton = () => {
                     </div>
                 </div>
             )}
-            
-            {isMobileDevice && (
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div className="flex items-start gap-2">
-                        <Smartphone className="w-5 h-5 text-blue-600 mt-0.5" />
-                        <div>
-                            <p className="text-sm font-medium text-blue-800">
-                                📱 Notificaciones en móvil
-                            </p>
-                            <p className="text-xs text-blue-700 mt-1">
-                                Para recibir notificaciones con la app cerrada, necesitas:
-                                <ul className="list-disc list-inside mt-1 space-y-1">
-                                    <li>Configurar correctamente Firebase</li>
-                                    <li>Usar HTTPS (no HTTP local)</li>
-                                    <li>Aceptar permisos cuando se soliciten</li>
-                                    <li>Instalar como PWA para mejor experiencia</li>
-                                </ul>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
