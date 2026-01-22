@@ -1,4 +1,3 @@
-//src/apps/points/views/client/PointsClient.jsx
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { useBusiness } from '../../../../contexts/BusinessContext';
@@ -11,14 +10,13 @@ import RedeemPurchaseModal from '../../components/RedeemPurchaseModal';
 import NotificationPermission from '../../components/NotificationPermission';
 
 // Componentes de puntos
-import PointsDisplay from '../../components/Points/PointsDisplay'; //Muestra los puntos del usuario
-import PointsCampaigns from '../../components/Points/PointsCampaigns'; // Lista de campañas
-import PointsHistory from '../../components/Points/PointsHistory'; // Historial de puntos
-import RedeemSection from '../../components/Points/RedeemSection'; // Sección de canje
-import MobileDeviceAlert from '../../components/Points/MobileDeviceAlert'; //Alerta para dispositivos móviles
-import NotificationTestButton from '../../components/Points/NotificationTestButton'; //Botón de prueba de notificaciones
-import PointsNotificationManager from '../../components/Points/PointsNotificationManager'; //Gestor de notificaciones
-import RedeemCodeModal from '../../components/Points/RedeemCodeModal'; //Modal de código de canje
+import PointsDisplay from '../../components/Points/PointsDisplay';
+import PointsCampaigns from '../../components/Points/PointsCampaigns';
+import PointsHistory from '../../components/Points/PointsHistory';
+import RedeemSection from '../../components/Points/RedeemSection';
+import MobileDeviceAlert from '../../components/Points/MobileDeviceAlert';
+import NotificationTestButton from '../../components/Points/NotificationTestButton';
+import PointsNotificationManager from '../../components/Points/PointsNotificationManager';
 import { ArrowRight } from 'lucide-react';
 
 const PointsClient = () => {
@@ -30,12 +28,7 @@ const PointsClient = () => {
     
     const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
     const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
-    const [showRedeemModal, setShowRedeemModal] = useState(false);
-    const [redeemData, setRedeemData] = useState({
-        code: '',
-        campaign: null,
-        copied: false
-    });
+    // Eliminamos los estados del modal
 
     const isLoading = businessLoading || accountLoading;
     const userName = user?.name || 'Usuario';
@@ -55,39 +48,12 @@ const PointsClient = () => {
         }
     }, [businessType, navigate]);
 
-    // Manejo de canje exitoso
-    const handleSuccessfulRedeem = (campaign, code) => {
-        setRedeemData({
-            code,
-            campaign,
-            copied: false
-        });
-        setShowRedeemModal(true);
-    };
-
     // Manejar permiso de notificaciones
     const handlePermissionChange = (granted) => {
         setShowNotificationPrompt(false);
     };
 
-    // Manejar copiar código
-    const handleCopyCode = () => {
-        navigator.clipboard.writeText(redeemData.code)
-            .then(() => {
-                setRedeemData(prev => ({ ...prev, copied: true }));
-                setTimeout(() => {
-                    setRedeemData(prev => ({ ...prev, copied: false }));
-                }, 2000);
-            });
-    };
-
-    // Cerrar modal de canje
-    const closeRedeemModal = () => {
-        setShowRedeemModal(false);
-        setRedeemData({ code: '', campaign: null, copied: false });
-    };
-
-    if (isLoading) {
+    if (isLoading || !accountData) {
         return (
             <div 
                 className="min-h-screen flex items-center justify-center"
@@ -197,7 +163,6 @@ const PointsClient = () => {
                                 color1={color1}
                                 color2={color2}
                                 detallesColor={detallesColor}
-                                onRedeem={handleSuccessfulRedeem}
                             />
 
                             {/* Sección de canje */}
@@ -228,18 +193,6 @@ const PointsClient = () => {
                 isOpen={isPurchaseModalOpen}
                 onClose={() => setIsPurchaseModalOpen(false)}
                 businessName={business?.NegocioDesc}
-            />
-
-            {/* Modal de Código de Canje */}
-            <RedeemCodeModal
-                isOpen={showRedeemModal && business?.NegocioId == 3}
-                onClose={closeRedeemModal}
-                redeemData={redeemData}
-                business={business}
-                color1={color1}
-                color2={color2}
-                detallesColor={detallesColor}
-                onCopyCode={handleCopyCode}
             />
         </>
     );

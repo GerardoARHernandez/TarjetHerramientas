@@ -88,7 +88,7 @@ const FullHistory = () => {
                         </div>
 
                         <button
-                            onClick={() => navigate('/points-loyalty/points')}
+                            onClick={() => navigate(-1)} // <- Cambia esto
                             className="font-semibold text-base px-4 py-2 rounded-xl transition-colors duration-200 hover:bg-opacity-20 hover:cursor-pointer"
                             style={{
                                 color: color1,

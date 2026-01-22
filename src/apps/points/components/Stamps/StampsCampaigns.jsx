@@ -1,9 +1,8 @@
-// src/apps/points/components/Points/PointsCampaigns.jsx 
-import { Coins, Gift, Image as ImageIcon } from 'lucide-react';
+import { Gift } from 'lucide-react';
 import { useState } from 'react';
 import confetti from 'canvas-confetti';
 
-const PointsCampaigns = ({ campaigns, userPoints, business, color1, color2, detallesColor }) => {
+const StampsCampaigns = ({ campaigns, userStamps, business, color1, color2, detallesColor }) => {
     const [isAnimating, setIsAnimating] = useState(false);
 
     // FUNCIÓN PARA LANZAR CONFETI
@@ -23,9 +22,10 @@ const PointsCampaigns = ({ campaigns, userPoints, business, color1, color2, deta
     const handleClick = (campaign) => {
         if (isAnimating) return;
         
-        const isCanjeable = userPoints >= campaign.CampaCantPSCanje;
+        const requiredStamps = parseInt(campaign.CampaCantPSCanje) || 10;
+        const hasEnoughStamps = userStamps >= requiredStamps;
         
-        if (isCanjeable) {
+        if (hasEnoughStamps) {
             setIsAnimating(true);
             
             // LANZAR CONFETI
@@ -37,7 +37,7 @@ const PointsCampaigns = ({ campaigns, userPoints, business, color1, color2, deta
                     new Notification(
                         '¡Puedes canjear!',
                         {
-                            body: `Tienes suficientes puntos para: ${campaign.CampaRecompensa}`,
+                            body: `Tienes suficientes sellos para: ${campaign.CampaRecompensa}`,
                             icon: business?.NegocioImagenUrl || '/favicon.ico'
                         }
                     );
@@ -55,9 +55,6 @@ const PointsCampaigns = ({ campaigns, userPoints, business, color1, color2, deta
 
     if (campaigns.length === 0) return null;
 
-    // URL de imagen para NegocioId == 3
-    const defaultImageUrl = "https://i0.wp.com/pizza-christian.mexicowebs.com/wp-content/uploads/2023/12/Papas-Oduladas.jpg?fit=984%2C984&ssl=1";
-
     return (
         <div 
             className="rounded-3xl p-8 shadow-lg border"
@@ -68,8 +65,8 @@ const PointsCampaigns = ({ campaigns, userPoints, business, color1, color2, deta
         >
             <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                    <Coins className="w-6 h-6" style={{ color: detallesColor }}/>
-                    Promociones Activas
+                    <Gift className="w-6 h-6" style={{ color: detallesColor }}/>
+                    Promociones de Sellos Activas
                 </h3>
                 <span className="text-sm font-medium px-3 py-1 rounded-full"
                     style={{
@@ -82,7 +79,8 @@ const PointsCampaigns = ({ campaigns, userPoints, business, color1, color2, deta
 
             <div className="space-y-6">
                 {campaigns.map((campaign) => {
-                    const isCanjeable = userPoints >= campaign.CampaCantPSCanje;
+                    const requiredStamps = parseInt(campaign.CampaCantPSCanje) || 10;
+                    const hasEnoughStamps = userStamps >= requiredStamps;
                     
                     return (
                         <div 
@@ -93,43 +91,6 @@ const PointsCampaigns = ({ campaigns, userPoints, business, color1, color2, deta
                                 borderColor: `${detallesColor}30`
                             }}
                         >
-                            {/* Sección de Imagen - Solo para NegocioId == 3 */}
-                            {business?.NegocioId == 3 && (
-                                <div className="mb-4">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <ImageIcon className="w-4 h-4" style={{ color: detallesColor }} />
-                                        <span className="text-xs font-medium" style={{ color: detallesColor }}>
-                                            Vista previa de la promoción
-                                        </span>
-                                    </div>
-                                    <div className="relative rounded-xl overflow-hidden border-2" style={{ borderColor: `${detallesColor}30` }}>
-                                        <div className="relative h-48 md:h-56 lg:h-64 w-full">
-                                            <img
-                                                src={defaultImageUrl}
-                                                alt={`Imagen de promoción: ${campaign.CampaNombre}`}
-                                                className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                                                onError={(e) => {
-                                                    e.target.style.display = 'none';
-                                                    e.target.parentElement.innerHTML = `
-                                                        <div class="w-full h-full flex flex-col items-center justify-center" style="background: linear-gradient(135deg, ${detallesColor}20, ${detallesColor}10)">
-                                                            <ImageIcon class="w-12 h-12 mb-2" style="color: ${detallesColor}60" />
-                                                            <p class="text-sm font-medium" style="color: ${detallesColor}80">Imagen de la promoción</p>
-                                                            <p class="text-xs mt-1" style="color: ${detallesColor}60">${campaign.CampaNombre}</p>
-                                                        </div>
-                                                    `;
-                                                }}
-                                            />
-                                            {/* Overlay sutil */}
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent"></div>
-                                        </div>
-                                        {/* Badge en esquina */}
-                                        <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-lg px-2 py-1 shadow-sm">
-                                            <span className="text-xs font-bold" style={{ color: detallesColor }}>PROMO</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
                             <div className="flex justify-between items-start mb-3">
                                 <div>
                                     <h4 className="font-bold text-lg text-gray-800">{campaign.CampaNombre}</h4>
@@ -138,7 +99,7 @@ const PointsCampaigns = ({ campaigns, userPoints, business, color1, color2, deta
                                     </p>
                                 </div>
                                 <span className="font-bold text-xl" style={{ color: color2 }}>
-                                    {campaign.CampaCantPSCanje} pts
+                                    {requiredStamps} sellos
                                 </span>
                             </div>
 
@@ -153,10 +114,10 @@ const PointsCampaigns = ({ campaigns, userPoints, business, color1, color2, deta
                                 }}
                             >
                                 <div className="flex items-center justify-between mb-2">
-                                    <span className="text-sm font-medium text-gray-700">Puntos necesarios:</span>
+                                    <span className="text-sm font-medium text-gray-700">Sellos necesarios:</span>
                                     <div className="flex items-center gap-1">
-                                        <Coins className="w-4 h-4" style={{ color: color1 }}/>
-                                        <span className="font-bold" style={{ color: color2 }}>{campaign.CampaCantPSCanje}</span>
+                                        <Gift className="w-4 h-4" style={{ color: color1 }}/>
+                                        <span className="font-bold" style={{ color: color2 }}>{requiredStamps}</span>
                                     </div>
                                 </div>
 
@@ -164,13 +125,13 @@ const PointsCampaigns = ({ campaigns, userPoints, business, color1, color2, deta
                                     <div
                                         className="h-2 rounded-full transition-all duration-500"
                                         style={{
-                                            width: `${Math.min((userPoints / campaign.CampaCantPSCanje) * 100, 100)}%`,
+                                            width: `${Math.min((userStamps / requiredStamps) * 100, 100)}%`,
                                             backgroundImage: `linear-gradient(to right, ${color1}, ${color2})`,
                                         }}
                                     ></div>
                                 </div>
                                 <p className="text-xs text-gray-500 mt-1">
-                                    Progreso: {userPoints}/{campaign.CampaCantPSCanje} puntos
+                                    Progreso: {userStamps}/{requiredStamps} sellos
                                 </p>
                             </div>
 
@@ -190,13 +151,13 @@ const PointsCampaigns = ({ campaigns, userPoints, business, color1, color2, deta
 
                             <button
                                 onClick={() => handleClick(campaign)}
-                                disabled={!isCanjeable || isAnimating}
+                                disabled={!hasEnoughStamps || isAnimating}
                                 className={`w-full py-4 rounded-2xl font-semibold text-lg transition-all duration-200 relative overflow-hidden
-                                    ${isCanjeable && !isAnimating
+                                    ${hasEnoughStamps && !isAnimating
                                         ? 'text-white shadow-lg transform hover:-translate-y-0.5 hover:shadow-xl active:scale-95 cursor-pointer'
                                         : 'bg-gray-200 text-gray-500 cursor-not-allowed'
                                     }`}
-                                style={isCanjeable && !isAnimating ? {
+                                style={hasEnoughStamps && !isAnimating ? {
                                     backgroundImage: `linear-gradient(to right, ${color1}, ${color2})`,
                                 } : {}}
                             >
@@ -205,10 +166,10 @@ const PointsCampaigns = ({ campaigns, userPoints, business, color1, color2, deta
                                         <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                                         ¡Disponible para canjear!
                                     </div>
-                                ) : isCanjeable ? (
+                                ) : hasEnoughStamps ? (
                                     `Disponible para canjear`
                                 ) : (
-                                    `Necesitas ${campaign.CampaCantPSCanje - userPoints} puntos más`
+                                    `Necesitas ${requiredStamps - userStamps} sellos más`
                                 )}
                             </button>
                         </div>
@@ -219,4 +180,4 @@ const PointsCampaigns = ({ campaigns, userPoints, business, color1, color2, deta
     );
 };
 
-export default PointsCampaigns;
+export default StampsCampaigns;
