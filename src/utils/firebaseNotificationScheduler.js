@@ -3,7 +3,7 @@ import { firebaseConfig, messaging, checkFirebaseSupport } from '../firebase/con
 import { getToken, onMessage, deleteToken } from 'firebase/messaging';
 
 export class FirebaseNotificationScheduler {
-  constructor(intervalMinutes = 1, hour = 18, minute = 20) {
+  constructor(intervalMinutes = 1, hour = 16, minute = 0) {
     this.intervalMinutes = intervalMinutes; // Intervalo en minutos
     this.hour = hour;
     this.minute = minute;
@@ -1006,6 +1006,16 @@ ${!this.token ? `
   console.log(`⏰ Eso sería a las: ${target.toLocaleTimeString()}`);
   
   return timeUntil;
+}
+
+async registerBackgroundSync() {
+  if ('serviceWorker' in navigator && 'SyncManager' in window) {
+    const registration = await navigator.serviceWorker.ready;
+    
+    // Registrar sincronización en background
+    await registration.sync.register('send-notifications');
+    console.log('✅ Background Sync registrado');
+  }
 }
 
   async unsubscribe() {

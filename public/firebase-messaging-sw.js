@@ -80,3 +80,15 @@ self.addEventListener('activate', (event) => {
   console.log('[Firebase SW] Service Worker activado');
   event.waitUntil(self.clients.claim());
 });
+
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'send-notifications') {
+    event.waitUntil(
+      // Intentar mostrar notificación aunque esté en background
+      self.registration.showNotification('Recordatorio', {
+        body: 'Sincronización en background',
+        icon: '/favicon.ico'
+      })
+    );
+  }
+});
