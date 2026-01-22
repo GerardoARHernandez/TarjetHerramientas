@@ -3,7 +3,7 @@ import { firebaseConfig, messaging, checkFirebaseSupport } from '../firebase/con
 import { getToken, onMessage, deleteToken } from 'firebase/messaging';
 
 export class FirebaseNotificationScheduler {
-  constructor(hour = 18, minute = 14) {
+  constructor(hour = 18, minute = 19) {
     this.hour = hour;
     this.minute = minute;
     this.timeoutId = null;
@@ -810,22 +810,6 @@ ${!this.token ? `
     }
     
     const { userName, points, businessName } = this.userData;
-    const today = new Date().toDateString();
-    const lastNotification = localStorage.getItem('lastDailyNotification');
-    
-    console.log('📊 Información detallada:');
-    console.log('- Usuario:', userName);
-    console.log('- Puntos:', points);
-    console.log('- Negocio:', businessName);
-    console.log('- Hoy:', today);
-    console.log('- Última notificación en localStorage:', lastNotification || 'Nunca');
-    
-    // IMPORTANTE: Solo verificar si es EXACTAMENTE igual
-    if (lastNotification === today) {
-      console.log('⏭️ Ya se mostró notificación hoy según localStorage');
-      console.log('💡 Para forzar prueba, ejecuta: localStorage.removeItem("lastDailyNotification")');
-      return;
-    }
     
     // Verificar si hay puntos
     if (points <= 0) {
@@ -839,32 +823,30 @@ ${!this.token ? `
     // Crear opciones de notificación
     const notificationOptions = {
       body: `¡Hola ${userName}! Recuerda que tienes ${points} puntos disponibles en ${businessName}`,
-      tag: 'daily-reminder-' + Date.now(),
+      tag: 'daily-reminder-' + Date.now(), // Único cada vez
       icon: this.userData?.businessLogo || '/favicon.ico',
       badge: '/favicon.ico',
       requireInteraction: false,
       vibrate: [200, 100, 200],
       data: {
         type: 'daily-reminder',
-        date: today,
-        points: points,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        points: points
       }
     };
     
     console.log('📨 Opciones de notificación:', notificationOptions);
     
-    // MOSTRAR NOTIFICACIÓN PRIMERO, LUEGO GUARDAR
+    // MOSTRAR NOTIFICACIÓN SIN VERIFICAR HISTORIAL
     console.log('🚀 Llamando a showNotification()...');
     const result = await this.showNotification(`📅 Recordatorio Diario`, notificationOptions);
     console.log('✅ showNotification() retornó:', result);
     
     if (result) {
-      // SOLO guardar si la notificación se mostró exitosamente
-      localStorage.setItem('lastDailyNotification', today);
-      console.log('✅✅✅ Notificación diaria enviada exitosamente y fecha guardada:', today);
+      console.log('✅✅✅ Notificación diaria enviada exitosamente');
+      // NO guardamos en localStorage para permitir múltiples notificaciones
     } else {
-      console.log('⚠️ showNotification() retornó falso, no guardando fecha');
+      console.log('⚠️ showNotification() retornó falso');
     }
     
   } catch (error) {
