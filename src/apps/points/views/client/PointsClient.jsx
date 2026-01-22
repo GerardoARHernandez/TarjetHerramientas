@@ -14,7 +14,6 @@ import PointsDisplay from '../../components/Points/PointsDisplay';
 import PointsCampaigns from '../../components/Points/PointsCampaigns';
 import PointsHistory from '../../components/Points/PointsHistory';
 import RedeemSection from '../../components/Points/RedeemSection';
-import MobileDeviceAlert from '../../components/Points/MobileDeviceAlert';
 import NotificationTestButton from '../../components/Points/NotificationTestButton';
 import PointsNotificationManager from '../../components/Points/PointsNotificationManager';
 import { ArrowRight } from 'lucide-react';
@@ -99,8 +98,6 @@ const PointsClient = () => {
                 />
 
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    {/* Alerta para móviles */}
-                    <MobileDeviceAlert />
 
                     {/* Prompt de notificaciones */}
                     {showNotificationPrompt && (

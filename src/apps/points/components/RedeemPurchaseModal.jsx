@@ -1,4 +1,3 @@
-// src/apps/points/components/RedeemPurchaseModal.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, CreditCard, DollarSign, CheckCircle, Gift, FileText, Store, Check, AlertCircle } from 'lucide-react';
@@ -17,6 +16,7 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
     const [showSuccess, setShowSuccess] = useState(false);
     const [pointsAwarded, setPointsAwarded] = useState(0);
     const [showRouletteQuestion, setShowRouletteQuestion] = useState(false);
+    const [showNonRouletteMessage, setShowNonRouletteMessage] = useState(false); // Nuevo estado
     const [isValidating, setIsValidating] = useState(false);
     const [ticketValidation, setTicketValidation] = useState(null);
     const [businessRules, setBusinessRules] = useState(null);
@@ -194,7 +194,14 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
                 // Después de mostrar éxito, preguntar por la ruleta
                 setTimeout(() => {
                     setShowSuccess(false);
-                    setShowRouletteQuestion(true);
+                    
+                    // Si es el negocio 3, mostrar pregunta de ruleta
+                    if (business?.NegocioId == 3) {
+                        setShowRouletteQuestion(true);
+                    } else {
+                        // Si no es el negocio 3, mostrar mensaje de ticket registrado
+                        setShowNonRouletteMessage(true);
+                    }
                 }, 2000);
             } else {
                 throw new Error(result.Mensaje || 'Error desconocido al registrar los puntos');
@@ -212,12 +219,19 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
     };
 
     const handleRouletteYes = () => {
+        setShowRouletteQuestion(false);
         onClose();
         navigate('/points-loyalty/ruleta');
     };
 
     const handleRouletteNo = () => {
         setShowRouletteQuestion(false);
+        onClose();
+        resetForm();
+    };
+
+    const handleNonRouletteClose = () => {
+        setShowNonRouletteMessage(false);
         onClose();
         resetForm();
     };
@@ -232,6 +246,7 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
         setPointsAwarded(0);
         setShowSuccess(false);
         setShowRouletteQuestion(false);
+        setShowNonRouletteMessage(false);
         setTicketValidation(null);
     };
 
@@ -251,7 +266,7 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
                     <div className="flex justify-between items-center mb-4">
                     <div className="flex items-center gap-3">
                         <Gift className="w-7 h-7 text-white" />
-                        <h2 className="text-xl font-bold text-white">Redimir Compra</h2>
+                        <h2 className="text-xl font-bold text-white">Registrar Ticket</h2>
                     </div>
                     <button
                         onClick={onClose}
@@ -285,8 +300,8 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
                     </div>
                     )}
 
-                    {/* Pregunta de la ruleta */}
-                    {showRouletteQuestion && business.NegocioId == "3" && (
+                    {/* Pregunta de la ruleta (solo para negocio 3) */}
+                    {showRouletteQuestion && business?.NegocioId == 3 && (
                     <div className="mb-6 animate-fade-in">
                         <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-5 text-center">
                         <div className="w-16 h-16 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -319,8 +334,30 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
                     </div>
                     )}
 
+                    {/* Mensaje cuando NO es el negocio 3 */}
+                    {showNonRouletteMessage && business?.NegocioId != 3 && (
+                    <div className="mb-6 animate-fade-in">
+                        <div className="bg-green-50 border border-green-200 rounded-xl p-5 text-center">
+                        <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
+                        <h3 className="text-lg font-semibold text-green-800 mb-2">
+                            ¡Ticket Registrado!
+                        </h3>
+                        <p className="text-green-700 mb-5">
+                            Tu compra ha sido registrada exitosamente. 
+                            Se han abonado <span className="font-bold">{pointsAwarded} puntos</span> a tu cuenta.
+                        </p>
+                        <button
+                            onClick={handleNonRouletteClose}
+                            className="w-full py-3 bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white font-medium rounded-lg transition-all shadow-md hover:shadow-lg cursor-pointer"
+                        >
+                            Cerrar
+                        </button>
+                        </div>
+                    </div>
+                    )}
+
                     {/* Formulario principal */}
-                    {!showSuccess && !showRouletteQuestion && (
+                    {!showSuccess && !showRouletteQuestion && !showNonRouletteMessage && (
                     <form onSubmit={handleSubmit} className="space-y-5">
                         {/* Campo Web ID */}
                         <div>

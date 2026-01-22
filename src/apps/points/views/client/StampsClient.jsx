@@ -13,7 +13,6 @@ import StampsDisplay from '../../components/Stamps/StampsDisplay';
 import StampsCampaigns from '../../components/Stamps/StampsCampaigns';
 import StampsHistory from '../../components/Stamps/StampsHistory';
 import RedeemSection from '../../components/Stamps/RedeemSection';
-import MobileDeviceAlert from '../../components/Stamps/MobileDeviceAlert';
 import { ArrowRight } from 'lucide-react';
 
 const StampsClient = () => {
@@ -107,8 +106,6 @@ const StampsClient = () => {
                 />
 
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    {/* Alerta para móviles */}
-                    <MobileDeviceAlert />
 
                     {/* Prompt de notificaciones */}
                     {showNotificationPrompt && (

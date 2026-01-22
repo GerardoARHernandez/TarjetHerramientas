@@ -43,26 +43,6 @@ const PointsDisplay = ({ userPoints, accountData, color1, color2, detallesColor,
         }
     };
 
-    // Copiar número al portapapeles
-    const copyToClipboard = () => {
-        navigator.clipboard.writeText(phoneNumber).then(() => {
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        });
-    };
-
-    // Descargar QR como imagen
-    const downloadQR = () => {
-        if (!qrDataUrl) return;
-        
-        const link = document.createElement('a');
-        link.href = qrDataUrl;
-        link.download = `qr-cliente-${phoneNumber}.png`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
-
     return (
         <div 
             className="rounded-3xl p-8 shadow-lg border"
@@ -78,22 +58,24 @@ const PointsDisplay = ({ userPoints, accountData, color1, color2, detallesColor,
                 </h3>
                 
                 {/* Botón para generar QR */}
-                <div className="mb-6">
-                    <button
-                        onClick={openQrModal}
-                        className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-medium transition-all duration-200 hover:shadow-lg"
-                        style={{
-                            background: `linear-gradient(135deg, ${color1}, ${color2})`,
-                            color: 'white'
-                        }}
-                    >
-                        <QrCode className="w-5 h-5" />
-                        Generar Mi Código QR
-                    </button>
-                    <p className="text-xs text-gray-500 mt-2">
-                        Muestre este QR al personal para acumular puntos rápidamente
-                    </p>
-                </div>
+                {business.NegocioModo == 'BS' && (
+                    <div className="mb-6">
+                        <button
+                            onClick={openQrModal}
+                            className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-medium transition-all duration-200 hover:shadow-lg"
+                            style={{
+                                background: `linear-gradient(135deg, ${color1}, ${color2})`,
+                                color: 'white'
+                            }}
+                        >
+                            <QrCode className="w-5 h-5" />
+                            Generar Mi Código QR
+                        </button>
+                        <p className="text-xs text-gray-500 mt-2">
+                            Muestre este QR al personal para acumular puntos rápidamente
+                        </p>
+                    </div>
+                )}
 
                 <div
                     style={{
@@ -146,7 +128,7 @@ const PointsDisplay = ({ userPoints, accountData, color1, color2, detallesColor,
             {/* Modal del QR */}
             {showQrModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-2">
-                    <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden">
+                    <div className="bg-blue-50 rounded-4xl w-full max-w-md overflow-hidden">
                         {/* Header */}
                         <div className="p-6 border-b border-gray-200 flex items-center justify-between">
                             <div className="flex items-center gap-3">
@@ -192,25 +174,9 @@ const PointsDisplay = ({ userPoints, accountData, color1, color2, detallesColor,
                             {/* Información del número */}
                             <div className="mb-6">
                                 <div className="flex items-center justify-between mb-2">
-                                    <label className="text-sm font-medium text-gray-700">
+                                    <label className="text-sm text-center font-medium text-gray-700">
                                         Número de teléfono asociado:
                                     </label>
-                                    <button
-                                        onClick={copyToClipboard}
-                                        className="flex items-center gap-1 text-sm px-3 py-1 rounded-lg hover:bg-gray-100 transition-colors"
-                                    >
-                                        {copied ? (
-                                            <>
-                                                <Check className="w-4 h-4 text-green-600" />
-                                                <span className="text-green-600">Copiado</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Copy className="w-4 h-4 text-gray-600" />
-                                                <span className="text-gray-600">Copiar</span>
-                                            </>
-                                        )}
-                                    </button>
                                 </div>
                                 <div 
                                     className="p-4 rounded-xl border text-center font-mono text-lg font-semibold"
@@ -225,42 +191,16 @@ const PointsDisplay = ({ userPoints, accountData, color1, color2, detallesColor,
                             </div>
 
                             {/* Botones de acción */}
-                            <div className="flex gap-3">
+                            <div className="flex gap-3 mb-2">
                                 <button
                                     onClick={() => setShowQrModal(false)}
-                                    className="flex-1 py-3 px-4 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium"
+                                    className="flex-1 py-3 px-4 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium hover:cursor-pointer"
                                 >
                                     Cerrar
-                                </button>
-                                <button
-                                    onClick={downloadQR}
-                                    disabled={!qrDataUrl}
-                                    className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2
-                                        ${qrDataUrl 
-                                            ? 'text-white shadow-lg hover:shadow-xl' 
-                                            : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                                        }`}
-                                    style={qrDataUrl ? {
-                                        backgroundImage: `linear-gradient(to right, ${color1}, ${color2})`
-                                    } : {}}
-                                >
-                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
-                                    </svg>
-                                    Descargar QR
-                                </button>
-                            </div>
-
-                            {/* Información adicional */}
-                            <div className="mt-4 text-center">
-                                <p className="text-xs text-gray-500">
-                                    Este QR contiene su número de teléfono: <strong>{phoneNumber}</strong>
-                                </p>
-                                <p className="text-xs text-gray-500 mt-1">
-                                    Funciona como identificación digital para acumular puntos
-                                </p>
+                                </button>                                
                             </div>
                         </div>
+
                     </div>
                 </div>
             )}
