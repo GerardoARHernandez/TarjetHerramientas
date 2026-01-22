@@ -3,7 +3,7 @@ import { firebaseConfig, messaging, checkFirebaseSupport } from '../firebase/con
 import { getToken, onMessage, deleteToken } from 'firebase/messaging';
 
 export class FirebaseNotificationScheduler {
-  constructor(hour = 18, minute = 8) {
+  constructor(hour = 18, minute = 10) {
     this.hour = hour;
     this.minute = minute;
     this.timeoutId = null;
