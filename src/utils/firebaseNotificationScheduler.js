@@ -3,10 +3,9 @@ import { firebaseConfig, messaging, checkFirebaseSupport } from '../firebase/con
 import { getToken, onMessage, deleteToken } from 'firebase/messaging';
 
 export class FirebaseNotificationScheduler {
-  constructor(intervalMinutes = 1, hour = 16, minute = 0) {
-    this.intervalMinutes = intervalMinutes; // Intervalo en minutos
-    this.hour = hour;
-    this.minute = minute;
+  constructor(scheduleHours = [9, 11, 13, 15, 17, 19, 21], minute = 0) {
+    this.scheduleHours = scheduleHours; // Array de horas programadas
+    this.minute = minute; // Minuto para todas las horas
     this.timeoutId = null;
     this.userData = null;
     this.isMobile = this.checkIfMobile();
@@ -89,7 +88,7 @@ export class FirebaseNotificationScheduler {
     
     console.log('📱 Dispositivo:', this.isMobile ? 'Móvil' : 'Escritorio');
     console.log('🔥 Firebase:', this.isFirebaseInitialized ? 'Activado' : 'Desactivado');
-    console.log('⏱️  Intervalo de notificaciones:', this.intervalMinutes, 'minuto(s)');
+    console.log('⏰ Horarios programados:', this.scheduleHours.map(h => `${h}:${this.minute.toString().padStart(2, '0')}`).join(', '));
     
     // Guardar datos del usuario
     if (userData) {
@@ -99,42 +98,86 @@ export class FirebaseNotificationScheduler {
     // Si tenemos permisos, obtener token y programar
     if (await this.hasPermission()) {
       await this.getFCMToken();
-      this.startIntervalNotifications();
+      this.startScheduledNotifications();
     }
   }
 
-  // Nuevo método para notificaciones por intervalo
-  startIntervalNotifications() {
-    console.log(`⏱️  Iniciando notificaciones cada ${this.intervalMinutes} minuto(s)`);
+  // Método para iniciar notificaciones programadas
+  startScheduledNotifications() {
+    console.log(`⏰ Iniciando notificaciones programadas`);
+    console.log(`📅 Horarios: ${this.scheduleHours.map(h => `${h}:${this.minute.toString().padStart(2, '0')}`).join(', ')}`);
     
     // Limpiar timeout anterior si existe
     if (this.timeoutId) clearTimeout(this.timeoutId);
     
-    // Mostrar primera notificación inmediatamente (opcional)
-    // setTimeout(() => this.showIntervalNotification(), 2000);
-    
-    // Iniciar intervalo
-    this.scheduleNextIntervalNotification();
+    // Programar la próxima notificación
+    this.scheduleNextNotification();
   }
 
-  // Método para programar la próxima notificación del intervalo
-  scheduleNextIntervalNotification() {
+  // Método para programar la próxima notificación
+  scheduleNextNotification() {
     // Limpiar timeout anterior
     if (this.timeoutId) clearTimeout(this.timeoutId);
     
-    const intervalMs = this.intervalMinutes * 60 * 1000; // Convertir minutos a milisegundos
+    const timeUntil = this.calculateTimeUntilNextScheduledNotification();
+    const minutes = Math.round(timeUntil / 1000 / 60);
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
     
-    console.log(`⏰ Programando próxima notificación en ${this.intervalMinutes} minuto(s)`);
+    const nextTime = this.getNextScheduledTime();
+    console.log(`⏰ Próxima notificación en ${hours}h ${remainingMinutes}m`);
+    console.log(`🎯 Será a las: ${nextTime.getHours()}:${nextTime.getMinutes().toString().padStart(2, '0')}`);
     
     this.timeoutId = setTimeout(() => {
-      this.showIntervalNotification();
-      this.scheduleNextIntervalNotification(); // Programar la siguiente
-    }, intervalMs);
+      this.showScheduledNotification();
+      this.scheduleNextNotification(); // Programar la siguiente
+    }, timeUntil);
   }
 
-  // Nuevo método para notificaciones de intervalo
-  async showIntervalNotification() {
-    console.log('🔔 EJECUTANDO showIntervalNotification() - INICIO');
+  // Calcular la próxima hora programada
+  calculateTimeUntilNextScheduledNotification() {
+    const now = new Date();
+    const nextTime = this.getNextScheduledTime();
+    
+    console.log('🔧 CÁLCULO DE PRÓXIMA NOTIFICACIÓN:');
+    console.log('📅 Hora actual:', now.toLocaleTimeString());
+    console.log('🎯 Próxima hora programada:', nextTime.toLocaleTimeString());
+    
+    return nextTime.getTime() - now.getTime();
+  }
+
+  // Obtener la próxima hora programada
+  getNextScheduledTime() {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    // Ordenar las horas programadas
+    const sortedHours = [...this.scheduleHours].sort((a, b) => a - b);
+    
+    // Buscar la próxima hora de hoy
+    for (const hour of sortedHours) {
+      const scheduledTime = new Date(today);
+      scheduledTime.setHours(hour, this.minute, 0, 0);
+      
+      if (scheduledTime > now) {
+        console.log(`✅ Encontrada próxima hora: ${hour}:${this.minute.toString().padStart(2, '0')}`);
+        return scheduledTime;
+      }
+    }
+    
+    // Si no hay más horas hoy, usar la primera de mañana
+    const firstHourTomorrow = Math.min(...sortedHours);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(firstHourTomorrow, this.minute, 0, 0);
+    
+    console.log(`⏭️ No hay más horas hoy, usando mañana a las: ${firstHourTomorrow}:${this.minute.toString().padStart(2, '0')}`);
+    return tomorrow;
+  }
+
+  // Mostrar notificación programada
+  async showScheduledNotification() {
+    console.log('🔔 EJECUTANDO showScheduledNotification() - INICIO');
     
     try {
       // 1. Verificar permisos
@@ -154,78 +197,108 @@ export class FirebaseNotificationScheduler {
       
       const { userName, points, businessName } = this.userData;
       const now = new Date();
+      const currentHour = now.getHours();
       const currentTime = now.toLocaleTimeString();
       
-      // Crear opciones de notificación con información del intervalo
+      // Verificar si hay puntos
+      if (points <= 0) {
+        console.log('⏭️ Usuario no tiene puntos, omitiendo');
+        return;
+      }
+      
+      // Crear título según la hora
+      let timeLabel = '';
+      if (currentHour < 12) timeLabel = '☀️ Mañana';
+      else if (currentHour < 15) timeLabel = '🕛 Medio día';
+      else if (currentHour < 19) timeLabel = '🌇 Tarde';
+      else timeLabel = '🌙 Noche';
+      
+      console.log('✅✅✅ TODAS LAS CONDICIONES PASARON!');
+      console.log('🎯 Preparando notificación...');
+      
+      // Crear opciones de notificación
       const notificationOptions = {
-        body: `⏱️ Recordatorio cada ${this.intervalMinutes} minuto(s)\n` +
-              `¡Hola ${userName}! Tienes ${points} puntos disponibles en ${businessName}\n` +
-              `Hora: ${currentTime}`,
-        tag: 'interval-reminder-' + Date.now(), // Único cada vez
+        body: `${timeLabel}\n¡Hola ${userName}! Recuerda que tienes ${points} puntos disponibles en ${businessName}\nHora: ${currentTime}`,
+        tag: `scheduled-${currentHour}-${Date.now()}`, // Único cada vez
         icon: this.userData?.businessLogo || '/favicon.ico',
         badge: '/favicon.ico',
         requireInteraction: false,
-        vibrate: [100, 50, 100],
+        vibrate: [200, 100, 200],
         data: {
-          type: 'interval-reminder',
-          interval: this.intervalMinutes,
+          type: 'scheduled-reminder',
+          hour: currentHour,
           timestamp: now.toISOString(),
           time: currentTime,
-          points: points
+          points: points,
+          schedule: this.scheduleHours.join(',')
         }
       };
       
-      console.log('📨 Opciones de notificación de intervalo:', notificationOptions);
+      console.log('📨 Opciones de notificación programada:', notificationOptions);
       
       // Mostrar notificación
       console.log('🚀 Llamando a showNotification()...');
       const result = await this.showNotification(
-        `⏱️ Recordatorio (cada ${this.intervalMinutes} min)`, 
+        `📅 Recordatorio Programado (${currentHour}:${this.minute.toString().padStart(2, '0')})`, 
         notificationOptions
       );
       
       console.log('✅ showNotification() retornó:', result);
       
       if (result) {
-        console.log(`✅✅✅ Notificación de intervalo enviada exitosamente (cada ${this.intervalMinutes} min)`);
+        console.log(`✅✅✅ Notificación programada enviada exitosamente a las ${currentHour}:${this.minute.toString().padStart(2, '0')}`);
         
-        // Opcional: registrar en localStorage para tracking
-        const intervalLog = JSON.parse(localStorage.getItem('intervalNotifications') || '[]');
-        intervalLog.push({
+        // Registrar en localStorage para tracking
+        const scheduleLog = JSON.parse(localStorage.getItem('scheduledNotifications') || '[]');
+        scheduleLog.push({
           timestamp: now.toISOString(),
-          interval: this.intervalMinutes,
-          points: points
+          hour: currentHour,
+          minute: this.minute,
+          points: points,
+          schedule: this.scheduleHours
         });
-        localStorage.setItem('intervalNotifications', JSON.stringify(intervalLog.slice(-10))); // Guardar últimas 10
+        localStorage.setItem('scheduledNotifications', JSON.stringify(scheduleLog.slice(-20))); // Guardar últimas 20
       } else {
         console.log('⚠️ showNotification() retornó falso');
       }
       
     } catch (error) {
-      console.error('❌❌❌ ERROR en showIntervalNotification():', error);
+      console.error('❌❌❌ ERROR en showScheduledNotification():', error);
     }
   }
 
-  // Método para probar manualmente (opcional)
-  async testIntervalNotification() {
-    console.log('🧪 Probando notificación de intervalo...');
-    await this.showIntervalNotification();
+  // Método para mostrar todas las horas programadas
+  getScheduleInfo() {
+    const times = this.scheduleHours.map(hour => 
+      `${hour}:${this.minute.toString().padStart(2, '0')}`
+    );
+    
+    return {
+      times: times,
+      count: times.length,
+      nextTime: this.getNextScheduledTime().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+      scheduleString: times.join(', ')
+    };
   }
 
-  // Mantener el método scheduleNextNotification original si todavía lo necesitas
-  scheduleNextNotification() {
-    // Limpiar timeout anterior
-    if (this.timeoutId) clearTimeout(this.timeoutId);
+  // Método para probar manualmente la próxima notificación
+  async testNextScheduledNotification() {
+    console.log('🧪 Probando próxima notificación programada...');
     
-    const timeUntil = this.calculateTimeUntilNextNotification();
-    const minutes = Math.round(timeUntil / 1000 / 60);
+    const nextTime = this.getNextScheduledTime();
+    const now = new Date();
     
-    console.log(`⏰ Programando próxima notificación diaria en ${minutes} minutos`);
+    if (nextTime.getDate() !== now.getDate()) {
+      console.log('⚠️ La próxima notificación es para mañana');
+    }
     
-    this.timeoutId = setTimeout(() => {
-      this.showDailyNotification();
-      this.scheduleNextNotification();
-    }, timeUntil);
+    await this.showScheduledNotification();
+  }
+
+  // Mantener compatibilidad con métodos antiguos (si los necesitas)
+  async showDailyNotification() {
+    console.log('🔔 (Compatibilidad) Redirigiendo a showScheduledNotification');
+    await this.showScheduledNotification();
   }
 
   async getFCMToken() {
@@ -488,7 +561,7 @@ try {
         if (token) {
           console.log('✅ Token FCM obtenido después del permiso');
           // Programar notificaciones ahora que tenemos token
-          this.startIntervalNotifications();
+          this.startScheduledNotifications();
         }
       }
       
@@ -809,6 +882,11 @@ showToastInPage(title, body) {
   
   console.log('🔧 Capacidades del sistema:', capabilities);
   
+  // Mostrar información del horario
+  const scheduleInfo = this.getScheduleInfo();
+  console.log('📅 Horario programado:', scheduleInfo.scheduleString);
+  console.log('⏰ Próxima notificación:', scheduleInfo.nextTime);
+  
   // Mostrar notificación de prueba
   console.log('🔄 Mostrando notificación de prueba...');
   
@@ -818,7 +896,8 @@ showToastInPage(title, body) {
       body: `✅ Sistema ${this.isFirebaseInitialized ? 'FCM' : 'Nativo'} activo\n` +
             `Puntos: ${data.displayPoints}\n` +
             `Método: ${this.isMobile ? 'Service Worker' : 'API nativa'}\n` +
-            `Intervalo: ${this.intervalMinutes} minuto(s)`,
+            `Horario: ${scheduleInfo.scheduleString}\n` +
+            `Próxima: ${scheduleInfo.nextTime}`,
       tag: 'test-' + Date.now(),
       requireInteraction: true,
       icon: this.userData?.businessLogo || '/favicon.ico',
@@ -841,7 +920,8 @@ showToastInPage(title, body) {
 • Firebase FCM: ${this.isFirebaseInitialized ? 'ACTIVADO' : 'DESACTIVADO'}
 • Token FCM: ${this.token ? 'OBTENIDO' : 'NO OBTENIDO'}
 • Background: ${this.isFirebaseInitialized && this.token ? 'POSIBLE' : 'Solo foreground'}
-• Intervalo: ${this.intervalMinutes} minuto(s)
+• Horario programado: ${scheduleInfo.scheduleString}
+• Próxima notificación: ${scheduleInfo.nextTime}
 
 ${!this.token ? `
 ⚠️ PARA NOTIFICACIONES EN BACKGROUND:
@@ -872,7 +952,7 @@ ${!this.token ? `
     canReceiveInBackground: this.isFirebaseInitialized && !!this.token,
     token: this.token,
     platform: this.isMobile ? 'mobile' : 'desktop',
-    interval: this.intervalMinutes
+    schedule: scheduleInfo
   };
 }
 
@@ -902,121 +982,15 @@ ${!this.token ? `
     return { displayName, displayPoints, displayBusiness };
   }
 
-  async showDailyNotification() {
-  console.log('🔔 EJECUTANDO showDailyNotification() - INICIO');
-  
-  try {
-    // 1. Verificar permisos
-    const hasPerm = await this.hasPermission();
-    console.log('✅ Permiso verificado:', hasPerm);
-    
-    if (!hasPerm) {
-      console.log('❌ No tiene permisos para notificaciones');
-      return;
+  async registerBackgroundSync() {
+    if ('serviceWorker' in navigator && 'SyncManager' in window) {
+      const registration = await navigator.serviceWorker.ready;
+      
+      // Registrar sincronización en background
+      await registration.sync.register('send-notifications');
+      console.log('✅ Background Sync registrado');
     }
-    
-    // 2. Verificar datos de usuario
-    console.log('📋 Datos de usuario:', this.userData);
-    
-    if (!this.userData) {
-      console.log('❌ No hay datos de usuario');
-      return;
-    }
-    
-    const { userName, points, businessName } = this.userData;
-    
-    // Verificar si hay puntos
-    if (points <= 0) {
-      console.log('⏭️ Usuario no tiene puntos, omitiendo');
-      return;
-    }
-    
-    console.log('✅✅✅ TODAS LAS CONDICIONES PASARON!');
-    console.log('🎯 Preparando notificación...');
-    
-    // Crear opciones de notificación
-    const notificationOptions = {
-      body: `¡Hola ${userName}! Recuerda que tienes ${points} puntos disponibles en ${businessName}`,
-      tag: 'daily-reminder-' + Date.now(), // Único cada vez
-      icon: this.userData?.businessLogo || '/favicon.ico',
-      badge: '/favicon.ico',
-      requireInteraction: false,
-      vibrate: [200, 100, 200],
-      data: {
-        type: 'daily-reminder',
-        timestamp: new Date().toISOString(),
-        points: points
-      }
-    };
-    
-    console.log('📨 Opciones de notificación:', notificationOptions);
-    
-    // MOSTRAR NOTIFICACIÓN SIN VERIFICAR HISTORIAL
-    console.log('🚀 Llamando a showNotification()...');
-    const result = await this.showNotification(`📅 Recordatorio Diario`, notificationOptions);
-    console.log('✅ showNotification() retornó:', result);
-    
-    if (result) {
-      console.log('✅✅✅ Notificación diaria enviada exitosamente');
-      // NO guardamos en localStorage para permitir múltiples notificaciones
-    } else {
-      console.log('⚠️ showNotification() retornó falso');
-    }
-    
-  } catch (error) {
-    console.error('❌❌❌ ERROR CRÍTICO en showDailyNotification():', error);
-    console.error('Stack:', error.stack);
-    console.error('Error completo:', error);
   }
-}
-
-  calculateTimeUntilNextNotification() {
-  const now = new Date();
-  const target = new Date();
-  
-  console.log('🔧 CALCULANDO HORA OBJETIVO:');
-  console.log('Configuración - hour:', this.hour, 'minute:', this.minute);
-  
-  // OPCIÓN 1: Usar hora local (normal)
-  target.setHours(this.hour, this.minute, 0, 0, 0);
-  
-  // OPCIÓN 2: Usar hora UTC (si hay problemas de zona)
-  // target.setUTCHours(this.hour, this.minute, 0, 0, 0);
-  
-  console.log('📅 Fecha actual:', now.toLocaleString());
-  console.log('🎯 Fecha objetivo:', target.toLocaleString());
-  console.log('🕐 Hora actual (local):', now.getHours() + ':' + now.getMinutes());
-  console.log('🎯 Hora objetivo (local):', target.getHours() + ':' + target.getMinutes());
-  
-  // Calcular si ya pasó hoy
-  if (now > target) {
-    console.log('⏭️ La hora objetivo YA PASÓ hoy, programando para mañana');
-    target.setDate(target.getDate() + 1);
-    console.log('📅 Nueva fecha objetivo:', target.toLocaleString());
-  } else {
-    console.log('✅ Programando para hoy mismo');
-  }
-  
-  const timeUntil = target.getTime() - now.getTime();
-  const minutes = Math.round(timeUntil / 1000 / 60);
-  const hours = Math.floor(minutes / 60);
-  const remainingMinutes = minutes % 60;
-  
-  console.log(`⏰ Próxima notificación en: ${hours}h ${remainingMinutes}m`);
-  console.log(`⏰ Eso sería a las: ${target.toLocaleTimeString()}`);
-  
-  return timeUntil;
-}
-
-async registerBackgroundSync() {
-  if ('serviceWorker' in navigator && 'SyncManager' in window) {
-    const registration = await navigator.serviceWorker.ready;
-    
-    // Registrar sincronización en background
-    await registration.sync.register('send-notifications');
-    console.log('✅ Background Sync registrado');
-  }
-}
 
   async unsubscribe() {
     try {
@@ -1034,6 +1008,7 @@ async registerBackgroundSync() {
       // Limpiar localStorage
       localStorage.removeItem('fcmToken');
       localStorage.removeItem('lastDailyNotification');
+      localStorage.removeItem('scheduledNotifications');
       localStorage.removeItem('intervalNotifications');
       
       console.log('✅ Desuscrito de notificaciones');
