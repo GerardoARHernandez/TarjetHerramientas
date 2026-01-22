@@ -33,6 +33,9 @@ const StampsDisplay = ({ userStamps, accountData, color1, color2, detallesColor,
         );
     }
     
+    // Obtener el ícono de sellos personalizado
+    const stampIconUrl = business?.NegocioIconoSellosUrl;
+    
     // Generar el código QR
     const generateQR = async () => {
         try {
@@ -87,6 +90,39 @@ const StampsDisplay = ({ userStamps, accountData, color1, color2, detallesColor,
         document.body.removeChild(link);
     };
 
+    // Calcular sellos para mostrar (máximo 10)
+    const totalCircles = 10;
+    const filledCircles = Math.min(userStamps, totalCircles);
+    const progressPercentage = (filledCircles / totalCircles) * 100;
+
+    // Función para renderizar el ícono de sello
+    const renderStampIcon = () => {
+        // Si hay un ícono personalizado
+        if (stampIconUrl) {
+            return (
+                <img 
+                    src={stampIconUrl} 
+                    alt="Sello" 
+                    className="w-10 h-10 sm:w-12 sm:h-12 object-contain"
+                    onError={(e) => {
+                        // Si falla la imagen, mostrar un ícono por defecto
+                        e.target.style.display = 'none';
+                        e.target.parentElement.innerHTML = `
+                            <div class="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center">
+                                <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2" style="border-color: white"></div>
+                            </div>
+                        `;
+                    }}
+                />
+            );
+        }
+        
+        // Si no hay ícono personalizado, mostrar un círculo con borde
+        return (
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-white"></div>
+        );
+    };
+
     return (
         <div 
             className="rounded-3xl p-8 shadow-lg border"
@@ -130,6 +166,56 @@ const StampsDisplay = ({ userStamps, accountData, color1, color2, detallesColor,
                 >
                     <div className="text-6xl font-bold mb-3">{userStamps}</div>
                     <div className="text-xl opacity-90">Sellos obtenidos</div>
+                </div>
+
+                {/* Cuadrícula de sellos - SIEMPRE 10 círculos */}
+                <div className="mb-8">
+                    <h4 className="text-lg font-semibold mb-4 text-gray-800 text-center">Mis Sellos</h4>
+                    
+                    {/* Barra de progreso */}
+                    <div className="w-full bg-gray-200 rounded-full h-3 mb-6">
+                        <div
+                            className="h-3 rounded-full transition-all duration-500"
+                            style={{
+                                width: `${progressPercentage}%`,
+                                backgroundImage: `linear-gradient(to right, ${color1}, ${color2})`,
+                            }}
+                        ></div>
+                    </div>
+                    
+                    {/* Grid de 10 sellos (5x2 en móvil, 10x1 en desktop) */}
+                    <div className="grid grid-cols-5 sm:grid-cols-10 gap-3 mb-6">
+                        {Array.from({ length: totalCircles }, (_, index) => (
+                            <div
+                                key={index}
+                                className={`aspect-square rounded-full border-3 flex items-center justify-center transition-all duration-300 transform hover:scale-105
+                                    ${index < filledCircles
+                                    ? 'border-transparent text-white shadow-lg'
+                                    : 'hover:bg-opacity-20'
+                                    }`}
+                                style={index < filledCircles ? {
+                                    backgroundImage: `linear-gradient(to bottom right, ${color1}, ${color2})`,
+                                } : {
+                                    backgroundColor: `${detallesColor}15`,
+                                    borderColor: `${detallesColor}30`,
+                                    color: detallesColor
+                                }}
+                            >
+                                {index < filledCircles && renderStampIcon()}
+                            </div>
+                        ))}
+                    </div>
+                    
+                    <div 
+                        className="rounded-2xl p-4 text-sm border"
+                        style={{ 
+                            backgroundColor: `${detallesColor}15`,
+                            color: detallesColor,
+                            borderColor: `${detallesColor}30`
+                        }}
+                    >
+                        <p>✨ ¡Obtén más sellos comprando en {businessName}!</p>
+                    </div>
                 </div>
 
                 {/* Modal del QR */}
