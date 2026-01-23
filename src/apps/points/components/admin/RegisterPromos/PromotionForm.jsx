@@ -132,7 +132,6 @@ const PromotionForm = ({business, formData, onChange, onSubmit, isSubmitting, is
             onChange={handleChange}
             placeholder={`${business?.NegocioTipoPS === 'P' ? '80' : '10'}`}
             min="1"
-            max="200"
             className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
             required
           />
