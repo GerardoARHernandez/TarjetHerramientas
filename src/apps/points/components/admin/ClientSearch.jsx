@@ -6,7 +6,8 @@ import { Search, User, Phone, Mail, Check, List, QrCode, Camera, X } from 'lucid
 const ClientSearch = ({ 
   selectedClientId, 
   onClientSelect,
-  onClientsUpdate
+  onClientsUpdate,
+  onCampaignSelect 
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [clients, setClients] = useState([]);
@@ -150,47 +151,30 @@ const ClientSearch = ({
     if (client) {
       // Cliente encontrado
       onClientSelect(client.id.toString());
+      
+      // Si existe la prop onCampaignSelect, llamarla para seleccionar la campaña
+      if (onCampaignSelect && campaignId) {
+        onCampaignSelect(campaignId);
+      }
+      
       setQrMessage(`✅ Cliente encontrado: ${client.name} | Promoción ID: ${campaignId}`);
       
       // Detener la cámara
       stopQrScanner();
       
-      // Preguntar si quiere ir a canjear promoción
+      // Solo mostrar mensaje informativo, sin preguntar redirección
       setTimeout(() => {
         setQrMessage('');
         
-        // Crear un modal personalizado
-        const userChoice = window.confirm(
+        // Mostrar alerta informativa (solo información)
+        alert(
           `🎉 ¡QR de Promoción Escaneado!\n\n` +
           `Cliente: ${client.name}\n` +
           `Teléfono: ${phoneNumber}\n` +
           `ID Promoción: ${campaignId}\n\n` +
-          `¿Deseas ir a la sección de Canje de Promociones para completar el proceso?`
+          `El cliente y la promoción han sido preseleccionados automáticamente.`
         );
-        
-        if (userChoice) {
-          // Guardar información para usar en la página de canje
-          const promoData = {
-            clientId: client.id.toString(),
-            campaignId: campaignId,
-            phoneNumber: phoneNumber,
-            clientName: client.name,
-            timestamp: new Date().getTime()
-          };
-          
-          // Guardar en localStorage para recuperar en la página de canje
-          localStorage.setItem('lastScannedPromoQR', JSON.stringify(promoData));
-          
-          // Redirigir a la página de canje de promociones
-          const redeemUrl = '/admin/redeem-promo';
-          if (window.location.pathname !== redeemUrl) {
-            window.location.href = redeemUrl;
-          } else {
-            // Si ya estamos en la página, recargar para que detecte los datos
-            window.location.reload();
-          }
-        }
-      }, 2000);
+      }, 1500);
     } else {
       // Cliente no encontrado
       setQrMessage(`❌ No se encontró cliente con teléfono: ${phoneNumber}`);
@@ -213,7 +197,7 @@ const ClientSearch = ({
         setQrMessage('');
       }, 5000);
     }
-  }, [findClientByPhone, onClientSelect]);
+  }, [findClientByPhone, onClientSelect, onCampaignSelect]);
 
   // Manejar QR de teléfono normal
   const handlePhoneQR = useCallback((parsedQR) => {

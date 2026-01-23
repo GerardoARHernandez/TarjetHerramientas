@@ -1,3 +1,4 @@
+// src/apps/admin-puntos/views/RedeemPromo.jsx
 import { useState, useEffect, useCallback } from 'react';
 import { useBusiness } from '../../../../contexts/BusinessContext';
 import { useAuth } from '../../../../contexts/AuthContext';
@@ -15,6 +16,7 @@ const RedeemPromo = () => {
   const [apiResponse, setApiResponse] = useState(null);
   const [isSuccess, setIsSuccess] = useState(false);
   const [transactionId, setTransactionId] = useState('');
+  const [scannedCampaignId, setScannedCampaignId] = useState(''); // ← Nueva state
   
   const { business, campaigns, isLoading, refreshData } = useBusiness();
   const { user } = useAuth();
@@ -23,6 +25,33 @@ const RedeemPromo = () => {
   const activeCampaigns = campaigns.filter(campaign => 
     campaign.CampaActiva === 'S'
   );
+
+  // Efecto para auto-seleccionar campaña cuando se escanea QR
+  useEffect(() => {
+    if (scannedCampaignId && activeCampaigns.length > 0) {
+      // Verificar si la campaña escaneada existe en las campañas activas
+      const campaignExists = activeCampaigns.find(camp => camp.CampaId === scannedCampaignId);
+      
+      if (campaignExists) {
+        // Auto-seleccionar la campaña
+        handleCampaignChange(scannedCampaignId);
+        
+        // Mostrar mensaje de éxito
+        setTimeout(() => {
+          alert(`✅ Promoción ${scannedCampaignId} preseleccionada automáticamente.`);
+        }, 100);
+        
+        // Limpiar el ID escaneado
+        setScannedCampaignId('');
+      } else {
+        // Si no existe, mostrar mensaje
+        setTimeout(() => {
+          alert(`⚠️ La promoción ID ${scannedCampaignId} no está disponible o no es válida.`);
+        }, 100);
+        setScannedCampaignId('');
+      }
+    }
+  }, [scannedCampaignId, activeCampaigns]);
 
   const handleClientsUpdate = useCallback((clientsList) => {
     setClients(clientsList);
@@ -41,6 +70,12 @@ const RedeemPromo = () => {
     setIsSuccess(false);
     setTransactionId('');
   };
+
+  // Nueva función para manejar selección de campaña desde QR
+  const handleCampaignSelectFromQR = useCallback((campaignId) => {
+    // Guardar el campaignId escaneado para procesarlo en el useEffect
+    setScannedCampaignId(campaignId);
+  }, []);
 
   const selectedClient = clients.find(client => client.id.toString() === formData.clientId);
   const selectedCampaign = activeCampaigns.find(campaign => 
@@ -65,7 +100,6 @@ const RedeemPromo = () => {
           UsuarioId: parseInt(formData.clientId),
           NegocioId: parseInt(business?.NegocioId),
           CampaId: parseInt(formData.campaignId)
-          // Eliminado: TransaccionNoReferen - ahora lo genera la API
         }
       };
 
@@ -117,6 +151,7 @@ const RedeemPromo = () => {
     setApiResponse(null);
     setIsSuccess(false);
     setTransactionId('');
+    setScannedCampaignId('');
   };
 
   const handleRefreshData = () => {
@@ -172,6 +207,7 @@ const RedeemPromo = () => {
                 selectedClientId={formData.clientId}
                 onClientSelect={handleClientSelect}
                 onClientsUpdate={handleClientsUpdate}
+                onCampaignSelect={handleCampaignSelectFromQR} // ← Pasar la nueva prop
               />
             </div>
 
@@ -194,6 +230,16 @@ const RedeemPromo = () => {
                   </option>
                 ))}
               </select>
+              
+              {/* Indicador de auto-selección */}
+              {scannedCampaignId && (
+                <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-xs text-blue-700 flex items-center gap-1">
+                    <span className="font-medium">✓</span>
+                    Promoción {scannedCampaignId} detectada. Preseleccionando...
+                  </p>
+                </div>
+              )}
               
               {isLoading && (
                 <div className="flex items-center gap-2 mt-2">
