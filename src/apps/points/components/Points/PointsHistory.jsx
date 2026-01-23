@@ -1,5 +1,6 @@
 //src/apps/points/components/Points/PointsHistory.jsx
-import { Clock, Info } from 'lucide-react';
+import { useState } from 'react';
+import { Clock, Info, ChevronDown, ChevronUp } from 'lucide-react';
 
 const PointsHistory = ({ accountData, detallesColor, onViewFullHistory, rules }) => {
     const pointsHistory = accountData?.Movimientos ? accountData.Movimientos.map(mov => {
@@ -85,23 +86,58 @@ const PointsHistory = ({ accountData, detallesColor, onViewFullHistory, rules })
             )}
 
             {/* Sección de Reglas/Observaciones */}
-            {rules?.ReglasObservaciones && (
-                <div className="mt-4 pt-3 border-t-2 border-gray-600">
-                    <div className="flex items-center gap-2 mb-3">
-                        <Info className="w-5 h-5" style={{ color: detallesColor }} />
-                        <h4 className="text-lg font-bold text-gray-900">Nota Importante</h4>
+            {(() => {
+                const reglasObservaciones = rules?.ReglasObservaciones;
+                if (!reglasObservaciones) return null;
+                
+                const [isExpanded, setIsExpanded] = useState(false);
+                const charLimit = 500;
+                const needsTruncation = reglasObservaciones.length > charLimit;
+                
+                return (
+                    <div className="mt-4 pt-3 border-t-2 border-gray-600">
+                        <div className="flex items-center gap-2 mb-3">
+                            <Info className="w-5 h-5" style={{ color: detallesColor }} />
+                            <h4 className="text-lg font-bold text-gray-900">Nota Importante</h4>
+                        </div>
+                        <div 
+                            className="rounded-xl p-4 text-sm"
+                            style={{
+                                backgroundColor: `${detallesColor}15`,
+                                borderColor: `${detallesColor}30`
+                            }}
+                        >
+                            <p className="text-gray-800 font-semibold whitespace-pre-line">
+                                {needsTruncation && !isExpanded 
+                                    ? `${reglasObservaciones.substring(0, charLimit)}...`
+                                    : reglasObservaciones
+                                }
+                            </p>
+                            
+                            {needsTruncation && (
+                                <button
+                                    onClick={() => setIsExpanded(!isExpanded)}
+                                    className="mt-3 text-sm font-medium hover:underline transition-colors flex items-center gap-1"
+                                    style={{ color: detallesColor }}
+                                >
+                                    {isExpanded ? (
+                                        <>
+                                            <ChevronUp className="w-4 h-4" />
+                                            Ver menos
+                                        </>
+                                    ) : (
+                                        <>
+                                            <ChevronDown className="w-4 h-4" />
+                                            Ver más...
+                                        </>
+                                    )}
+                                </button>
+                            )}
+                        </div>
                     </div>
-                    <div 
-                        className="rounded-xl p-4 text-sm"
-                        style={{
-                            backgroundColor: `${detallesColor}15`,
-                            borderColor: `${detallesColor}30`
-                        }}
-                    >
-                        <p className="text-gray-800 font-semibold whitespace-pre-line">{rules.ReglasObservaciones}</p>
-                    </div>
-                </div>
-            )}
+                );
+            })()}
+            
         </div>
     );
 };
