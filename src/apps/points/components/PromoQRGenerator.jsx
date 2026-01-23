@@ -105,10 +105,6 @@ const PromoQRGenerator = ({
                   {campaign.CampaRecompensa}
                 </span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">Cliente:</span>
-                <span className="font-semibold">{clientName}</span>
-              </div>
             </div>
           </div>
 
@@ -174,7 +170,7 @@ const PromoQRGenerator = ({
               Cerrar
             </button>
           </div>
-          
+
         </div>
       </div>
     </div>

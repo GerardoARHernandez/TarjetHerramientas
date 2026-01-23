@@ -35,12 +35,7 @@ const RedeemPromo = () => {
       if (campaignExists) {
         // Auto-seleccionar la campaña
         handleCampaignChange(scannedCampaignId);
-        
-        // Mostrar mensaje de éxito
-        setTimeout(() => {
-          alert(`✅ Promoción ${scannedCampaignId} preseleccionada automáticamente.`);
-        }, 100);
-        
+                
         // Limpiar el ID escaneado
         setScannedCampaignId('');
       } else {
