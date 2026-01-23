@@ -66,7 +66,7 @@ const ClientSearch = ({
     };
 
     fetchClients();
-  }, [business?.NegocioId]);
+  }, [business?.NegocioId, onClientsUpdate]);
 
   // Filtrar clientes en tiempo real según el término de búsqueda
   const filterClients = useCallback((term, clientsList) => {
@@ -76,7 +76,7 @@ const ClientSearch = ({
       const filtered = clientsList.filter(client => {
         return (
           client.name.toLowerCase().includes(searchLower) ||
-          client.phone.includes(term) ||
+          (client.phone && client.phone.includes(term)) ||
           (client.email?.toLowerCase().includes(searchLower) || false)
         );
       });
@@ -94,18 +94,187 @@ const ClientSearch = ({
   }, [searchTerm, clients, filterClients]);
 
   // Buscar cliente por teléfono exacto
-  const findClientByPhone = (phoneNumber) => {
-    // Limpiar el número de teléfono (remover espacios, guiones, etc.)
-    const cleanPhone = phoneNumber.replace(/\D/g, '');
+  const findClientByPhone = useCallback((phoneNumber) => {
+    if (!phoneNumber || !clients || clients.length === 0) return null;
     
-    // Buscar coincidencia exacta
-    const client = clients.find(c => {
-      const clientPhone = c.phone.replace(/\D/g, '');
+    // Limpiar el número de teléfono (remover espacios, guiones, etc.)
+    const cleanPhone = phoneNumber.toString().replace(/\D/g, '');
+    
+    if (cleanPhone.length < 10) return null;
+    
+    // Buscar coincidencia
+    return clients.find(c => {
+      if (!c.phone) return false;
+      const clientPhone = c.phone.toString().replace(/\D/g, '');
       return clientPhone.includes(cleanPhone) || cleanPhone.includes(clientPhone);
     });
+  }, [clients]);
+
+  // Función auxiliar para parsear QR de promoción
+  const parsePromoQR = useCallback((qrData) => {
+    if (!qrData) return null;
     
-    return client;
-  };
+    // Verificar si es un QR de promoción
+    if (qrData.startsWith('PROMO:')) {
+      const parts = qrData.split(':');
+      if (parts.length >= 3) {
+        return {
+          type: 'promo',
+          campaignId: parts[1],
+          phoneNumber: parts[2],
+          rawData: qrData
+        };
+      }
+    }
+    
+    // Si no es promoción, verificar si es solo teléfono
+    const cleanPhone = qrData.replace(/\D/g, '');
+    if (cleanPhone.length >= 10) {
+      return {
+        type: 'phone',
+        phoneNumber: cleanPhone,
+        rawData: qrData
+      };
+    }
+    
+    return null;
+  }, []);
+
+  // Manejar QR de promoción
+  const handlePromoQR = useCallback((parsedQR) => {
+    const { campaignId, phoneNumber } = parsedQR;
+    
+    // Buscar cliente por teléfono
+    const client = findClientByPhone(phoneNumber);
+    
+    if (client) {
+      // Cliente encontrado
+      onClientSelect(client.id.toString());
+      setQrMessage(`✅ Cliente encontrado: ${client.name} | Promoción ID: ${campaignId}`);
+      
+      // Detener la cámara
+      stopQrScanner();
+      
+      // Preguntar si quiere ir a canjear promoción
+      setTimeout(() => {
+        setQrMessage('');
+        
+        // Crear un modal personalizado
+        const userChoice = window.confirm(
+          `🎉 ¡QR de Promoción Escaneado!\n\n` +
+          `Cliente: ${client.name}\n` +
+          `Teléfono: ${phoneNumber}\n` +
+          `ID Promoción: ${campaignId}\n\n` +
+          `¿Deseas ir a la sección de Canje de Promociones para completar el proceso?`
+        );
+        
+        if (userChoice) {
+          // Guardar información para usar en la página de canje
+          const promoData = {
+            clientId: client.id.toString(),
+            campaignId: campaignId,
+            phoneNumber: phoneNumber,
+            clientName: client.name,
+            timestamp: new Date().getTime()
+          };
+          
+          // Guardar en localStorage para recuperar en la página de canje
+          localStorage.setItem('lastScannedPromoQR', JSON.stringify(promoData));
+          
+          // Redirigir a la página de canje de promociones
+          const redeemUrl = '/admin/redeem-promo';
+          if (window.location.pathname !== redeemUrl) {
+            window.location.href = redeemUrl;
+          } else {
+            // Si ya estamos en la página, recargar para que detecte los datos
+            window.location.reload();
+          }
+        }
+      }, 2000);
+    } else {
+      // Cliente no encontrado
+      setQrMessage(`❌ No se encontró cliente con teléfono: ${phoneNumber}`);
+      
+      // Preguntar si quiere buscar manualmente
+      setTimeout(() => {
+        const searchChoice = window.confirm(
+          `No se encontró cliente con teléfono ${phoneNumber}.\n\n` +
+          `ID de Promoción: ${campaignId}\n\n` +
+          `¿Quieres buscar el cliente manualmente?`
+        );
+        
+        if (searchChoice) {
+          setSearchTerm(phoneNumber);
+        }
+      }, 500);
+      
+      // Mostrar mensaje por 5 segundos
+      setTimeout(() => {
+        setQrMessage('');
+      }, 5000);
+    }
+  }, [findClientByPhone, onClientSelect]);
+
+  // Manejar QR de teléfono normal
+  const handlePhoneQR = useCallback((parsedQR) => {
+    const { phoneNumber } = parsedQR;
+    
+    // Buscar cliente por teléfono
+    const client = findClientByPhone(phoneNumber);
+    
+    if (client) {
+      // Cliente encontrado
+      onClientSelect(client.id.toString());
+      setQrMessage(`✅ Cliente encontrado: ${client.name}`);
+      
+      // Detener la cámara
+      stopQrScanner();
+      
+      // Mostrar confirmación visual
+      setTimeout(() => {
+        setQrMessage('');
+      }, 3000);
+    } else {
+      // Cliente no encontrado
+      setQrMessage(`❌ No se encontró cliente con teléfono: ${phoneNumber}`);
+      
+      // Preguntar si quiere buscar manualmente
+      setTimeout(() => {
+        const searchChoice = window.confirm(
+          `No se encontró cliente con teléfono ${phoneNumber}.\n\n` +
+          `¿Quieres buscarlo manualmente?`
+        );
+        
+        if (searchChoice) {
+          setSearchTerm(phoneNumber);
+        }
+      }, 500);
+      
+      setTimeout(() => {
+        setQrMessage('');
+      }, 5000);
+    }
+  }, [findClientByPhone, onClientSelect]);
+
+  // Procesar el código QR leído
+  const processQrCode = useCallback((qrData) => {
+    // Parsear el QR
+    const parsedQR = parsePromoQR(qrData);
+    
+    if (!parsedQR) {
+      setQrMessage('❌ Código QR no válido');
+      setTimeout(() => setQrMessage(''), 3000);
+      return;
+    }
+    
+    if (parsedQR.type === 'promo') {
+      // Es un QR de promoción: PROMO:CampaId:PhoneNumber
+      handlePromoQR(parsedQR);
+    } else if (parsedQR.type === 'phone') {
+      // Es solo un teléfono
+      handlePhoneQR(parsedQR);
+    }
+  }, [parsePromoQR, handlePromoQR, handlePhoneQR]);
 
   // Iniciar escáner QR
   const startQrScanner = async () => {
@@ -136,7 +305,7 @@ const ClientSearch = ({
       
       // Función para procesar cada frame
       const scanFrame = () => {
-        if (!videoRef.current || videoRef.current.readyState !== 4) {
+        if (!videoRef.current || videoRef.current.readyState !== 4 || !streamRef.current) {
           requestAnimationFrame(scanFrame);
           return;
         }
@@ -182,55 +351,7 @@ const ClientSearch = ({
     }
     
     setShowQrScanner(false);
-  };
-
-  // Procesar el código QR leído
-  const processQrCode = (qrData) => {
-    // Limpiar el texto del QR (podría ser solo el número o tener prefijo)
-    let phoneNumber = qrData.trim();
-    
-    // Remover prefijos comunes
-    const prefixes = ['tel:', 'TEL:', 'phone:', 'PHONE:'];
-    prefixes.forEach(prefix => {
-      if (phoneNumber.startsWith(prefix)) {
-        phoneNumber = phoneNumber.substring(prefix.length);
-      }
-    });
-    
-    // Remover espacios, guiones, paréntesis
-    phoneNumber = phoneNumber.replace(/\D/g, '');
-    
-    if (phoneNumber.length < 10) {
-      setQrMessage(`QR inválido: ${qrData}`);
-      setTimeout(() => setQrMessage(''), 3000);
-      return;
-    }
-    
-    // Buscar cliente por teléfono
-    const client = findClientByPhone(phoneNumber);
-    
-    if (client) {
-      // Cliente encontrado
-      onClientSelect(client.id.toString());
-      setQrMessage(`✅ Cliente encontrado: ${client.name}`);
-      
-      // Mostrar confirmación visual
-      setTimeout(() => {
-        setQrMessage('');
-      }, 3000);
-    } else {
-      // Cliente no encontrado
-      setQrMessage(`❌ No se encontró cliente con teléfono: ${phoneNumber}`);
-      
-      // Preguntar si quiere buscar manualmente
-      if (window.confirm(`No se encontró cliente con teléfono ${phoneNumber}. ¿Quieres buscarlo manualmente?`)) {
-        setSearchTerm(phoneNumber);
-      }
-      
-      setTimeout(() => {
-        setQrMessage('');
-      }, 5000);
-    }
+    setQrMessage('');
   };
 
   // Escanear QR desde un archivo (alternativa)
@@ -343,7 +464,7 @@ const ClientSearch = ({
             />
             
             {/* Botón para subir imagen QR */}
-            <div className="absolute inset-y-0 right-0 flex items-center">
+            <div className="absolute inset-y-0 right-0 flex items-center pr-10">
               <input
                 type="file"
                 id="qr-file"
@@ -384,7 +505,7 @@ const ClientSearch = ({
                         <div className="flex items-center gap-4 text-sm text-gray-600">
                           <div className="flex items-center gap-1">
                             <Phone className="w-3 h-3" />
-                            <span>{client.phone}</span>
+                            <span>{client.phone || 'Sin teléfono'}</span>
                           </div>
                           {client.email && (
                             <div className="flex items-center gap-1">
@@ -473,7 +594,7 @@ const ClientSearch = ({
                   Apunte el código QR del cliente hacia la cámara
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  El código debe contener el número de teléfono del cliente
+                  El código debe contener el número de teléfono del cliente o una promoción
                 </p>
               </div>
               
@@ -528,15 +649,15 @@ const ClientSearch = ({
               </div>
             ) : (
               <select
-                value={selectedClientId}
+                value={selectedClientId || ''}
                 onChange={(e) => handleClientSelectFromDropdown(e.target.value)}
                 size={Math.min(clients.length, 8)}
-                className="w-full border-0 focus:ring-0"
+                className="w-full border-0 focus:ring-0 text-sm"
               >
                 <option value="">Selecciona un cliente</option>
                 {clients.map(client => (
                   <option key={client.id} value={client.id}>
-                    {client.name} - 📞{client.phone} 
+                    {client.name} - 📞{client.phone || 'Sin teléfono'} 
                     {client.email && ` - ✉️${client.email}`}
                   </option>
                 ))}
@@ -584,7 +705,7 @@ const ClientSearch = ({
             </div>
             <div className="flex items-center gap-2">
               <Phone className="w-4 h-4" />
-              <span><strong>Teléfono:</strong> {selectedClient.phone}</span>
+              <span><strong>Teléfono:</strong> {selectedClient.phone || 'No registrado'}</span>
             </div>
             {selectedClient.email && (
               <div className="flex items-center gap-2">
@@ -596,9 +717,11 @@ const ClientSearch = ({
               <span className="text-xs bg-green-200 text-green-800 px-2 py-1 rounded">
                 ID: {selectedClient.id}
               </span>
-              <span className="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded">
-                📞 {selectedClient.phone}
-              </span>
+              {selectedClient.phone && (
+                <span className="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded">
+                  📞 {selectedClient.phone}
+                </span>
+              )}
             </div>
           </div>
         </div>

@@ -160,6 +160,7 @@ const PointsClient = () => {
                                 color1={color1}
                                 color2={color2}
                                 detallesColor={detallesColor}
+                                accountData={accountData} 
                             />
 
                             {/* Sección de canje */}

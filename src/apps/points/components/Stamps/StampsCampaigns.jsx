@@ -1,9 +1,13 @@
-import { Gift } from 'lucide-react';
+// src/apps/points/components/Stamps/StampsCampaigns.jsx
+import { Gift, Image as ImageIcon } from 'lucide-react';
 import { useState } from 'react';
 import confetti from 'canvas-confetti';
+import PromoQRGenerator from '../PromoQRGenerator';
 
-const StampsCampaigns = ({ campaigns, userStamps, business, color1, color2, detallesColor }) => {
+const StampsCampaigns = ({ campaigns, userStamps, business, color1, color2, detallesColor, accountData }) => {
     const [isAnimating, setIsAnimating] = useState(false);
+    const [showPromoQR, setShowPromoQR] = useState(false);
+    const [selectedCampaign, setSelectedCampaign] = useState(null);
 
     // FUNCIÓN PARA LANZAR CONFETI
     const launchConfetti = () => {
@@ -18,7 +22,9 @@ const StampsCampaigns = ({ campaigns, userStamps, business, color1, color2, deta
         });
     };
 
-    // FUNCIÓN PARA MANEJAR EL CLICK (solo animación)
+    console.log('User Stamps:', campaigns);
+
+    // FUNCIÓN PARA MANEJAR EL CLICK (animación + QR)
     const handleClick = (campaign) => {
         if (isAnimating) return;
         
@@ -46,137 +52,212 @@ const StampsCampaigns = ({ campaigns, userStamps, business, color1, color2, deta
                 }
             }
 
-            // REINICIAR ANIMACIÓN
+            // Mostrar QR después de la animación
             setTimeout(() => {
                 setIsAnimating(false);
+                // Mostrar QR solo si hay teléfono disponible
+                if (accountData?.Telefono) {
+                    setSelectedCampaign(campaign);
+                    setShowPromoQR(true);
+                } else {
+                    alert('No se pudo generar el QR. Falta información del teléfono.');
+                }
             }, 1500);
+        }
+    };
+
+    // Función para mostrar solo el QR (sin confetti)
+    const handleShowQR = (campaign) => {
+        if (accountData?.Telefono) {
+            setSelectedCampaign(campaign);
+            setShowPromoQR(true);
+        } else {
+            alert('No se pudo generar el QR. Falta información del teléfono.');
         }
     };
 
     if (campaigns.length === 0) return null;
 
+    // URL de imagen para NegocioId == 3
+    const defaultImageUrl = "https://i0.wp.com/pizza-christian.mexicowebs.com/wp-content/uploads/2023/12/Papas-Oduladas.jpg?fit=984%2C984&ssl=1";
+
     return (
-        <div 
-            className="rounded-3xl p-8 shadow-lg border"
-            style={{
-                backgroundColor: 'white',
-                borderColor: `${detallesColor}30`
-            }}
-        >
-            <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                    <Gift className="w-6 h-6" style={{ color: detallesColor }}/>
-                    Promociones de Sellos Activas
-                </h3>
-                <span className="text-sm font-medium px-3 py-1 rounded-full"
-                    style={{
-                        backgroundColor: `${detallesColor}15`,
-                        color: detallesColor
-                    }}>
-                    {campaigns.length} {campaigns.length === 1 ? 'promoción' : 'promociones'}
-                </span>
-            </div>
+        <>
+            <div 
+                className="rounded-3xl p-8 shadow-lg border"
+                style={{
+                    backgroundColor: 'white',
+                    borderColor: `${detallesColor}30`
+                }}
+            >
+                <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <Gift className="w-6 h-6" style={{ color: detallesColor }}/>
+                        Promociones de Sellos Activas
+                    </h3>
+                    <span className="text-sm font-medium px-3 py-1 rounded-full"
+                        style={{
+                            backgroundColor: `${detallesColor}15`,
+                            color: detallesColor
+                        }}>
+                        {campaigns.length} {campaigns.length === 1 ? 'promoción' : 'promociones'}
+                    </span>
+                </div>
 
-            <div className="space-y-6">
-                {campaigns.map((campaign) => {
-                    const requiredStamps = parseInt(campaign.CampaCantPSCanje) || 10;
-                    const hasEnoughStamps = userStamps >= requiredStamps;
-                    
-                    return (
-                        <div 
-                            key={campaign.CampaId} 
-                            className="rounded-2xl p-6 border-2 overflow-hidden"
-                            style={{
-                                backgroundImage: `linear-gradient(to bottom right, ${detallesColor}15, ${detallesColor}08)`,
-                                borderColor: `${detallesColor}30`
-                            }}
-                        >
-                            <div className="flex justify-between items-start mb-3">
-                                <div>
-                                    <h4 className="font-bold text-lg text-gray-800">{campaign.CampaNombre}</h4>
-                                    <p className="text-sm font-medium" style={{ color: detallesColor }}>
-                                        Válida hasta: {new Date(campaign.CampaVigeFin).toLocaleDateString()}
-                                    </p>
-                                </div>
-                                <span className="font-bold text-xl" style={{ color: color2 }}>
-                                    {requiredStamps} sellos
-                                </span>
-                            </div>
-
-                            <p className="text-sm text-gray-600 mb-4 leading-relaxed">
-                                {campaign.CampaDesc}
-                            </p>
-
+                <div className="space-y-6">
+                    {campaigns.map((campaign) => {
+                        const requiredStamps = parseInt(campaign.CampaCantPSCanje) || 10;
+                        const hasEnoughStamps = userStamps >= requiredStamps;
+                        
+                        return (
                             <div 
-                                className="rounded-xl p-4 mb-4"
+                                key={campaign.CampaId} 
+                                className="rounded-2xl p-6 border-2 overflow-hidden"
                                 style={{
-                                    backgroundColor: `${detallesColor}08`
-                                }}
-                            >
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="text-sm font-medium text-gray-700">Sellos necesarios:</span>
-                                    <div className="flex items-center gap-1">
-                                        <Gift className="w-4 h-4" style={{ color: color1 }}/>
-                                        <span className="font-bold" style={{ color: color2 }}>{requiredStamps}</span>
-                                    </div>
-                                </div>
-
-                                <div className="w-full bg-gray-200 rounded-full h-2">
-                                    <div
-                                        className="h-2 rounded-full transition-all duration-500"
-                                        style={{
-                                            width: `${Math.min((userStamps / requiredStamps) * 100, 100)}%`,
-                                            backgroundImage: `linear-gradient(to right, ${color1}, ${color2})`,
-                                        }}
-                                    ></div>
-                                </div>
-                                <p className="text-xs text-gray-500 mt-1">
-                                    Progreso: {userStamps}/{requiredStamps} sellos
-                                </p>
-                            </div>
-
-                            <div 
-                                className="rounded-xl p-4 border mb-4"
-                                style={{
-                                    backgroundColor: `${detallesColor}08`,
+                                    backgroundImage: `linear-gradient(to bottom right, ${detallesColor}15, ${detallesColor}08)`,
                                     borderColor: `${detallesColor}30`
                                 }}
                             >
-                                <div className="flex items-center gap-2 mb-1">
-                                    <Gift className="w-4 h-4" style={{ color: detallesColor }}/>
-                                    <span className="text-sm font-medium" style={{ color: detallesColor }}>Tu recompensa:</span>
-                                </div>
-                                <p className="font-bold" style={{ color: detallesColor }}>{campaign.CampaRecompensa}</p>
-                            </div>
-
-                            <button
-                                onClick={() => handleClick(campaign)}
-                                disabled={!hasEnoughStamps || isAnimating}
-                                className={`w-full py-4 rounded-2xl font-semibold text-lg transition-all duration-200 relative overflow-hidden
-                                    ${hasEnoughStamps && !isAnimating
-                                        ? 'text-white shadow-lg transform hover:-translate-y-0.5 hover:shadow-xl active:scale-95 cursor-pointer'
-                                        : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                                    }`}
-                                style={hasEnoughStamps && !isAnimating ? {
-                                    backgroundImage: `linear-gradient(to right, ${color1}, ${color2})`,
-                                } : {}}
-                            >
-                                {isAnimating ? (
-                                    <div className="flex items-center justify-center gap-2">
-                                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                        ¡Disponible para canjear!
+                                {/* Sección de Imagen - Solo para NegocioId == 3 */}
+                                {business?.NegocioId == 3 && (
+                                    <div className="mb-4">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <ImageIcon className="w-4 h-4" style={{ color: detallesColor }} />
+                                            <span className="text-xs font-medium" style={{ color: detallesColor }}>
+                                                Vista previa de la promoción
+                                            </span>
+                                        </div>
+                                        <div className="relative rounded-xl overflow-hidden border-2" style={{ borderColor: `${detallesColor}30` }}>
+                                            <div className="relative h-48 md:h-56 lg:h-64 w-full">
+                                                <img
+                                                    src={defaultImageUrl}
+                                                    alt={`Imagen de promoción: ${campaign.CampaNombre}`}
+                                                    className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                                                    onError={(e) => {
+                                                        e.target.style.display = 'none';
+                                                        e.target.parentElement.innerHTML = `
+                                                            <div class="w-full h-full flex flex-col items-center justify-center" style="background: linear-gradient(135deg, ${detallesColor}20, ${detallesColor}10)">
+                                                                <ImageIcon class="w-12 h-12 mb-2" style="color: ${detallesColor}60" />
+                                                                <p class="text-sm font-medium" style="color: ${detallesColor}80">Imagen de la promoción</p>
+                                                                <p class="text-xs mt-1" style="color: ${detallesColor}60">${campaign.CampaNombre}</p>
+                                                            </div>
+                                                        `;
+                                                    }}
+                                                />
+                                                {/* Overlay sutil */}
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent"></div>
+                                            </div>
+                                            {/* Badge en esquina */}
+                                            <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-lg px-2 py-1 shadow-sm">
+                                                <span className="text-xs font-bold" style={{ color: detallesColor }}>PROMO</span>
+                                            </div>
+                                        </div>
                                     </div>
-                                ) : hasEnoughStamps ? (
-                                    `Disponible para canjear`
-                                ) : (
-                                    `Necesitas ${requiredStamps - userStamps} sellos más`
                                 )}
-                            </button>
-                        </div>
-                    );
-                })}
+
+                                <div className="flex justify-between items-start mb-3">
+                                    <div>
+                                        <h4 className="font-bold text-lg text-gray-800">{campaign.CampaNombre}</h4>
+                                        <p className="text-sm font-medium" style={{ color: detallesColor }}>
+                                            Válida hasta: {new Date(campaign.CampaVigeFin).toLocaleDateString()}
+                                        </p>
+                                    </div>
+                                    <span className="font-bold text-xl" style={{ color: color2 }}>
+                                        {requiredStamps} sellos
+                                    </span>
+                                </div>
+
+                                <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+                                    {campaign.CampaDesc}
+                                </p>
+
+                                <div 
+                                    className="rounded-xl p-4 mb-4"
+                                    style={{
+                                        backgroundColor: `${detallesColor}08`
+                                    }}
+                                >
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-sm font-medium text-gray-700">Sellos necesarios:</span>
+                                        <div className="flex items-center gap-1">
+                                            <Gift className="w-4 h-4" style={{ color: color1 }}/>
+                                            <span className="font-bold" style={{ color: color2 }}>{requiredStamps}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="w-full bg-gray-200 rounded-full h-2">
+                                        <div
+                                            className="h-2 rounded-full transition-all duration-500"
+                                            style={{
+                                                width: `${Math.min((userStamps / requiredStamps) * 100, 100)}%`,
+                                                backgroundImage: `linear-gradient(to right, ${color1}, ${color2})`,
+                                            }}
+                                        ></div>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        Progreso: {userStamps}/{requiredStamps} sellos
+                                    </p>
+                                </div>
+
+                                <div 
+                                    className="rounded-xl p-4 border mb-4"
+                                    style={{
+                                        backgroundColor: `${detallesColor}08`,
+                                        borderColor: `${detallesColor}30`
+                                    }}
+                                >
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <Gift className="w-4 h-4" style={{ color: detallesColor }}/>
+                                        <span className="text-sm font-medium" style={{ color: detallesColor }}>Tu recompensa:</span>
+                                    </div>
+                                    <p className="font-bold" style={{ color: detallesColor }}>{campaign.CampaRecompensa}</p>
+                                </div>
+
+                                {/* Botón principal - Mantiene el texto original */}
+                                <button
+                                    onClick={() => handleClick(campaign)}
+                                    disabled={!hasEnoughStamps || isAnimating}
+                                    className={`w-full py-4 rounded-2xl font-semibold text-lg transition-all duration-200 relative overflow-hidden
+                                        ${hasEnoughStamps && !isAnimating
+                                            ? 'text-white shadow-lg transform hover:-translate-y-0.5 hover:shadow-xl active:scale-95 cursor-pointer'
+                                            : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                        }`}
+                                    style={hasEnoughStamps && !isAnimating ? {
+                                        backgroundImage: `linear-gradient(to right, ${color1}, ${color2})`,
+                                    } : {}}
+                                >
+                                    {isAnimating ? (
+                                        <div className="flex items-center justify-center gap-2">
+                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                            ¡Disponible para canjear!
+                                        </div>
+                                    ) : hasEnoughStamps ? (
+                                        `Disponible para canjear`
+                                    ) : (
+                                        `Necesitas ${requiredStamps - userStamps} sellos más`
+                                    )}
+                                </button>                                
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
-        </div>
+
+            {/* Modal del QR de Promoción */}
+            {showPromoQR && selectedCampaign && (
+                <PromoQRGenerator
+                    isOpen={showPromoQR}
+                    onClose={() => setShowPromoQR(false)}
+                    campaign={selectedCampaign}
+                    phoneNumber={accountData?.Telefono}
+                    clientName={`${accountData?.Nombre} ${accountData?.Apellido}`}
+                    business={business}
+                    color1={color1}
+                    color2={color2}
+                    detallesColor={detallesColor}
+                />
+            )}
+        </>
     );
 };
 
