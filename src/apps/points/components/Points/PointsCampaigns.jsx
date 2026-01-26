@@ -167,8 +167,6 @@ const PointsCampaigns = ({ campaigns, userPoints, business, color1, color2, deta
         }, 5000);
     };
 
-    console.log('User Points:', campaigns);
-
     // FUNCIÓN PARA MANEJAR EL CLICK (animación + QR)
     const handleClick = (campaign) => {
         if (isAnimating) return;

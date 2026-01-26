@@ -21,14 +21,7 @@ export class FirebaseNotificationScheduler {
 
   // Función para verificar si Notification está disponible de forma segura
   isNotificationAvailable() {
-    try {
-      return typeof window !== 'undefined' && 
-             'Notification' in window && 
-             typeof Notification !== 'undefined' &&
-             typeof Notification.requestPermission !== 'undefined';
-    } catch (error) {
-      return false;
-    }
+    return this.safeNotificationCheck();
   }
 
   // Función para obtener permiso de forma segura
@@ -235,13 +228,32 @@ export class FirebaseNotificationScheduler {
       throw error;
     }
   }
+ 
+  safeNotificationCheck() {
+    // Verificar de forma segura si Notification está disponible
+    if (typeof window === 'undefined') return false;
+    
+    try {
+      // Intenta acceder a Notification de forma segura
+      if (!('Notification' in window)) return false;
+      if (typeof window.Notification === 'undefined') return false;
+      if (typeof window.Notification.requestPermission === 'undefined') return false;
+      
+      // Intenta acceder a una propiedad para ver si realmente funciona
+      return window.Notification.permission !== undefined;
+    } catch (error) {
+      console.log('Notification no disponible:', error.message);
+      return false;
+    }
+  }
 
   async testNotification() {
-    console.log('🧪 Iniciando prueba completa de notificaciones...');
-    console.log('📱 Es móvil:', this.isMobile);
-    console.log('🌐 Protocolo:', window.location.protocol);
+  console.log('🧪 Iniciando prueba completa de notificaciones...');
+  console.log('📱 Es móvil:', this.isMobile);
+  console.log('🌐 Protocolo:', window.location.protocol);
 
-  if (!('Notification' in window)) {
+  // Verificación segura de Notification - USAR LA FUNCIÓN SEGURA
+  if (!this.isNotificationAvailable()) {
     throw new Error('Tu navegador no soporta notificaciones');
   }
 
@@ -259,8 +271,8 @@ export class FirebaseNotificationScheduler {
     }
   }
 
-  // Verificar/obtener permisos
-  if (Notification.permission === 'default') {
+  // Verificar/obtener permisos - USAR getNotificationPermission()
+  if (this.getNotificationPermission() === 'default') {
     console.log('🔄 Solicitando permiso...');
     
     // En móvil, mostrar mensaje especial antes de pedir permiso
@@ -288,11 +300,11 @@ export class FirebaseNotificationScheduler {
     console.log('- Firebase activo:', result.isFirebase);
     console.log('- Background disponible:', result.canReceiveInBackground);
     console.log('- Token obtenido:', result.token ? 'Sí' : 'No');
-  } else if (Notification.permission !== 'granted') {
+  } else if (this.getNotificationPermission() !== 'granted') {
     throw new Error('Permiso denegado previamente. Revise configuración del navegador.');
   }
 
-  if (Notification.permission === 'granted' && this.isFirebaseInitialized) {
+  if (this.getNotificationPermission() === 'granted' && this.isFirebaseInitialized) {
     console.log('🔄 Verificando token FCM...');
     
     if (!this.token) {
@@ -300,12 +312,12 @@ export class FirebaseNotificationScheduler {
       await this.getFCMToken();
     } else {
       console.log('✅ Token ya disponible');
-      console.log('Token:', this.token.substring(0, 30) + '...');
+      console.log('Token:', this.token ? this.token.substring(0, 30) + '...' : 'No disponible');
     }
   }
 
   // Si ya teníamos permiso, obtener token ahora
-  if (Notification.permission === 'granted' && this.isFirebaseInitialized && !this.token) {
+  if (this.getNotificationPermission() === 'granted' && this.isFirebaseInitialized && !this.token) {
     console.log('🔄 Obteniendo token FCM...');
     await this.getFCMToken();
   }
