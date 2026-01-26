@@ -350,6 +350,185 @@ showiOSFallbackNotification(title, body) {
       }
     }, 5000);
   }
+  async getFCMToken() {
+    try {
+      // Si es Safari iOS, no intentar obtener token
+      if (this.isSafariIOS) {
+        console.log('📱 Safari iOS - No se puede obtener token FCM');
+        return null;
+      }
+      
+      if (!this.isFirebaseInitialized || !messaging) {
+        console.log('❌ Firebase no está inicializado');
+        return null;
+      }
+
+      // Verificar permisos primero
+      if (!this.isNotificationAvailable() || this.getNotificationPermission() !== 'granted') {
+        console.log('❌ No hay permisos para notificaciones');
+        return null;
+      }
+
+      console.log('🔄 Obteniendo token FCM...');
+      
+      // Obtener token con el VAPID key
+      const currentToken = await getToken(messaging, { 
+        vapidKey: this.vapidKey 
+      });
+      
+      if (currentToken) {
+        this.token = currentToken;
+        localStorage.setItem('fcmToken', currentToken);
+        console.log('✅ Token FCM obtenido:', currentToken.substring(0, 30) + '...');
+        return currentToken;
+      } else {
+        console.log('❌ No se pudo obtener token FCM');
+        return null;
+      }
+    } catch (error) {
+      console.error('❌ Error obteniendo token FCM:', error);
+      
+      // Si es error específico de falta de permisos en iOS
+      if (error.code === 'messaging/permission-blocked') {
+        console.log('📱 Permiso bloqueado en iOS');
+      }
+      
+      return null;
+    }
+  }
+
+  // También faltan estos métodos necesarios:
+  async getScheduleInfo() {
+    // Calcular próxima notificación
+    const now = new Date();
+    const nextHour = this.scheduleHours.find(h => h > now.getHours());
+    
+    if (nextHour) {
+      return {
+        nextTime: `${nextHour}:${this.minute.toString().padStart(2, '0')}`,
+        scheduleString: this.scheduleHours.map(h => `${h}:${this.minute.toString().padStart(2, '0')}`).join(', ')
+      };
+    } else {
+      // Si ya pasaron todas las horas de hoy, usar la primera de mañana
+      return {
+        nextTime: `Mañana a las ${this.scheduleHours[0]}:${this.minute.toString().padStart(2, '0')}`,
+        scheduleString: this.scheduleHours.map(h => `${h}:${this.minute.toString().padStart(2, '0')}`).join(', ')
+      };
+    }
+  }
+
+  async showNotification(title, options) {
+    // Método principal para mostrar notificaciones
+    if (this.isMobile) {
+      return await this.showNotificationViaServiceWorker(title, options);
+    } else {
+      return await this.showNotificationDesktop(title, options);
+    }
+  }
+
+  async showNotificationViaServiceWorker(title, options) {
+    // Implementación para Service Worker
+    if ('serviceWorker' in navigator) {
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        await registration.showNotification(title, options);
+        return true;
+      } catch (error) {
+        console.error('Error con Service Worker:', error);
+        // Fallback a Notification API
+        return await this.showNotificationDesktop(title, options);
+      }
+    }
+    return false;
+  }
+
+  startScheduledNotifications() {
+    console.log('⏰ Programando notificaciones...');
+    
+    // Si es Safari iOS, no programar nada
+    if (this.isSafariIOS) {
+      console.log('📱 Safari iOS - Notificaciones programadas deshabilitadas');
+      return;
+    }
+    
+    // Limpiar timeout anterior si existe
+    if (this.timeoutId) {
+      clearTimeout(this.timeoutId);
+    }
+    
+    // Programar próxima notificación
+    this.scheduleNextNotification();
+  }
+
+  async scheduleNextNotification() {
+    // Si es Safari iOS, no hacer nada
+    if (this.isSafariIOS) {
+      return;
+    }
+    
+    // Implementar lógica de programación
+    const now = new Date();
+    const nextHour = this.scheduleHours.find(h => h > now.getHours());
+    
+    if (nextHour) {
+      const nextTime = new Date();
+      nextTime.setHours(nextHour, this.minute, 0, 0);
+      
+      const timeUntilNext = nextTime.getTime() - now.getTime();
+      
+      this.timeoutId = setTimeout(() => {
+        this.sendScheduledNotification();
+        this.scheduleNextNotification(); // Programar la siguiente
+      }, timeUntilNext);
+      
+      console.log(`⏰ Próxima notificación programada para: ${nextTime.toLocaleTimeString()}`);
+    } else {
+      // Programar para mañana a la primera hora
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(this.scheduleHours[0], this.minute, 0, 0);
+      
+      const timeUntilTomorrow = tomorrow.getTime() - now.getTime();
+      
+      this.timeoutId = setTimeout(() => {
+        this.sendScheduledNotification();
+        this.scheduleNextNotification();
+      }, timeUntilTomorrow);
+      
+      console.log(`⏰ Próxima notificación programada para mañana: ${tomorrow.toLocaleTimeString()}`);
+    }
+  }
+
+  async sendScheduledNotification() {
+    // Si es Safari iOS, no enviar
+    if (this.isSafariIOS) {
+      return;
+    }
+    
+    const data = this.getNotificationData();
+    
+    const notificationOptions = {
+      body: `¡Hola ${data.displayName}! Tienes ${data.displayPoints} puntos acumulados en ${data.displayBusiness}.`,
+      icon: this.userData?.businessLogo || '/favicon.ico',
+      tag: 'scheduled-notification-' + Date.now(),
+      requireInteraction: false,
+      data: {
+        url: '/points-loyalty/points',
+        timestamp: new Date().toISOString()
+      }
+    };
+    
+    try {
+      await this.showNotification(
+        `📱 ¡Tus puntos te esperan!`,
+        notificationOptions
+      );
+      console.log('✅ Notificación programada enviada');
+    } catch (error) {
+      console.error('❌ Error enviando notificación programada:', error);
+    }
+  }
+
  
   safeNotificationCheck() {
     // Verificar de forma segura si Notification está disponible
