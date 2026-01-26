@@ -7,16 +7,20 @@ import ClientHeader from '../../components/ClientHeader';
 import { useEffect, useState } from 'react';
 import ClientFooter from '../../components/ClientFooter';
 import RedeemPurchaseModal from '../../components/RedeemPurchaseModal';
-import NotificationPermission from '../../components/NotificationPermission';
 
-// Componentes de puntos
+// Componentes de puntos (siempre cargados)
 import PointsDisplay from '../../components/Points/PointsDisplay';
 import PointsCampaigns from '../../components/Points/PointsCampaigns';
 import PointsHistory from '../../components/Points/PointsHistory';
 import RedeemSection from '../../components/Points/RedeemSection';
-import NotificationTestButton from '../../components/Points/NotificationTestButton';
-import PointsNotificationManager from '../../components/Points/PointsNotificationManager';
 import { ArrowRight } from 'lucide-react';
+
+// Función para detectar iOS
+const isIOSDevice = () => {
+  if (typeof window === 'undefined') return false;
+  const userAgent = window.navigator.userAgent;
+  return /iPhone|iPad|iPod/.test(userAgent) && !window.MSStream;
+};
 
 const PointsClient = () => {
     const { user } = useAuth();
@@ -25,9 +29,21 @@ const PointsClient = () => {
     const { accountData, isLoading: accountLoading } = useClientAccount();
     const navigate = useNavigate();
     
-    const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
     const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
-    // Eliminamos los estados del modal
+    const [isIOS, setIsIOS] = useState(false);
+
+    useEffect(() => {
+        setIsIOS(isIOSDevice());
+        
+        if (business?.NegocioTipoPS === 'S') {
+            navigate('/points-loyalty/stamps');
+        }
+        
+        // Si es iOS, mostrar mensaje en consola
+        if (isIOSDevice()) {
+            console.log('📱 iOS detectado - Notificaciones deshabilitadas');
+        }
+    }, [business?.NegocioTipoPS, navigate]);
 
     const isLoading = businessLoading || accountLoading;
     const userName = user?.name || 'Usuario';
@@ -39,18 +55,6 @@ const PointsClient = () => {
     const userPoints = accountData?.puntosDisponibles ? parseInt(accountData.puntosDisponibles) : 0;
     const activeCampaigns = campaigns?.filter(campaign => campaign.CampaActiva === 'S') || [];
     const pointsCampaigns = activeCampaigns.filter(campaign => campaign.NegocioTipoPS === 'P');
-
-    // Redirigir si el negocio no usa puntos
-    useEffect(() => {
-        if (businessType === 'S') {
-            navigate('/points-loyalty/stamps');
-        }
-    }, [businessType, navigate]);
-
-    // Manejar permiso de notificaciones
-    const handlePermissionChange = (granted) => {
-        setShowNotificationPrompt(false);
-    };
 
     if (isLoading || !accountData) {
         return (
@@ -88,32 +92,25 @@ const PointsClient = () => {
                     color2={color2}
                 />
 
-                {/* Gestor de notificaciones */}
-                <PointsNotificationManager
-                    isLoading={isLoading}
-                    userPoints={userPoints}
-                    userName={userName}
-                    business={business}
-                    onPermissionPrompt={() => setShowNotificationPrompt(true)}
-                />
+                {/* Mensaje informativo para iOS */}
+                {isIOS && (
+                  <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 mx-4 sm:mx-8 lg:mx-12">
+                    <div className="flex">
+                      <div className="flex-shrink-0">
+                        <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div className="ml-3">
+                        <p className="text-sm text-yellow-700">
+                          <span className="font-medium">Nota para usuarios iOS:</span> Las notificaciones push están deshabilitadas en Safari para iOS. Para mejor experiencia, usa Chrome en iOS o instala la app como PWA.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
-                    {/* Prompt de notificaciones */}
-                    {showNotificationPrompt && (
-                        <div className="mb-6 animate-fade-in">
-                            <NotificationPermission 
-                                onPermissionChange={handlePermissionChange}
-                            />
-                        </div>
-                    )}
-
-                    {/* Botón de prueba de notificaciones */}
-                    {business?.NegocioId == 3 && (
-                        <div className="mb-6">
-                            <NotificationTestButton />
-                        </div>
-                    )}
 
                     {/* Botón de Registrar Ticket (solo para negocios PL) */}
                     {business?.NegocioModo == "PL" && (
@@ -142,7 +139,6 @@ const PointsClient = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                         {/* Columna Principal */}
                         <div className="lg:col-span-2 space-y-8">
-                            {/* Display de puntos */}
                             <PointsDisplay
                                 userPoints={userPoints}
                                 accountData={accountData}
@@ -152,7 +148,6 @@ const PointsClient = () => {
                                 detallesColor={detallesColor}
                             />
 
-                            {/* Campañas activas */}
                             <PointsCampaigns
                                 campaigns={pointsCampaigns}
                                 userPoints={userPoints}
@@ -163,7 +158,6 @@ const PointsClient = () => {
                                 accountData={accountData} 
                             />
 
-                            {/* Sección de canje */}
                             <RedeemSection
                                 campaigns={pointsCampaigns}
                                 businessName={business?.NegocioDesc}
@@ -186,7 +180,6 @@ const PointsClient = () => {
 
             <ClientFooter />
 
-            {/* Modal de Registrar Ticket */}
             <RedeemPurchaseModal 
                 isOpen={isPurchaseModalOpen}
                 onClose={() => setIsPurchaseModalOpen(false)}
