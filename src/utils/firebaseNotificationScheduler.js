@@ -9,19 +9,38 @@ export class FirebaseNotificationScheduler {
     this.timeoutId = null;
     this.userData = null;
     this.isMobile = this.checkIfMobile();
+    this.isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
     this.vapidKey = "BCHcLjBBpycW_V6v5Uf4-iDUiTkR00x-sp4_Yehh9m3nDNQtwBLt9x-bPCtljSwaLznVIEPpJoTo6nlJLpzSUFA"
     
     this.token = null;
     this.isFirebaseInitialized = false;
     this.fcmSupported = false;
     
-    // Inicializar Firebase de forma asíncrona
+    // Si es iOS, deshabilitar notificaciones completamente
+    if (this.isIOS) {
+      console.log('📱 iOS detectado - Notificaciones deshabilitadas');
+      return; // Salir temprano del constructor
+    }
+    
+    // Solo inicializar Firebase si no es iOS
     this.initializeFirebase();
   }
 
   // Función para verificar si Notification está disponible de forma segura
   isNotificationAvailable() {
-    return this.safeNotificationCheck();
+    // Si es iOS, devolver false directamente
+    if (this.isIOS) {
+      return false;
+    }
+    
+    try {
+      return typeof window !== 'undefined' && 
+             'Notification' in window && 
+             typeof Notification !== 'undefined' &&
+             typeof Notification.requestPermission !== 'undefined';
+    } catch (error) {
+      return false;
+    }
   }
 
   // Función para obtener permiso de forma segura
