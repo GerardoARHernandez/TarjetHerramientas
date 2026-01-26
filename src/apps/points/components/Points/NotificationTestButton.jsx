@@ -7,16 +7,42 @@ const NotificationTestButton = () => {
     const [isMobileDevice, setIsMobileDevice] = useState(false);
     const [notificationStatus, setNotificationStatus] = useState({
         isTesting: false,
-        permission: Notification.permission,
+        permission: 'default',
         lastTestResult: null,
         capabilities: null
     });
 
     const [notificationScheduler, setNotificationScheduler] = useState(null);
 
+    // Función para verificar si Notification está disponible de forma segura
+    const isNotificationAvailable = () => {
+        try {
+            return typeof window !== 'undefined' && 
+                   'Notification' in window && 
+                   typeof Notification !== 'undefined' &&
+                   typeof Notification.requestPermission !== 'undefined';
+        } catch (error) {
+            return false;
+        }
+    };
+
+    // Función para obtener permiso de forma segura
+    const getNotificationPermission = () => {
+        if (!isNotificationAvailable()) {
+            return 'denied';
+        }
+        return Notification.permission;
+    };
+
     useEffect(() => {
         const mobileCheck = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         setIsMobileDevice(mobileCheck);
+
+        // Inicializar con permiso seguro
+        setNotificationStatus(prev => ({ 
+            ...prev, 
+            permission: getNotificationPermission() 
+        }));
 
         const scheduler = new FirebaseNotificationScheduler();
         setNotificationScheduler(scheduler);
@@ -31,7 +57,8 @@ const NotificationTestButton = () => {
     const testNotification = async () => {
         console.log('🔔 Iniciando prueba completa...');
         
-        if (!('Notification' in window)) {
+        // Verificación segura
+        if (!isNotificationAvailable()) {
             alert('❌ Tu navegador no soporta notificaciones');
             return;
         }
@@ -85,6 +112,17 @@ const NotificationTestButton = () => {
             }));
         }
     };
+
+    // Solo mostrar si Notification está disponible
+    if (!isNotificationAvailable()) {
+        return (
+            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-sm text-yellow-800">
+                    ⚠️ Las notificaciones no están disponibles en este navegador/iPhone.
+                </p>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-4">
