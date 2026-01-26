@@ -3,42 +3,64 @@ import { firebaseConfig, messaging, checkFirebaseSupport } from '../firebase/con
 import { getToken, onMessage, deleteToken } from 'firebase/messaging';
 
 export class FirebaseNotificationScheduler {
+  // En el constructor, verificar iOS primero
   constructor(scheduleHours = [9, 11, 13, 15, 17, 19, 21], minute = 0) {
     this.scheduleHours = scheduleHours;
     this.minute = minute;
     this.timeoutId = null;
     this.userData = null;
     this.isMobile = this.checkIfMobile();
-    this.isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
-    this.vapidKey = "BCHcLjBBpycW_V6v5Uf4-iDUiTkR00x-sp4_Yehh9m3nDNQtwBLt9x-bPCtljSwaLznVIEPpJoTo6nlJLpzSUFA"
+    this.isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) && 
+                !window.MSStream; // Excluir dispositivos Windows Phone
+    
+    // DETECCIÓN MÁS PRECISA PARA SAFARI iOS
+    this.isSafariIOS = this.isIOS && 
+                      /Safari/.test(navigator.userAgent) && 
+                      !/Chrome|CriOS/.test(navigator.userAgent);
+    
+    this.vapidKey = "BCHcLjBBpycW_V6v5Uf4-iDUiTkR00x-sp4_Yehh9m3nDNQtwBLt9x-bPCtljSwaLznVIEPpJoTo6nlJLpzSUFA";
     
     this.token = null;
     this.isFirebaseInitialized = false;
     this.fcmSupported = false;
     
-    // Si es iOS, deshabilitar notificaciones completamente
-    if (this.isIOS) {
-      console.log('📱 iOS detectado - Notificaciones deshabilitadas');
-      return; // Salir temprano del constructor
+    // Si es Safari en iOS, deshabilitar completamente
+    if (this.isSafariIOS) {
+      console.log('📱 Safari iOS detectado - Notificaciones deshabilitadas completamente');
+      console.log('ℹ️ Safari iOS no soporta Notification API ni FCM push nativos');
+      return;
     }
     
-    // Solo inicializar Firebase si no es iOS
+    // Solo inicializar Firebase si no es Safari iOS
     this.initializeFirebase();
   }
 
-  // Función para verificar si Notification está disponible de forma segura
   isNotificationAvailable() {
-    // Si es iOS, devolver false directamente
-    if (this.isIOS) {
+    // Si es Safari iOS, devolver false directamente
+    if (this.isSafariIOS) {
       return false;
     }
     
+    // Si es otro iOS (Chrome en iOS), también puede tener limitaciones
+    if (this.isIOS) {
+      console.log('📱 iOS detectado - Notificaciones pueden tener limitaciones');
+      
+      // Chrome en iOS tampoco soporta FCM completamente
+      if (/Chrome|CriOS/.test(navigator.userAgent)) {
+        console.log('⚠️ Chrome en iOS - FCM no está completamente soportado');
+      }
+    }
+    
     try {
-      return typeof window !== 'undefined' && 
-             'Notification' in window && 
-             typeof Notification !== 'undefined' &&
-             typeof Notification.requestPermission !== 'undefined';
+      // Verificación segura paso por paso
+      if (typeof window === 'undefined') return false;
+      if (!('Notification' in window)) return false;
+      if (typeof window.Notification === 'undefined') return false;
+      if (typeof window.Notification.requestPermission === 'undefined') return false;
+      
+      return true;
     } catch (error) {
+      console.log('Notification API no disponible:', error.message);
       return false;
     }
   }
@@ -204,48 +226,129 @@ export class FirebaseNotificationScheduler {
     }
   }
 
-  // También corrige showNotificationDesktop:
   async showNotificationDesktop(title, options) {
-    console.log('💻 Usando notificación para escritorio...');
-    
-    // Usar nuestra función segura para verificar disponibilidad
-    if (!this.isNotificationAvailable()) {
-      throw new Error('API de notificaciones no disponible');
-    }
+  console.log('💻 Usando notificación para escritorio...');
+  
+  // Verificar si es iOS primero
+  if (this.isIOS) {
+    console.log('📱 iOS detectado - Usando fallback para notificaciones');
+    return this.showiOSFallbackNotification(title, options.body || '');
+  }
+  
+  // Usar nuestra función segura
+  if (!this.isNotificationAvailable()) {
+    console.warn('API de notificaciones no disponible, usando fallback');
+    return this.showFallbackNotification(title, options.body || '');
+  }
 
-    try {
-      // Intentar con Notification API directa
-      const notification = new Notification(title, options);
+  try {
+    const notification = new Notification(title, options);
 
-      notification.onclick = () => {
-        window.focus();
-        notification.close();
-        if (window.location.pathname !== '/points-loyalty/points') {
-          window.location.href = '/points-loyalty/points';
-        }
-      };
-
-      // Auto-cerrar
-      setTimeout(() => {
-        try {
-          notification.close();
-        } catch (e) {
-          // Ignorar
-        }
-      }, 8000);
-
-      return true;
-    } catch (error) {
-      console.error('❌ Error con Notification API:', error);
-      
-      // Si falla en escritorio, intentar con Service Worker también
-      if ('serviceWorker' in navigator) {
-        console.log('🔄 Fallback a Service Worker en escritorio');
-        return await this.showNotificationViaServiceWorker(title, options);
+    notification.onclick = () => {
+      window.focus();
+      notification.close();
+      if (window.location.pathname !== '/points-loyalty/points') {
+        window.location.href = '/points-loyalty/points';
       }
-      
-      throw error;
+    };
+
+    setTimeout(() => {
+      try {
+        notification.close();
+      } catch (e) {}
+    }, 8000);
+
+    return true;
+  } catch (error) {
+    console.error('❌ Error con Notification API:', error);
+    
+    // Fallback para iOS específico
+    if (this.isIOS) {
+      return this.showiOSFallbackNotification(title, options.body || '');
     }
+    
+    // Fallback general
+    return this.showFallbackNotification(title, options.body || '');
+  }
+}
+
+// Fallback específico para iOS
+showiOSFallbackNotification(title, body) {
+  console.log('📱 Mostrando fallback para iOS');
+  
+  // Usar alert nativo (solo para desarrollo/debug)
+  if (process.env.NODE_ENV === 'development') {
+    alert(`📱 ${title}\n${body}`);
+  }
+  
+  // Alternativa: Mostrar banner en la interfaz
+  this.showInAppNotification(title, body);
+  
+  return false;
+}
+
+  // Función para mostrar notificación en la app (sin APIs nativas)
+  showInAppNotification(title, body) {
+    const notificationId = 'in-app-notification-' + Date.now();
+    
+    // Crear elemento de notificación
+    const notificationEl = document.createElement('div');
+    notificationEl.id = notificationId;
+    notificationEl.className = 'fixed top-4 right-4 max-w-sm bg-white rounded-xl shadow-2xl border border-gray-200 p-4 z-50 animate-slide-in-right';
+    notificationEl.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      max-width: 320px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+      padding: 16px;
+      z-index: 99999;
+      border: 1px solid rgba(0,0,0,0.1);
+      animation: slideInRight 0.3s ease;
+    `;
+    
+    notificationEl.innerHTML = `
+      <div class="flex items-start">
+        <div class="flex-1">
+          <div class="font-bold text-gray-900 mb-1">${title}</div>
+          <div class="text-gray-600 text-sm">${body}</div>
+        </div>
+        <button onclick="document.getElementById('${notificationId}').remove()" 
+                class="ml-2 text-gray-400 hover:text-gray-600">
+          ×
+        </button>
+      </div>
+    `;
+    
+    // Agregar estilos si no existen
+    if (!document.querySelector('#notification-styles')) {
+      const style = document.createElement('style');
+      style.id = 'notification-styles';
+      style.textContent = `
+        @keyframes slideInRight {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOutRight {
+          from { transform: translateX(0); opacity: 1; }
+          to { transform: translateX(100%); opacity: 0; }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+    
+    document.body.appendChild(notificationEl);
+    
+    // Auto-remover después de 5 segundos
+    setTimeout(() => {
+      if (document.getElementById(notificationId)) {
+        const el = document.getElementById(notificationId);
+        el.style.animation = 'slideOutRight 0.3s ease';
+        setTimeout(() => el.remove(), 300);
+      }
+    }, 5000);
   }
  
   safeNotificationCheck() {
@@ -264,6 +367,19 @@ export class FirebaseNotificationScheduler {
       console.log('Notification no disponible:', error.message);
       return false;
     }
+  }
+
+  getCapabilities() {
+    return {
+      platform: this.isMobile ? 'mobile' : 'desktop',
+      isIOS: this.isIOS,
+      isSafariIOS: this.isSafariIOS,
+      notificationAPI: this.isNotificationAvailable(),
+      firebaseSupported: this.fcmSupported && !this.isSafariIOS,
+      serviceWorker: 'serviceWorker' in navigator,
+      canShowNotifications: !this.isSafariIOS && this.isNotificationAvailable(),
+      canReceiveBackground: !this.isSafariIOS && this.isFirebaseInitialized && !!this.token
+    };
   }
 
   async testNotification() {

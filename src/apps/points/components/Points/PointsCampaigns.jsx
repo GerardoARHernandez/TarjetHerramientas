@@ -22,152 +22,9 @@ const PointsCampaigns = ({ campaigns, userPoints, business, color1, color2, deta
         });
     };
 
-    // Función para verificar si Notification está realmente disponible
-    const isNotificationAvailable = () => {
-        try {
-            // Verificar si existe en window
-            if (!('Notification' in window)) {
-                return false;
-            }
-            
-            // Verificar si el constructor está disponible
-            if (typeof Notification === 'undefined') {
-                return false;
-            }
-            
-            // Verificar si es soportado por el navegador
-            if (typeof Notification.requestPermission === 'undefined') {
-                return false;
-            }
-            
-            return true;
-        } catch (error) {
-            console.log('Notification no disponible:', error.message);
-            return false;
-        }
-    };
+    console.log('User Points:', campaigns);
 
-    // Función para mostrar notificación con fallback
-    const showNotification = (title, body, icon) => {
-        try {
-            // Verificar si está disponible
-            if (!isNotificationAvailable()) {
-                console.log('Notificaciones no disponibles en este dispositivo');
-                return false;
-            }
-
-            // Verificar permisos
-            if (Notification.permission !== 'granted') {
-                console.log('Permiso para notificaciones no concedido');
-                return false;
-            }
-
-            // Intentar crear notificación
-            const notification = new Notification(title, {
-                body: body,
-                icon: icon || '/favicon.ico'
-            });
-
-            // Configurar evento onclick
-            notification.onclick = () => {
-                window.focus();
-                notification.close();
-            };
-
-            // Auto-cerrar después de 4 segundos
-            setTimeout(() => {
-                try {
-                    notification.close();
-                } catch (e) {
-                    // Ignorar errores al cerrar
-                }
-            }, 4000);
-
-            console.log('Notificación mostrada exitosamente');
-            return true;
-
-        } catch (error) {
-            console.error('Error al mostrar notificación:', error);
-            
-            // Fallback para iOS/Safari que no soporta Notification API
-            if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
-                console.log('Usando fallback para iOS');
-                showiOSFallback(title, body);
-            }
-            
-            return false;
-        }
-    };
-
-    // Fallback para iOS que no soporta Notification API
-    const showiOSFallback = (title, body) => {
-        // Crear un toast/alert en la página
-        const toast = document.createElement('div');
-        toast.style.cssText = `
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: linear-gradient(135deg, ${color1} 0%, ${color2} 100%);
-            color: white;
-            padding: 16px 24px;
-            border-radius: 12px;
-            z-index: 99999;
-            max-width: 90%;
-            width: 350px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            animation: slideDown 0.3s ease;
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-        `;
-        
-        toast.innerHTML = `
-            <div style="font-weight: bold; font-size: 16px; margin-bottom: 8px;">${title}</div>
-            <div style="font-size: 14px; opacity: 0.9;">${body}</div>
-            <button style="
-                position: absolute;
-                top: 8px;
-                right: 8px;
-                background: none;
-                border: none;
-                color: white;
-                font-size: 20px;
-                cursor: pointer;
-            " onclick="this.parentElement.remove()">×</button>
-        `;
-        
-        // Agregar animación CSS
-        if (!document.querySelector('#ios-toast-style')) {
-            const style = document.createElement('style');
-            style.id = 'ios-toast-style';
-            style.textContent = `
-                @keyframes slideDown {
-                    from { transform: translateX(-50%) translateY(-20px); opacity: 0; }
-                    to { transform: translateX(-50%) translateY(0); opacity: 1; }
-                }
-                @keyframes slideUp {
-                    from { transform: translateX(-50%) translateY(0); opacity: 1; }
-                    to { transform: translateX(-50%) translateY(-20px); opacity: 0; }
-                }
-            `;
-            document.head.appendChild(style);
-        }
-        
-        document.body.appendChild(toast);
-        
-        // Auto-remover después de 5 segundos
-        setTimeout(() => {
-            if (toast.parentNode) {
-                toast.style.animation = 'slideUp 0.3s ease';
-                setTimeout(() => {
-                    if (toast.parentNode) {
-                        toast.parentNode.removeChild(toast);
-                    }
-                }, 300);
-            }
-        }, 5000);
-    };
-
-    // FUNCIÓN PARA MANEJAR EL CLICK (animación + QR)
+    // FUNCIÓN PARA MANEJAR EL CLICK (animación + QR) - SIN NOTIFICACIÓN
     const handleClick = (campaign) => {
         if (isAnimating) return;
         
@@ -178,13 +35,6 @@ const PointsCampaigns = ({ campaigns, userPoints, business, color1, color2, deta
             
             // LANZAR CONFETI
             launchConfetti();
-            
-            // ENVIAR NOTIFICACIÓN CON VERIFICACIÓN ROBUSTA
-            showNotification(
-                '¡Puedes canjear!',
-                `Tienes suficientes puntos para: ${campaign.CampaRecompensa}`,
-                business?.NegocioImagenUrl || '/favicon.ico'
-            );
 
             // Mostrar QR después de la animación
             setTimeout(() => {
@@ -251,8 +101,101 @@ const PointsCampaigns = ({ campaigns, userPoints, business, color1, color2, deta
                                     borderColor: `${detallesColor}30`
                                 }}
                             >
-                                {/* ... resto del código ... */}
-                                
+                                {/* Sección de Imagen - Solo para NegocioId == 3 */}
+                                {business?.NegocioId == 3 && (
+                                    <div className="mb-4">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <ImageIcon className="w-4 h-4" style={{ color: detallesColor }} />
+                                            <span className="text-xs font-medium" style={{ color: detallesColor }}>
+                                                Vista previa de la promoción
+                                            </span>
+                                        </div>
+                                        <div className="relative rounded-xl overflow-hidden border-2" style={{ borderColor: `${detallesColor}30` }}>
+                                            <div className="relative h-48 md:h-56 lg:h-64 w-full">
+                                                <img
+                                                    src={defaultImageUrl}
+                                                    alt={`Imagen de promoción: ${campaign.CampaNombre}`}
+                                                    className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                                                    onError={(e) => {
+                                                        e.target.style.display = 'none';
+                                                        e.target.parentElement.innerHTML = `
+                                                            <div class="w-full h-full flex flex-col items-center justify-center" style="background: linear-gradient(135deg, ${detallesColor}20, ${detallesColor}10)">
+                                                                <ImageIcon class="w-12 h-12 mb-2" style="color: ${detallesColor}60" />
+                                                                <p class="text-sm font-medium" style="color: ${detallesColor}80">Imagen de la promoción</p>
+                                                                <p class="text-xs mt-1" style="color: ${detallesColor}60">${campaign.CampaNombre}</p>
+                                                            </div>
+                                                        `;
+                                                    }}
+                                                />
+                                                {/* Overlay sutil */}
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent"></div>
+                                            </div>
+                                            {/* Badge en esquina */}
+                                            <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-lg px-2 py-1 shadow-sm">
+                                                <span className="text-xs font-bold" style={{ color: detallesColor }}>PROMO</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="flex justify-between items-start mb-3">
+                                    <div>
+                                        <h4 className="font-bold text-lg text-gray-800">{campaign.CampaNombre}</h4>
+                                        <p className="text-sm font-medium" style={{ color: detallesColor }}>
+                                            Válida hasta: {new Date(campaign.CampaVigeFin).toLocaleDateString()}
+                                        </p>
+                                    </div>
+                                    <span className="font-bold text-xl" style={{ color: color2 }}>
+                                        {campaign.CampaCantPSCanje} pts
+                                    </span>
+                                </div>
+
+                                <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+                                    {campaign.CampaDesc}
+                                </p>
+
+                                <div 
+                                    className="rounded-xl p-4 mb-4"
+                                    style={{
+                                        backgroundColor: `${detallesColor}08`
+                                    }}
+                                >
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-sm font-medium text-gray-700">Puntos necesarios:</span>
+                                        <div className="flex items-center gap-1">
+                                            <Coins className="w-4 h-4" style={{ color: color1 }}/>
+                                            <span className="font-bold" style={{ color: color2 }}>{campaign.CampaCantPSCanje}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="w-full bg-gray-200 rounded-full h-2">
+                                        <div
+                                            className="h-2 rounded-full transition-all duration-500"
+                                            style={{
+                                                width: `${Math.min((userPoints / campaign.CampaCantPSCanje) * 100, 100)}%`,
+                                                backgroundImage: `linear-gradient(to right, ${color1}, ${color2})`,
+                                            }}
+                                        ></div>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        Progreso: {userPoints}/{campaign.CampaCantPSCanje} puntos
+                                    </p>
+                                </div>
+
+                                <div 
+                                    className="rounded-xl p-4 border mb-4"
+                                    style={{
+                                        backgroundColor: `${detallesColor}08`,
+                                        borderColor: `${detallesColor}30`
+                                    }}
+                                >
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <Gift className="w-4 h-4" style={{ color: detallesColor }}/>
+                                        <span className="text-sm font-medium" style={{ color: detallesColor }}>Tu recompensa:</span>
+                                    </div>
+                                    <p className="font-bold" style={{ color: detallesColor }}>{campaign.CampaRecompensa}</p>
+                                </div>
+
                                 {/* Botón principal - Mantiene el texto original */}
                                 <button
                                     onClick={() => handleClick(campaign)}
