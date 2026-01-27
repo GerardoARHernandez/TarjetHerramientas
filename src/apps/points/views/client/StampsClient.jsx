@@ -8,12 +8,25 @@ import { useEffect, useState } from 'react';
 import ClientFooter from '../../components/ClientFooter';
 import RedeemPurchaseModal from '../../components/RedeemPurchaseModal';
 
-// Componentes de sellos
+// Componentes de sellos (siempre cargados)
 import StampsDisplay from '../../components/Stamps/StampsDisplay';
 import StampsCampaigns from '../../components/Stamps/StampsCampaigns';
 import StampsHistory from '../../components/Stamps/StampsHistory';
 import RedeemSection from '../../components/Stamps/RedeemSection';
 import { ArrowRight } from 'lucide-react';
+
+// Función para detectar iOS
+const isIOSDevice = () => {
+  if (typeof window === 'undefined') return false; // Para SSR
+  
+  const userAgent = window.navigator.userAgent;
+  const isIOS = /iPhone|iPad|iPod/.test(userAgent) && !window.MSStream;
+  const isSafari = /Safari/.test(userAgent) && !/Chrome|CriOS/.test(userAgent);
+  
+  return isIOS && isSafari; // Solo Safari iOS
+};
+
+const isIOS = isIOSDevice();
 
 const StampsClient = () => {
     const { user } = useAuth();
@@ -22,9 +35,9 @@ const StampsClient = () => {
     const { accountData, isLoading: accountLoading } = useClientAccount();
     const navigate = useNavigate();
     
-    const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
+    // Solo crear estado para notificaciones si no es iOS
+    const [showNotificationPrompt, setShowNotificationPrompt] = useState(!isIOS ? false : undefined);
     const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
-    // Eliminamos el estado del modal
 
     const isLoading = businessLoading || accountLoading;
     const userName = user?.name || 'Usuario';
@@ -64,10 +77,12 @@ const StampsClient = () => {
         if (businessType === 'P') {
             navigate('/points-loyalty/points');
         }
+        
+        // Si es iOS, registrar en console para debug
+        if (isIOS) {
+          console.log('📱 iOS Safari detectado - Notificaciones deshabilitadas en Stamps');
+        }
     }, [businessType, navigate]);
-
-    // Eliminamos la función handleSuccessfulRedeem
-    // Eliminamos handleCopyCode y closeRedeemModal
 
     if (isLoading || !accountData) {
         return (
@@ -107,7 +122,7 @@ const StampsClient = () => {
 
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-                    {/* Prompt de notificaciones */}
+                    {/* Prompt de notificaciones - SOLO si no es iOS */}
                     {!isIOS && showNotificationPrompt && (
                         <div className="mb-6 animate-fade-in">
                             <div className="bg-white rounded-2xl p-6 border shadow-sm">
@@ -130,6 +145,28 @@ const StampsClient = () => {
                                 </div>
                             </div>
                         </div>
+                    )}
+
+                    {/* Información para usuarios iOS */}
+                    {isIOS && (
+                      <div className="mb-6 p-4 rounded-xl bg-blue-50 border border-blue-200">
+                        <div className="flex items-center gap-3">
+                          <div className="text-blue-600">
+                            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                            </svg>
+                          </div>
+                          {/* <div>
+                            <p className="font-medium text-blue-800">
+                              📱 Modo iOS Safari
+                            </p>
+                            <p className="text-sm text-blue-600">
+                              Las notificaciones están deshabilitadas en Safari para iOS. 
+                              Para mejor experiencia, usa Chrome.
+                            </p>
+                          </div> */}
+                        </div>
+                      </div>
                     )}
 
                     {/* Botón de Registrar Ticket (solo para negocios PL) */}
