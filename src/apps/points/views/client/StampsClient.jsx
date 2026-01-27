@@ -108,7 +108,7 @@ const StampsClient = () => {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
                     {/* Prompt de notificaciones */}
-                    {showNotificationPrompt && (
+                    {!isIOS && showNotificationPrompt && (
                         <div className="mb-6 animate-fade-in">
                             <div className="bg-white rounded-2xl p-6 border shadow-sm">
                                 <h3 className="font-bold text-lg mb-2">¿Activar notificaciones?</h3>
