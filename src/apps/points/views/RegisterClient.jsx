@@ -153,7 +153,7 @@ const RegisterClient = () => {
       // Verificar si la respuesta contiene un error del servidor
       if (result.error) {
         // Mostrar mensaje personalizado en lugar del de la API
-        setMessage('Ocurrió un error. Intente nuevamente o verifique si el usuario ya está registrado con otro correo y teléfono.');
+        setMessage('Ocurrió un error. Intente nuevamente o verifique si el usuario ya está registrado.');
         
         setTimeout(() => {
           setMessage('');
@@ -164,7 +164,7 @@ const RegisterClient = () => {
       // Verificar si el usuarioId es 0 (indicando error)
       if (result.usuarioId == 0) {
         // Mostrar mensaje personalizado en lugar del de la API
-        setMessage('Ocurrió un error. Intente nuevamente o verifique si el usuario ya está registrado con otro correo y teléfono.');
+        setMessage('Ocurrió un error. Intente nuevamente o verifique si el usuario ya está registrado.');
         
         setTimeout(() => {
           setMessage('');
