@@ -152,17 +152,19 @@ const RegisterClient = () => {
 
       // Verificar si la respuesta contiene un error del servidor
       if (result.error) {
-        setMessage(result.Mensaje || 'Error en el registro. Por favor, intente nuevamente.');
+        // Mostrar mensaje personalizado en lugar del de la API
+        setMessage('Ocurrió un error. Intente nuevamente o verifique si el usuario ya está registrado con otro correo y teléfono.');
         
         setTimeout(() => {
           setMessage('');
-        }, 5000); // Más tiempo para mensajes largos del servidor
+        }, 5000);
         return;
       }
 
       // Verificar si el usuarioId es 0 (indicando error)
-      if (result.usuarioId === 0) {
-        setMessage(result.Mensaje || 'Error en el registro. Por favor, intente nuevamente.');
+      if (result.usuarioId == 0) {
+        // Mostrar mensaje personalizado en lugar del de la API
+        setMessage('Ocurrió un error. Intente nuevamente o verifique si el usuario ya está registrado con otro correo y teléfono.');
         
         setTimeout(() => {
           setMessage('');
