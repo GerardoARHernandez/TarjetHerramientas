@@ -62,8 +62,7 @@ const PointsCampaigns = ({ campaigns, userPoints, business, color1, color2, deta
 
     if (campaigns.length === 0) return null;
 
-    // URL de imagen para NegocioId == 3
-    const defaultImageUrl = "https://i0.wp.com/pizza-christian.mexicowebs.com/wp-content/uploads/2023/12/Papas-Oduladas.jpg?fit=984%2C984&ssl=1";
+    // URL de imagen 
 
     return (
         <>
@@ -101,8 +100,8 @@ const PointsCampaigns = ({ campaigns, userPoints, business, color1, color2, deta
                                     borderColor: `${detallesColor}30`
                                 }}
                             >
-                                {/* Sección de Imagen - Solo para NegocioId == 3 */}
-                                {business?.NegocioId == 3 && (
+                                {/* Sección de Imagen */}
+                                {campaign.URLImagen !== "" && (
                                     <div className="mb-4">
                                         <div className="flex items-center gap-2 mb-2">
                                             <ImageIcon className="w-4 h-4" style={{ color: detallesColor }} />
@@ -113,7 +112,7 @@ const PointsCampaigns = ({ campaigns, userPoints, business, color1, color2, deta
                                         <div className="relative rounded-xl overflow-hidden border-2" style={{ borderColor: `${detallesColor}30` }}>
                                             <div className="relative h-48 md:h-56 lg:h-64 w-full">
                                                 <img
-                                                    src={defaultImageUrl}
+                                                    src={campaign.URLImagen}
                                                     alt={`Imagen de promoción: ${campaign.CampaNombre}`}
                                                     className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                                                     onError={(e) => {
