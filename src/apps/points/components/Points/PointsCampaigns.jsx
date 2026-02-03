@@ -3,6 +3,7 @@ import { Coins, Gift, Image as ImageIcon } from 'lucide-react';
 import { useState } from 'react';
 import confetti from 'canvas-confetti';
 import PromoQRGenerator from '../PromoQRGenerator';
+import PRUEBACatalogo from './PRUEBACatalogo';
 
 const PointsCampaigns = ({ campaigns, userPoints, business, color1, color2, detallesColor, accountData }) => {
     const [isAnimating, setIsAnimating] = useState(false);
@@ -222,8 +223,15 @@ const PointsCampaigns = ({ campaigns, userPoints, business, color1, color2, deta
                                 
                             </div>
                         );
+
                     })}
                 </div>
+
+                {business.NegocioId == 3 && (
+                    <div className='my-6 '>
+                        <PRUEBACatalogo />
+                    </div>
+                )}
             </div>
 
             {/* Modal del QR de Promoción */}
