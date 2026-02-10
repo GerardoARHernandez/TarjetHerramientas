@@ -1,12 +1,25 @@
 // src/utils/whatsappUtils.js
-export const sendWhatsApp = (phone, clientName, balance, businessName, businessType, context = 'balance') => {
+export const sendWhatsApp = (phone, clientName, balance, businessName, businessType, context = 'balance', countryCode = '+52') => {
   if (!phone) {
     alert('El cliente no tiene número de teléfono registrado');
     return;
   }
 
-  // Número de teléfono (eliminar caracteres no numéricos)
+  // Eliminar caracteres no numéricos
   const phoneNumber = phone.replace(/\D/g, '');
+  
+  // Si el número ya tiene código de país, no lo agregues
+  let formattedPhone;
+  if (phoneNumber.startsWith('52') && phoneNumber.length > 10) {
+    // Ya tiene código de México (52)
+    formattedPhone = phoneNumber;
+  } else if (phoneNumber.length === 10) {
+    // Número de 10 dígitos sin código de país
+    formattedPhone = countryCode.replace('+', '') + phoneNumber;
+  } else {
+    // Otro formato, usar tal cual
+    formattedPhone = phoneNumber;
+  }
   
   // Determinar el tipo de programa
   const tipoPrograma = businessType === 'P' ? 'puntos' : 'sellos';
@@ -15,10 +28,8 @@ export const sendWhatsApp = (phone, clientName, balance, businessName, businessT
   let defaultMessage;
   
   if (context === 'abono') {
-    // Mensaje para abono reciente
     defaultMessage = `Hola ${clientName}, este es un mensaje de ${businessName}. Te informamos que se han abonado ${balance} ${tipoPrograma} a tu cuenta. ¡Gracias por tu compra!`;
   } else {
-    // Mensaje para saldo actual (contexto por defecto)
     defaultMessage = `Hola ${clientName}, este es un mensaje de ${businessName}. Solo para recordarte que tu saldo actual es: ${balance || '0'} ${tipoPrograma}.`;
   }
   
@@ -26,7 +37,7 @@ export const sendWhatsApp = (phone, clientName, balance, businessName, businessT
   const encodedMessage = encodeURIComponent(defaultMessage);
   
   // Crear URL de WhatsApp
-  const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+  const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodedMessage}`;
   
   // Abrir en nueva pestaña
   window.open(whatsappUrl, '_blank');
@@ -39,11 +50,12 @@ export const WhatsAppButton = ({
   balance, 
   businessName, 
   businessType, 
-  context = 'balance', // 'balance' o 'abono'
+  context = 'balance',
+  countryCode = '+52', // Código de país por defecto (México)
   className = '' 
 }) => {
   const handleClick = () => {
-    sendWhatsApp(phone, clientName, balance, businessName, businessType, context);
+    sendWhatsApp(phone, clientName, balance, businessName, businessType, context, countryCode);
   };
 
   if (!phone) return null;
