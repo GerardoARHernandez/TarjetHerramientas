@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, CreditCard, DollarSign, CheckCircle, Gift, FileText, Store, Check, AlertCircle } from 'lucide-react';
+import { X, CreditCard, DollarSign, CheckCircle, Gift, FileText, Store, Check, AlertCircle, Camera, XCircle } from 'lucide-react';
 import { useBusiness } from '../../../contexts/BusinessContext';
 import { useAuth } from '../../../contexts/AuthContext';
+import BarcodeScanner from 'react-barcode-scanner';
 
 const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
     const navigate = useNavigate();
@@ -16,11 +17,12 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
     const [showSuccess, setShowSuccess] = useState(false);
     const [pointsAwarded, setPointsAwarded] = useState(0);
     const [showRouletteQuestion, setShowRouletteQuestion] = useState(false);
-    const [showNonRouletteMessage, setShowNonRouletteMessage] = useState(false); // Nuevo estado
+    const [showNonRouletteMessage, setShowNonRouletteMessage] = useState(false);
     const [isValidating, setIsValidating] = useState(false);
     const [ticketValidation, setTicketValidation] = useState(null);
     const [businessRules, setBusinessRules] = useState(null);
     const [loadingRules, setLoadingRules] = useState(false);
+    const [showScanner, setShowScanner] = useState(false); // Estado para el scanner
     
     const { user } = useAuth();
     const { business } = useBusiness();
@@ -56,10 +58,8 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
 
     const calculatePoints = (amount) => {
         if (!businessRules || !businessRules.ReglasPorcentaje) {
-            // Valor por defecto si no hay reglas
             return Math.floor(parseFloat(amount) * 0.10);
         }
-        
         const percentage = parseFloat(businessRules.ReglasPorcentaje) / 100;
         return Math.floor(parseFloat(amount) * percentage);
     };
@@ -71,10 +71,27 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
             [name]: value
         }));
         
-        // Limpiar validación si se cambia el Web ID
         if (name === 'webId') {
             setTicketValidation(null);
         }
+    };
+
+    // Función para manejar el código escaneado
+    const handleScan = (data) => {
+        if (data) {
+            setFormData(prev => ({
+                ...prev,
+                webId: data
+            }));
+            setShowScanner(false);
+            setTicketValidation(null);
+        }
+    };
+
+    const handleError = (err) => {
+        console.error('Error al escanear:', err);
+        setShowScanner(false);
+        // Aquí puedes mostrar un mensaje de error si lo deseas
     };
 
     const handleValidateTicket = async (e) => {
@@ -115,7 +132,6 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
 
             const result = await response.json();
             
-            // Mostrar "Ticket válido" en lugar de "Web ID Valido"
             if (!result.error) {
                 result.Mensaje = "Ticket válido";
             }
@@ -136,7 +152,6 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         
-        // Validar que el ticket haya sido validado primero
         if (!ticketValidation || ticketValidation.error) {
             setTicketValidation({
                 error: true,
@@ -149,7 +164,6 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
             return;
         }
 
-        // Verificar que el usuario esté autenticado
         if (!user || !user.clienteId) {
             setTicketValidation({
                 error: true,
@@ -164,19 +178,17 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
             const points = calculatePoints(formData.importe);
             setPointsAwarded(points);
 
-            // Preparar datos para el abono de puntos
             const transactionData = {
                 ListTransaccion: {
                     UsuarioId: parseInt(user.clienteId),
                     TransaccionCant: points,
                     TransaccionImporte: parseFloat(formData.importe),
-                    TransaccionNoReferen: formData.webId, // Usar el WebId como referencia
+                    TransaccionNoReferen: formData.webId,
                     TransaccionFolioTick: formData.folio,
                     TransaccionSucursal: formData.sucursal
                 }
             };
 
-            // Llamar a la API de abono de puntos
             const response = await fetch('https://souvenir-site.com/WebPuntos/API1/AbonoPuntos', {
                 method: 'POST',
                 headers: {
@@ -187,19 +199,15 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
 
             const result = await response.json();
 
-            // Validar respuesta
             if (!result.error && result.TransaccionId) {
                 setShowSuccess(true);
                 
-                // Después de mostrar éxito, preguntar por la ruleta
                 setTimeout(() => {
                     setShowSuccess(false);
                     
-                    // Si es el negocio 3, mostrar pregunta de ruleta
                     if (business?.NegocioId == 3) {
                         setShowRouletteQuestion(true);
                     } else {
-                        // Si no es el negocio 3, mostrar mensaje de ticket registrado
                         setShowNonRouletteMessage(true);
                     }
                 }, 2000);
@@ -248,6 +256,7 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
         setShowRouletteQuestion(false);
         setShowNonRouletteMessage(false);
         setTicketValidation(null);
+        setShowScanner(false);
     };
 
     if (!isOpen) return null;
@@ -356,30 +365,72 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
                     </div>
                     )}
 
-                    {/* Formulario principal */}
-                    {!showSuccess && !showRouletteQuestion && !showNonRouletteMessage && (
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                        {/* Campo Web ID */}
-                        <div>
-                        <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                            <CreditCard className="w-4 h-4" />
-                            Web ID
-                        </label>
-                        <div className="relative">
-                            <input
-                            type="text"
-                            name="webId"
-                            value={formData.webId}
-                            onChange={handleChange}
-                            placeholder="Ingresa el ID de la compra"
-                            className="w-full px-4 py-3 pl-11 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                            required
-                            />
-                            <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    {/* Scanner de código de barras */}
+                    {showScanner && (
+                        <div className="mb-6 animate-fade-in">
+                            <div className="bg-gray-900 rounded-lg overflow-hidden relative">
+                                <button
+                                    onClick={() => setShowScanner(false)}
+                                    className="absolute top-2 right-2 z-10 p-1 bg-black/50 rounded-full hover:bg-black/70 transition-colors"
+                                >
+                                    <XCircle className="w-6 h-6 text-white" />
+                                </button>
+                                <div className="relative">
+                                    <BarcodeScanner
+                                        onUpdate={(err, result) => {
+                                            if (result) handleScan(result.text);
+                                            if (err) handleError(err);
+                                        }}
+                                    />
+                                    <div className="absolute inset-0 border-2 border-white/30 m-4 rounded-lg pointer-events-none">
+                                        <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-white"></div>
+                                        <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-white"></div>
+                                        <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-white"></div>
+                                        <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-white"></div>
+                                    </div>
+                                </div>
+                                <p className="absolute bottom-4 left-0 right-0 text-center text-white text-sm bg-black/50 py-2">
+                                    Enfoca el código de barras del Web ID
+                                </p>
+                            </div>
                         </div>
-                        <p className="text-xs text-gray-500 mt-1">
-                            Encuentra el Web ID en tu recibo de compra
-                        </p>
+                    )}
+
+                    {/* Formulario principal */}
+                    {!showSuccess && !showRouletteQuestion && !showNonRouletteMessage && !showScanner && (
+                    <form onSubmit={handleSubmit} className="space-y-5">
+                        {/* Campo Web ID con botón de escaneo */}
+                        <div>
+                            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                                <CreditCard className="w-4 h-4" />
+                                Web ID
+                            </label>
+                            <div className="relative flex gap-2">
+                                <div className="relative flex-1">
+                                    <input
+                                        type="text"
+                                        name="webId"
+                                        value={formData.webId}
+                                        onChange={handleChange}
+                                        placeholder="Ingresa o escanea el Web ID"
+                                        className="w-full px-4 py-3 pl-11 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                        required
+                                    />
+                                    <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowScanner(true)}
+                                    className="px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors flex items-center gap-2"
+                                    title="Escanear código de barras"
+                                >
+                                    <Camera className="w-5 h-5" />
+                                    <span className="hidden sm:inline">Escanear</span>
+                                </button>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">
+                                Encuentra el Web ID en tu recibo de compra o escanéalo
+                            </p>
                         </div>
 
                         {/* Campo Importe */}
