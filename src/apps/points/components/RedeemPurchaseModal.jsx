@@ -13,13 +13,12 @@ import {
     Camera,
     XCircle
 } from 'lucide-react';
-import { Html5Qrcode } from "html5-qrcode";
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import { useBusiness } from '../../../contexts/BusinessContext';
 import { useAuth } from '../../../contexts/AuthContext';
 
 const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
     const navigate = useNavigate();
-    const scannerRef = useRef(null);
     const readerId = useRef(`reader-${Date.now()}`);
     
     const [formData, setFormData] = useState({
@@ -135,12 +134,13 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
                     qrbox: { width: 280, height: 120 },
                     aspectRatio: 1.0,
                     formatsToSupport: [
-                        Html5Qrcode.constants.FormatCode39,
-                        Html5Qrcode.constants.FormatCode128,
-                        Html5Qrcode.constants.FormatEAN13,
-                        Html5Qrcode.constants.FormatEAN8,
-                        Html5Qrcode.constants.FormatITF,
-                        Html5Qrcode.constants.FormatCODABAR
+                        Html5QrcodeSupportedFormats.CODE_39,
+                        Html5QrcodeSupportedFormats.CODE_128,
+                        Html5QrcodeSupportedFormats.EAN_13,
+                        Html5QrcodeSupportedFormats.EAN_8,
+                        Html5QrcodeSupportedFormats.ITF,
+                        Html5QrcodeSupportedFormats.CODABAR,
+                        Html5QrcodeSupportedFormats.CODE_93
                     ]
                 };
 
@@ -179,7 +179,7 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
                 setScanError(err.message || 'Error al iniciar la cámara');
                 setIsScanning(false);
             }
-        }, 300); // Pequeño delay para asegurar que el DOM está listo
+        }, 300);
     };
 
     const stopScanner = async () => {
