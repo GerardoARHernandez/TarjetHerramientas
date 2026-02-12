@@ -1,31 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-    X,
-    CreditCard,
-    DollarSign,
-    CheckCircle,
-    Gift,
-    FileText,
-    Store,
-    Check,
-    AlertCircle,
-    Camera
-} from 'lucide-react';
-import { Html5Qrcode } from "html5-qrcode";
+import { X, CreditCard, DollarSign, CheckCircle, Gift, FileText, Store, Check, AlertCircle, Camera, XCircle } from 'lucide-react';
 import { useBusiness } from '../../../contexts/BusinessContext';
 import { useAuth } from '../../../contexts/AuthContext';
+import { BrowserMultiFormatReader, DecodeHintType, BarcodeFormat } from '@zxing/library';
 
 const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
     const navigate = useNavigate();
-
     const [formData, setFormData] = useState({
         webId: '',
         importe: '',
         folio: '',
         sucursal: ''
     });
-
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
     const [pointsAwarded, setPointsAwarded] = useState(0);
@@ -35,36 +22,43 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
     const [ticketValidation, setTicketValidation] = useState(null);
     const [businessRules, setBusinessRules] = useState(null);
     const [loadingRules, setLoadingRules] = useState(false);
-
-    // 🔹 Scanner states
     const [showScanner, setShowScanner] = useState(false);
-    const [scannerInstance, setScannerInstance] = useState(null);
-
+    const [scanning, setScanning] = useState(false);
+    const [scanError, setScanError] = useState(null);
+    
+    // Refs para el scanner
+    const videoRef = useRef(null);
+    const codeReader = useRef(null);
+    
     const { user } = useAuth();
     const { business } = useBusiness();
 
-    const color1 = business?.NegocioColor1 || '#ffb900';
-    const color2 = business?.NegocioColor2 || '#fe9a00';
+    const color1 = business?.NegocioColor1 ? business.NegocioColor1 : '#ffb900';
+    const color2 = business?.NegocioColor2 ? business.NegocioColor2 : '#fe9a00';
     const detallesColor = business?.NegocioColor2 || '#FF9800';
 
-    // ===============================
-    // CARGAR REGLAS
-    // ===============================
+    // Cargar reglas del negocio al abrir el modal
     useEffect(() => {
         if (isOpen && business?.NegocioId) {
             fetchBusinessRules();
         }
     }, [isOpen, business?.NegocioId]);
 
+    // Limpiar scanner al cerrar el modal
+    useEffect(() => {
+        if (!isOpen) {
+            stopScanner();
+        }
+    }, [isOpen]);
+
     const fetchBusinessRules = async () => {
         if (!business?.NegocioId) return;
-
+        
         setLoadingRules(true);
         try {
-            const response = await fetch(
-                `https://souvenir-site.com/WebPuntos/API1/GetReglasNegocio?Negocioid=${business.NegocioId}`
-            );
+            const response = await fetch(`https://souvenir-site.com/WebPuntos/API1/GetReglasNegocio?Negocioid=${business.NegocioId}`);
             const data = await response.json();
+            
             if (!data.error) {
                 setBusinessRules(data);
             }
@@ -76,7 +70,7 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
     };
 
     const calculatePoints = (amount) => {
-        if (!businessRules?.ReglasPorcentaje) {
+        if (!businessRules || !businessRules.ReglasPorcentaje) {
             return Math.floor(parseFloat(amount) * 0.10);
         }
         const percentage = parseFloat(businessRules.ReglasPorcentaje) / 100;
@@ -89,59 +83,139 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
             ...prev,
             [name]: value
         }));
-
+        
         if (name === 'webId') {
             setTicketValidation(null);
         }
     };
 
-    // ===============================
-    // 🔹 SCANNER FUNCIONES
-    // ===============================
-
+    // Función para iniciar el scanner
     const startScanner = async () => {
-        const html5QrCode = new Html5Qrcode("reader");
-
         try {
-            await html5QrCode.start(
-                { facingMode: "environment" },
-                {
-                    fps: 10,
-                    qrbox: { width: 250, height: 120 }
-                },
-                (decodedText) => {
-                    setFormData(prev => ({
-                        ...prev,
-                        webId: decodedText
-                    }));
-
-                    html5QrCode.stop();
-                    setShowScanner(false);
-                },
-                () => {}
+            setShowScanner(true);
+            setScanning(true);
+            setScanError(null);
+            
+            // Configurar hints para mejores resultados
+            const hints = new Map();
+            hints.set(DecodeHintType.POSSIBLE_FORMATS, [
+                BarcodeFormat.CODE_39,
+                BarcodeFormat.CODE_128,
+                BarcodeFormat.EAN_13,
+                BarcodeFormat.EAN_8,
+                BarcodeFormat.ITF,
+                BarcodeFormat.CODABAR,
+                BarcodeFormat.CODE_93
+            ]);
+            hints.set(DecodeHintType.TRY_HARDER, true);
+            
+            // Inicializar el lector con los hints
+            codeReader.current = new BrowserMultiFormatReader(hints);
+            
+            // Obtener dispositivos de video
+            const videoDevices = await codeReader.current.listVideoInputDevices();
+            
+            // Intentar obtener la cámara trasera
+            let selectedDevice = null;
+            
+            // Primero buscar cámara trasera por nombre
+            if (videoDevices.length > 0) {
+                // Buscar específicamente cámara trasera o environment
+                selectedDevice = videoDevices.find(device => 
+                    device.label.toLowerCase().includes('back') || 
+                    device.label.toLowerCase().includes('trasera') ||
+                    device.label.toLowerCase().includes('environment') ||
+                    device.label.toLowerCase().includes('rear')
+                );
+                
+                // Si no encuentra, usar la última cámara (generalmente la trasera en móviles)
+                if (!selectedDevice) {
+                    selectedDevice = videoDevices[videoDevices.length - 1];
+                }
+            }
+            
+            console.log('Usando dispositivo:', selectedDevice?.label || 'cámara por defecto');
+            
+            // Iniciar el escaneo continuo
+            await codeReader.current.decodeFromVideoDevice(
+                selectedDevice?.deviceId,
+                videoRef.current,
+                (result, error) => {
+                    if (result) {
+                        // Vibrar si está disponible (opcional)
+                        if (navigator.vibrate) {
+                            navigator.vibrate(200);
+                        }
+                        
+                        const scannedCode = result.getText();
+                        console.log('Código escaneado:', scannedCode);
+                        
+                        // Limpiar y formatear el código
+                        const cleanCode = scannedCode.trim();
+                        
+                        setFormData(prev => ({
+                            ...prev,
+                            webId: cleanCode
+                        }));
+                        
+                        // Detener el scanner después de leer
+                        stopScanner();
+                        
+                        // Limpiar validación previa
+                        setTicketValidation(null);
+                        
+                        // Feedback visual
+                        setScanError(null);
+                    }
+                    
+                    if (error) {
+                        // Solo mostrar errores que no sean "no se encontró código"
+                        if (!error.message.includes('NotFoundException') && 
+                            !error.message.includes('Timeout') &&
+                            error.message !== '') {
+                            console.error('Error de escaneo:', error);
+                            setScanError('Acerque el código a la cámara');
+                        }
+                    }
+                }
             );
-
-            setScannerInstance(html5QrCode);
-        } catch (err) {
-            console.error("Error al iniciar cámara:", err);
+            
+        } catch (error) {
+            console.error('Error al iniciar la cámara:', error);
+            setScanError('No se pudo acceder a la cámara. Verifica los permisos.');
+            setShowScanner(false);
+            setScanning(false);
         }
     };
 
-    const stopScanner = async () => {
-        if (scannerInstance) {
-            await scannerInstance.stop();
-            setScannerInstance(null);
+    // Función para detener el scanner
+    const stopScanner = () => {
+        if (codeReader.current) {
+            try {
+                codeReader.current.reset();
+                codeReader.current = null;
+            } catch (error) {
+                console.error('Error al detener scanner:', error);
+            }
         }
+        
+        // Limpiar el video element
+        if (videoRef.current) {
+            const stream = videoRef.current.srcObject;
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            videoRef.current.srcObject = null;
+        }
+        
         setShowScanner(false);
+        setScanning(false);
+        setScanError(null);
     };
-
-    // ===============================
-    // VALIDAR TICKET
-    // ===============================
 
     const handleValidateTicket = async (e) => {
         e.preventDefault();
-
+        
         if (!formData.webId.trim()) {
             setTicketValidation({
                 error: true,
@@ -162,25 +236,29 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
         setTicketValidation(null);
 
         try {
-            const response = await fetch(
-                'https://souvenir-site.com/WebPuntos/API1/Ticket/Validar',
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        WebID: formData.webId,
-                        Importe: parseFloat(formData.importe)
-                    })
-                }
-            );
+            const validationData = {
+                WebID: formData.webId,
+                Importe: parseFloat(formData.importe)
+            };
+
+            const response = await fetch('https://souvenir-site.com/WebPuntos/API1/Ticket/Validar', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(validationData)
+            });
 
             const result = await response.json();
+            
             if (!result.error) {
                 result.Mensaje = "Ticket válido";
             }
+            
             setTicketValidation(result);
 
         } catch (error) {
+            console.error('Error al validar ticket:', error);
             setTicketValidation({
                 error: true,
                 Mensaje: 'Error de conexión al validar el ticket'
@@ -190,13 +268,9 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
         }
     };
 
-    // ===============================
-    // SUBMIT
-    // ===============================
-
     const handleSubmit = async (e) => {
         e.preventDefault();
-
+        
         if (!ticketValidation || ticketValidation.error) {
             setTicketValidation({
                 error: true,
@@ -209,7 +283,7 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
             return;
         }
 
-        if (!user?.clienteId) {
+        if (!user || !user.clienteId) {
             setTicketValidation({
                 error: true,
                 Mensaje: 'Usuario no autenticado'
@@ -218,36 +292,38 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
         }
 
         setIsSubmitting(true);
-
+        
         try {
             const points = calculatePoints(formData.importe);
             setPointsAwarded(points);
 
-            const response = await fetch(
-                'https://souvenir-site.com/WebPuntos/API1/AbonoPuntos',
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        ListTransaccion: {
-                            UsuarioId: parseInt(user.clienteId),
-                            TransaccionCant: points,
-                            TransaccionImporte: parseFloat(formData.importe),
-                            TransaccionNoReferen: formData.webId,
-                            TransaccionFolioTick: formData.folio,
-                            TransaccionSucursal: formData.sucursal
-                        }
-                    })
+            const transactionData = {
+                ListTransaccion: {
+                    UsuarioId: parseInt(user.clienteId),
+                    TransaccionCant: points,
+                    TransaccionImporte: parseFloat(formData.importe),
+                    TransaccionNoReferen: formData.webId,
+                    TransaccionFolioTick: formData.folio,
+                    TransaccionSucursal: formData.sucursal
                 }
-            );
+            };
+
+            const response = await fetch('https://souvenir-site.com/WebPuntos/API1/AbonoPuntos', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(transactionData)
+            });
 
             const result = await response.json();
 
             if (!result.error && result.TransaccionId) {
                 setShowSuccess(true);
-
+                
                 setTimeout(() => {
                     setShowSuccess(false);
+                    
                     if (business?.NegocioId == 3) {
                         setShowRouletteQuestion(true);
                     } else {
@@ -255,10 +331,11 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
                     }
                 }, 2000);
             } else {
-                throw new Error(result.Mensaje || 'Error desconocido');
+                throw new Error(result.Mensaje || 'Error desconocido al registrar los puntos');
             }
 
         } catch (error) {
+            console.error('Error al registrar puntos:', error);
             setTicketValidation({
                 error: true,
                 Mensaje: `Error al registrar la compra: ${error.message}`
@@ -268,97 +345,223 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
         }
     };
 
+    const handleRouletteYes = () => {
+        setShowRouletteQuestion(false);
+        onClose();
+        navigate('/points-loyalty/ruleta');
+    };
+
+    const handleRouletteNo = () => {
+        setShowRouletteQuestion(false);
+        onClose();
+        resetForm();
+    };
+
+    const handleNonRouletteClose = () => {
+        setShowNonRouletteMessage(false);
+        onClose();
+        resetForm();
+    };
+
     const resetForm = () => {
-        setFormData({ webId: '', importe: '', folio: '', sucursal: '' });
+        setFormData({ 
+            webId: '', 
+            importe: '', 
+            folio: '', 
+            sucursal: '' 
+        });
         setPointsAwarded(0);
         setShowSuccess(false);
         setShowRouletteQuestion(false);
         setShowNonRouletteMessage(false);
         setTicketValidation(null);
+        stopScanner();
     };
 
     if (!isOpen) return null;
 
     return (
-        <>
-            <div className="fixed inset-0 z-50 overflow-y-auto">
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+            {/* Fondo oscuro */}
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+            
+            {/* Contenedor del modal */}
+            <div className="flex min-h-full items-center justify-center p-4">
+                <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+                
+                {/* Header del modal */}
+                <div className="p-6" style={{backgroundImage: `linear-gradient(to right, ${color1}, ${color2})`,}}>
+                    <div className="flex justify-between items-center mb-4">
+                    <div className="flex items-center gap-3">
+                        <Gift className="w-7 h-7 text-white" />
+                        <h2 className="text-xl font-bold text-white">Registrar Ticket</h2>
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className="p-1 hover:bg-white/20 rounded-full transition-colors"
+                    >
+                        <X className="w-6 h-6 text-white" />
+                    </button>
+                    </div>
+                    <p className="text-blue-100 text-sm">
+                    Ingresa los datos de tu compra para acumular puntos
+                    </p>
+                </div>
 
-                <div className="flex min-h-full items-center justify-center p-4">
-                    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+                {/* Contenido del formulario */}
+                <div className="p-6">
+                    {/* Mensaje de éxito */}
+                    {showSuccess && (
+                    <div className="mb-6 animate-fade-in">
+                        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-5 text-center">
+                        <CheckCircle className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
+                        <h3 className="text-lg font-semibold text-emerald-800 mb-2">
+                            ¡Puntos Abonados!
+                        </h3>
+                        <p className="text-emerald-700 mb-1">
+                            Se han abonado <span className="font-bold">{pointsAwarded} puntos</span> a tu cuenta.
+                        </p>
+                        <p className="text-emerald-600 text-sm">
+                            {businessRules?.ReglasPorcentaje ? `${businessRules.ReglasPorcentaje}% del importe` : '10% del importe'}: ${formData.importe}
+                        </p>
+                        </div>
+                    </div>
+                    )}
 
-                        {/* HEADER */}
-                        <div
-                            className="p-6"
-                            style={{ backgroundImage: `linear-gradient(to right, ${color1}, ${color2})` }}
+                    {/* Pregunta de la ruleta (solo para negocio 3) */}
+                    {showRouletteQuestion && business?.NegocioId == 3 && (
+                    <div className="mb-6 animate-fade-in">
+                        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-5 text-center">
+                        <div className="w-16 h-16 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 10v4a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <h3 className="text-lg font-semibold text-amber-800 mb-3">
+                            ¿Deseas participar en la ruleta?
+                        </h3>
+                        <p className="text-amber-700 mb-5">
+                            Gira la ruleta y gana premios adicionales con tus puntos
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                            onClick={handleRouletteNo}
+                            className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors cursor-pointer"
+                            >
+                            No, gracias
+                            </button>
+                            <button
+                            onClick={handleRouletteYes}
+                            className="flex-1 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-medium rounded-lg transition-all shadow-md hover:shadow-lg cursor-pointer"
+                            >
+                            ¡Sí, participar!
+                            </button>
+                        </div>
+                        </div>
+                    </div>
+                    )}
+
+                    {/* Mensaje cuando NO es el negocio 3 */}
+                    {showNonRouletteMessage && business?.NegocioId != 3 && (
+                    <div className="mb-6 animate-fade-in">
+                        <div className="bg-green-50 border border-green-200 rounded-xl p-5 text-center">
+                        <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
+                        <h3 className="text-lg font-semibold text-green-800 mb-2">
+                            ¡Ticket Registrado!
+                        </h3>
+                        <p className="text-green-700 mb-5">
+                            Tu compra ha sido registrada exitosamente. 
+                            Se han abonado <span className="font-bold">{pointsAwarded} puntos</span> a tu cuenta.
+                        </p>
+                        <button
+                            onClick={handleNonRouletteClose}
+                            className="w-full py-3 bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white font-medium rounded-lg transition-all shadow-md hover:shadow-lg cursor-pointer"
                         >
-                            <div className="flex justify-between items-center mb-4">
-                                <div className="flex items-center gap-3">
-                                    <Gift className="w-7 h-7 text-white" />
-                                    <h2 className="text-xl font-bold text-white">Registrar Ticket</h2>
-                                </div>
-                                <button onClick={onClose}>
-                                    <X className="w-6 h-6 text-white" />
+                            Cerrar
+                        </button>
+                        </div>
+                    </div>
+                    )}
+
+                    {/* Scanner de código de barras con ZXing */}
+                    {showScanner && (
+                        <div className="mb-6 animate-fade-in">
+                            <div className="bg-gray-900 rounded-lg overflow-hidden relative">
+                                <button
+                                    onClick={stopScanner}
+                                    className="absolute top-2 right-2 z-10 p-1 bg-black/50 rounded-full hover:bg-black/70 transition-colors"
+                                >
+                                    <XCircle className="w-6 h-6 text-white" />
                                 </button>
+                                <div className="relative">
+                                    <video
+                                        ref={videoRef}
+                                        className="w-full h-72 object-cover"
+                                        playsInline
+                                        autoPlay
+                                    />
+                                    <div className="absolute inset-0 border-2 border-white/30 m-4 rounded-lg pointer-events-none">
+                                        <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-white"></div>
+                                        <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-white"></div>
+                                        <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-white"></div>
+                                        <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-white"></div>
+                                    </div>
+                                    {scanning && (
+                                        <>
+                                            <div className="absolute inset-x-0 top-1/2 h-0.5 bg-red-500 shadow-lg shadow-red-500/50 animate-scanner-line"></div>
+                                            <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/10 pointer-events-none"></div>
+                                        </>
+                                    )}
+                                </div>
+                                <div className="p-3 bg-gray-900">
+                                    <p className="text-center text-white text-sm">
+                                        {scanError ? (
+                                            <span className="text-yellow-400">{scanError}</span>
+                                        ) : (
+                                            "Centra el código de barras en el recuadro"
+                                        )}
+                                    </p>
+                                </div>
                             </div>
                         </div>
+                    )}
 
-                        {/* BODY */}
-                        <div className="p-6 space-y-5">
-
-                            {/* WEB ID CON SCANNER */}
-                            <div>
-                                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                                    <CreditCard className="w-4 h-4" />
-                                    Web ID
-                                </label>
-
-                                <div className="flex gap-2">
+                    {/* Formulario principal */}
+                    {!showSuccess && !showRouletteQuestion && !showNonRouletteMessage && !showScanner && (
+                    <form onSubmit={handleSubmit} className="space-y-5">
+                        {/* Campo Web ID con botón de escaneo */}
+                        <div>
+                            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                                <CreditCard className="w-4 h-4" />
+                                Web ID
+                            </label>
+                            <div className="relative flex gap-2">
+                                <div className="relative flex-1">
                                     <input
                                         type="text"
                                         name="webId"
                                         value={formData.webId}
                                         onChange={handleChange}
-                                        className="flex-1 px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg"
+                                        placeholder="Ingresa o escanea el Web ID"
+                                        className="w-full px-4 py-3 pl-11 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                                         required
                                     />
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setShowScanner(true);
-                                            setTimeout(() => startScanner(), 300);
-                                        }}
-                                        className="px-4 bg-gray-100 rounded-lg"
-                                    >
-                                        <Camera className="w-5 h-5" />
-                                    </button>
+                                    <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                                 </div>
+                                <button
+                                    type="button"
+                                    onClick={startScanner}
+                                    className="px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors flex items-center gap-2"
+                                    title="Escanear código de barras"
+                                >
+                                    <Camera className="w-5 h-5" />
+                                    <span className="hidden sm:inline">Escanear</span>
+                                </button>
                             </div>
-
-                            {/* Formulario principal */}
-                    {!showSuccess && !showRouletteQuestion && !showNonRouletteMessage && (
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                        {/* Campo Web ID */}
-                        <div>
-                        <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                            <CreditCard className="w-4 h-4" />
-                            Web ID
-                        </label>
-                        <div className="relative">
-                            <input
-                            type="text"
-                            name="webId"
-                            value={formData.webId}
-                            onChange={handleChange}
-                            placeholder="Ingresa el ID de la compra"
-                            className="w-full px-4 py-3 pl-11 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                            required
-                            />
-                            <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        </div>
-                        <p className="text-xs text-gray-500 mt-1">
-                            Encuentra el Web ID en tu recibo de compra
-                        </p>
+                            <p className="text-xs text-gray-500 mt-1">
+                                Encuentra el Web ID en tu recibo de compra o escanéalo
+                            </p>
                         </div>
 
                         {/* Campo Importe */}
@@ -526,27 +729,22 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
                         )}
                     </form>
                     )}
+                </div>
 
-                        </div>
+                {/* Footer informativo */}
+                <div className="bg-gray-50 border-t border-gray-200 px-6 py-4">
+                    <div className="flex items-center justify-between text-sm text-gray-600">
+                    <span>{businessName}</span>
+                    {loadingRules ? (
+                        <span className="text-xs">Cargando reglas...</span>
+                    ) : businessRules?.ReglasPorcentaje && (
+                        <span className="text-xs">Porcentaje: {businessRules.ReglasPorcentaje}%</span>
+                    )}
                     </div>
+                </div>
                 </div>
             </div>
-
-            {/* MODAL SCANNER */}
-            {showScanner && (
-                <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center">
-                    <div className="bg-white p-4 rounded-xl w-full max-w-sm">
-                        <div className="flex justify-between mb-3">
-                            <h3 className="font-semibold">Escanear Web ID</h3>
-                            <button onClick={stopScanner}>
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-                        <div id="reader" />
-                    </div>
-                </div>
-            )}
-        </>
+        </div>
     );
 };
 
