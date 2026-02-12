@@ -20,6 +20,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
     const navigate = useNavigate();
     const scannerRef = useRef(null);
+    const readerId = useRef(`reader-${Date.now()}`);
     
     const [formData, setFormData] = useState({
         webId: '',
@@ -42,6 +43,7 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
     const [showScanner, setShowScanner] = useState(false);
     const [scannerInstance, setScannerInstance] = useState(null);
     const [scanError, setScanError] = useState('');
+    const [isScanning, setIsScanning] = useState(false);
 
     const { user } = useAuth();
     const { business } = useBusiness();
@@ -57,6 +59,7 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
         if (isOpen && business?.NegocioId) {
             fetchBusinessRules();
         }
+        
         // Limpiar scanner al cerrar
         return () => {
             if (scannerInstance) {
@@ -104,65 +107,79 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
     };
 
     // ===============================
-    // SCANNER FUNCIONES
+    // SCANNER FUNCIONES - CORREGIDAS
     // ===============================
     const startScanner = async () => {
         setScanError('');
+        setIsScanning(true);
+        setShowScanner(true);
         
-        // Asegurar que el elemento existe
-        if (!document.getElementById('reader')) {
-            setScanError('Error al inicializar el escáner');
-            return;
-        }
+        // Esperar a que el DOM se actualice
+        setTimeout(async () => {
+            try {
+                // Verificar que el elemento existe
+                const readerElement = document.getElementById(readerId.current);
+                if (!readerElement) {
+                    throw new Error('Elemento reader no encontrado');
+                }
 
-        // Limpiar instancia anterior si existe
-        if (scannerInstance) {
-            await stopScanner();
-        }
+                // Limpiar instancia anterior si existe
+                if (scannerInstance) {
+                    await stopScanner();
+                }
 
-        const html5QrCode = new Html5Qrcode("reader");
+                const html5QrCode = new Html5Qrcode(readerId.current);
 
-        try {
-            await html5QrCode.start(
-                { 
-                    facingMode: "environment" // Usa cámara trasera
-                },
-                {
+                const config = {
                     fps: 10,
                     qrbox: { width: 280, height: 120 },
-                    aspectRatio: 1.0
-                },
-                (decodedText) => {
-                    // Éxito al escanear
-                    setFormData(prev => ({
-                        ...prev,
-                        webId: decodedText.trim()
-                    }));
-                    
-                    // Limpiar validación anterior
-                    setTicketValidation(null);
-                    
-                    // Cerrar scanner
-                    stopScanner();
-                },
-                (errorMessage) => {
-                    // Error de escaneo (ignorar errores de no detección)
-                    if (!errorMessage.includes('NotFoundException')) {
-                        console.debug('Error de escaneo:', errorMessage);
-                    }
-                }
-            ).catch((err) => {
-                console.error('Error al iniciar escáner:', err);
-                setScanError('No se pudo acceder a la cámara. Verifica los permisos.');
-            });
+                    aspectRatio: 1.0,
+                    formatsToSupport: [
+                        Html5Qrcode.constants.FormatCode39,
+                        Html5Qrcode.constants.FormatCode128,
+                        Html5Qrcode.constants.FormatEAN13,
+                        Html5Qrcode.constants.FormatEAN8,
+                        Html5Qrcode.constants.FormatITF,
+                        Html5Qrcode.constants.FormatCODABAR
+                    ]
+                };
 
-            setScannerInstance(html5QrCode);
-            setShowScanner(true);
-            
-        } catch (err) {
-            console.error("Error al iniciar cámara:", err);
-            setScanError('Error al iniciar la cámara. Intenta de nuevo.');
-        }
+                await html5QrCode.start(
+                    { facingMode: "environment" },
+                    config,
+                    (decodedText) => {
+                        // Éxito al escanear
+                        setFormData(prev => ({
+                            ...prev,
+                            webId: decodedText.trim()
+                        }));
+                        
+                        setTicketValidation(null);
+                        
+                        // Pequeña vibración si está disponible
+                        if (navigator.vibrate) {
+                            navigator.vibrate(50);
+                        }
+                        
+                        stopScanner();
+                    },
+                    (errorMessage) => {
+                        // Ignorar errores de no detección
+                        if (!errorMessage.includes('NotFoundException')) {
+                            console.debug('Error de escaneo:', errorMessage);
+                        }
+                    }
+                );
+
+                setScannerInstance(html5QrCode);
+                setIsScanning(false);
+                
+            } catch (err) {
+                console.error("Error al iniciar cámara:", err);
+                setScanError(err.message || 'Error al iniciar la cámara');
+                setIsScanning(false);
+            }
+        }, 300); // Pequeño delay para asegurar que el DOM está listo
     };
 
     const stopScanner = async () => {
@@ -177,6 +194,7 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
         }
         setShowScanner(false);
         setScanError('');
+        setIsScanning(false);
     };
 
     // ===============================
@@ -648,7 +666,9 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
                     <div className="relative w-full max-w-lg mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden">
                         {/* Header del scanner */}
                         <div className="flex items-center justify-between p-4 border-b">
-                            <h3 className="font-semibold text-gray-900">Escanear Web ID</h3>
+                            <h3 className="font-semibold text-gray-900">
+                                {isScanning ? 'Iniciando cámara...' : 'Escanear Web ID'}
+                            </h3>
                             <button
                                 onClick={stopScanner}
                                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -657,11 +677,11 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
                             </button>
                         </div>
 
-                        {/* Contenedor del scanner */}
-                        <div className="bg-black">
+                        {/* Contenedor del scanner con ID único */}
+                        <div className="bg-black flex items-center justify-center" style={{ minHeight: '300px' }}>
                             <div 
-                                id="reader" 
-                                className="w-full"
+                                id={readerId.current}
+                                className="w-full h-full"
                                 style={{ 
                                     minHeight: '300px',
                                     maxHeight: '400px'
@@ -684,7 +704,7 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
                             ) : (
                                 <div className="text-center">
                                     <p className="text-gray-700 text-sm mb-1">
-                                        Centra el código de barras en el recuadro
+                                        {isScanning ? 'Preparando cámara...' : 'Centra el código de barras en el recuadro'}
                                     </p>
                                     <p className="text-xs text-gray-500">
                                         El escáner se cerrará automáticamente al leer el código
