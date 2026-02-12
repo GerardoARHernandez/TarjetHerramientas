@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, CreditCard, DollarSign, CheckCircle, Gift, FileText, Store, Check, AlertCircle, Camera, XCircle } from 'lucide-react';
 import { useBusiness } from '../../../contexts/BusinessContext';
 import { useAuth } from '../../../contexts/AuthContext';
-import BarcodeScanner from 'react-barcode-scanner';
+import { BrowserMultiFormatReader } from '@zxing/library';
 
 const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
     const navigate = useNavigate();
@@ -22,7 +22,12 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
     const [ticketValidation, setTicketValidation] = useState(null);
     const [businessRules, setBusinessRules] = useState(null);
     const [loadingRules, setLoadingRules] = useState(false);
-    const [showScanner, setShowScanner] = useState(false); // Estado para el scanner
+    const [showScanner, setShowScanner] = useState(false);
+    const [scanning, setScanning] = useState(false);
+    
+    // Refs para el scanner
+    const videoRef = useRef(null);
+    const codeReader = useRef(null);
     
     const { user } = useAuth();
     const { business } = useBusiness();
@@ -37,6 +42,13 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
             fetchBusinessRules();
         }
     }, [isOpen, business?.NegocioId]);
+
+    // Limpiar scanner al cerrar el modal
+    useEffect(() => {
+        if (!isOpen) {
+            stopScanner();
+        }
+    }, [isOpen]);
 
     const fetchBusinessRules = async () => {
         if (!business?.NegocioId) return;
@@ -76,22 +88,65 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
         }
     };
 
-    // Función para manejar el código escaneado
-    const handleScan = (data) => {
-        if (data) {
-            setFormData(prev => ({
-                ...prev,
-                webId: data
-            }));
+    // Función para iniciar el scanner
+    const startScanner = async () => {
+        try {
+            setShowScanner(true);
+            setScanning(true);
+            
+            // Inicializar el lector de códigos
+            codeReader.current = new BrowserMultiFormatReader();
+            
+            // Obtener dispositivos de video
+            const videoDevices = await codeReader.current.listVideoInputDevices();
+            
+            // Usar la cámara trasera si está disponible
+            const selectedDevice = videoDevices.find(
+                device => device.label.toLowerCase().includes('back') || 
+                         device.label.toLowerCase().includes('environment')
+            ) || videoDevices[0];
+            
+            // Iniciar el escaneo
+            await codeReader.current.decodeFromVideoDevice(
+                selectedDevice?.deviceId,
+                videoRef.current,
+                (result, error) => {
+                    if (result) {
+                        handleScan(result.getText());
+                    }
+                    if (error && !error.message.includes('NotFoundException')) {
+                        console.error('Error de escaneo:', error);
+                    }
+                }
+            );
+        } catch (error) {
+            console.error('Error al iniciar la cámara:', error);
             setShowScanner(false);
-            setTicketValidation(null);
+            setScanning(false);
+            alert('No se pudo acceder a la cámara. Por favor, verifica los permisos.');
         }
     };
 
-    const handleError = (err) => {
-        console.error('Error al escanear:', err);
+    // Función para detener el scanner
+    const stopScanner = () => {
+        if (codeReader.current) {
+            codeReader.current.reset();
+            codeReader.current = null;
+        }
         setShowScanner(false);
-        // Aquí puedes mostrar un mensaje de error si lo deseas
+        setScanning(false);
+    };
+
+    // Función para manejar el código escaneado
+    const handleScan = (data) => {
+        if (data && scanning) {
+            setFormData(prev => ({
+                ...prev,
+                webId: data.trim()
+            }));
+            stopScanner();
+            setTicketValidation(null);
+        }
     };
 
     const handleValidateTicket = async (e) => {
@@ -256,7 +311,7 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
         setShowRouletteQuestion(false);
         setShowNonRouletteMessage(false);
         setTicketValidation(null);
-        setShowScanner(false);
+        stopScanner();
     };
 
     if (!isOpen) return null;
@@ -365,22 +420,20 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
                     </div>
                     )}
 
-                    {/* Scanner de código de barras */}
+                    {/* Scanner de código de barras con ZXing */}
                     {showScanner && (
                         <div className="mb-6 animate-fade-in">
                             <div className="bg-gray-900 rounded-lg overflow-hidden relative">
                                 <button
-                                    onClick={() => setShowScanner(false)}
+                                    onClick={stopScanner}
                                     className="absolute top-2 right-2 z-10 p-1 bg-black/50 rounded-full hover:bg-black/70 transition-colors"
                                 >
                                     <XCircle className="w-6 h-6 text-white" />
                                 </button>
                                 <div className="relative">
-                                    <BarcodeScanner
-                                        onUpdate={(err, result) => {
-                                            if (result) handleScan(result.text);
-                                            if (err) handleError(err);
-                                        }}
+                                    <video
+                                        ref={videoRef}
+                                        className="w-full h-64 object-cover"
                                     />
                                     <div className="absolute inset-0 border-2 border-white/30 m-4 rounded-lg pointer-events-none">
                                         <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-white"></div>
@@ -388,6 +441,9 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
                                         <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-white"></div>
                                         <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-white"></div>
                                     </div>
+                                    {scanning && (
+                                        <div className="absolute inset-x-0 top-1/2 h-0.5 bg-red-500 animate-scanner-line"></div>
+                                    )}
                                 </div>
                                 <p className="absolute bottom-4 left-0 right-0 text-center text-white text-sm bg-black/50 py-2">
                                     Enfoca el código de barras del Web ID
@@ -420,7 +476,7 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
                                 </div>
                                 <button
                                     type="button"
-                                    onClick={() => setShowScanner(true)}
+                                    onClick={startScanner}
                                     className="px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors flex items-center gap-2"
                                     title="Escanear código de barras"
                                 >
