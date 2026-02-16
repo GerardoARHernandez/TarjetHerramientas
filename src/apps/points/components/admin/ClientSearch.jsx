@@ -1,7 +1,7 @@
 // src/apps/points/components/admin/RegisterPurchase/ClientSearch.jsx
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../../../contexts/AuthContext';
-import { Search, User, Phone, Mail, Check, List, QrCode, Camera, X } from 'lucide-react';
+import { Search, User, Phone, Mail, Check, List, QrCode, Camera, X, MapPin } from 'lucide-react';
 
 const ClientSearch = ({ 
   selectedClientId, 
@@ -17,9 +17,57 @@ const ClientSearch = ({
   const [showDropdown, setShowDropdown] = useState(false);
   const [showQrScanner, setShowQrScanner] = useState(false);
   const [qrMessage, setQrMessage] = useState('');
+  const [location, setLocation] = useState(null);
+  const [locationError, setLocationError] = useState('');
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const { business } = useAuth();
+
+  // Función para obtener la ubicación actual
+  const getCurrentLocation = useCallback(() => {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('Geolocalización no soportada por el navegador'));
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const coords = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy,
+            timestamp: new Date().toISOString()
+          };
+          setLocation(coords);
+          resolve(coords);
+        },
+        (error) => {
+          let errorMessage = 'Error al obtener ubicación';
+          switch(error.code) {
+            case error.PERMISSION_DENIED:
+              errorMessage = 'Permiso de ubicación denegado';
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage = 'Información de ubicación no disponible';
+              break;
+            case error.TIMEOUT:
+              errorMessage = 'Tiempo de espera agotado';
+              break;
+            default:
+              errorMessage = error.message;
+          }
+          setLocationError(errorMessage);
+          reject(new Error(errorMessage));
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        }
+      );
+    });
+  }, []);
 
   // Cargar clientes del negocio al montar el componente
   useEffect(() => {
@@ -141,9 +189,48 @@ const ClientSearch = ({
     return null;
   }, []);
 
+  // Mostrar ubicación en alerta (solo para negocio ID 3)
+  const showLocationAlert = useCallback((locationData, qrType, clientInfo = null) => {
+    if (business?.NegocioId === 3 && locationData) {
+      const locationMessage = 
+        `📍 INFORMACIÓN DE UBICACIÓN 📍\n\n` +
+        `Latitud: ${locationData.latitude}\n` +
+        `Longitud: ${locationData.longitude}\n` +
+        `Precisión: ±${locationData.accuracy.toFixed(2)} metros\n` +
+        `Timestamp: ${new Date(locationData.timestamp).toLocaleString()}\n\n` +
+        `📱 Tipo QR: ${qrType === 'promo' ? 'Promoción' : 'Teléfono'}\n` +
+        (clientInfo ? `👤 Cliente: ${clientInfo.name}\n` : '') +
+        (clientInfo?.phone ? `📞 Teléfono: ${clientInfo.phone}\n` : '') +
+        `\n🌍 Enlace a Google Maps:\n` +
+        `https://www.google.com/maps?q=${locationData.latitude},${locationData.longitude}`;
+
+      alert(locationMessage);
+      
+      // También mostrar en consola para debugging
+      console.log('📍 Ubicación del escaneo:', {
+        ...locationData,
+        negocioId: business.NegocioId,
+        qrType,
+        client: clientInfo
+      });
+    }
+  }, [business?.NegocioId]);
+
   // Manejar QR de promoción
-  const handlePromoQR = useCallback((parsedQR) => {
+  const handlePromoQR = useCallback(async (parsedQR) => {
     const { campaignId, phoneNumber } = parsedQR;
+    
+    let locationData = null;
+    
+    // Solicitar ubicación SOLO si el negocioId es 3
+    if (business?.NegocioId === 3) {
+      try {
+        locationData = await getCurrentLocation();
+      } catch (error) {
+        console.warn('No se pudo obtener ubicación:', error.message);
+        // Continuamos aunque no tengamos ubicación
+      }
+    }
     
     // Buscar cliente por teléfono
     const client = findClientByPhone(phoneNumber);
@@ -162,28 +249,46 @@ const ClientSearch = ({
       // Detener la cámara
       stopQrScanner();
       
+      // Mostrar alerta con ubicación si aplica
+      if (locationData) {
+        showLocationAlert(locationData, 'promo', client);
+      }
+      
       // Solo mostrar mensaje informativo, sin preguntar redirección
       setTimeout(() => {
         setQrMessage('');
         
         // Mostrar alerta informativa (solo información)
-        alert(
+        const alertMessage = 
           `🎉 ¡QR de Promoción Escaneado!\n\n` +
           `Cliente: ${client.name}\n` +
           `Teléfono: ${phoneNumber}\n` +
           `ID Promoción: ${campaignId}\n\n` +
-          `El cliente y la promoción han sido preseleccionados automáticamente.`
-        );
+          (locationData ? 
+            `📍 Ubicación registrada: ${locationData.latitude}, ${locationData.longitude}\n` +
+            `🔍 Precisión: ±${locationData.accuracy.toFixed(2)} metros\n\n` : 
+            '') +
+          `El cliente y la promoción han sido preseleccionados automáticamente.`;
+        
+        alert(alertMessage);
       }, 1500);
     } else {
       // Cliente no encontrado
       setQrMessage(`❌ No se encontró cliente con teléfono: ${phoneNumber}`);
+      
+      // Mostrar alerta con ubicación si aplica
+      if (locationData) {
+        showLocationAlert(locationData, 'promo');
+      }
       
       // Preguntar si quiere buscar manualmente
       setTimeout(() => {
         const searchChoice = window.confirm(
           `No se encontró cliente con teléfono ${phoneNumber}.\n\n` +
           `ID de Promoción: ${campaignId}\n\n` +
+          (locationData ? 
+            `📍 Ubicación registrada: ${locationData.latitude}, ${locationData.longitude}\n\n` : 
+            '') +
           `¿Quieres buscar el cliente manualmente?`
         );
         
@@ -197,11 +302,23 @@ const ClientSearch = ({
         setQrMessage('');
       }, 5000);
     }
-  }, [findClientByPhone, onClientSelect, onCampaignSelect]);
+  }, [findClientByPhone, onClientSelect, onCampaignSelect, getCurrentLocation, showLocationAlert, business?.NegocioId]);
 
   // Manejar QR de teléfono normal
-  const handlePhoneQR = useCallback((parsedQR) => {
+  const handlePhoneQR = useCallback(async (parsedQR) => {
     const { phoneNumber } = parsedQR;
+    
+    let locationData = null;
+    
+    // Solicitar ubicación SOLO si el negocioId es 3
+    if (business?.NegocioId === 3) {
+      try {
+        locationData = await getCurrentLocation();
+      } catch (error) {
+        console.warn('No se pudo obtener ubicación:', error.message);
+        // Continuamos aunque no tengamos ubicación
+      }
+    }
     
     // Buscar cliente por teléfono
     const client = findClientByPhone(phoneNumber);
@@ -214,6 +331,20 @@ const ClientSearch = ({
       // Detener la cámara
       stopQrScanner();
       
+      // Mostrar alerta con ubicación si aplica
+      if (locationData) {
+        showLocationAlert(locationData, 'phone', client);
+        
+        // Mostrar confirmación con ubicación
+        setTimeout(() => {
+          alert(
+            `✅ Cliente encontrado: ${client.name}\n` +
+            `📍 Ubicación registrada: ${locationData.latitude}, ${locationData.longitude}\n` +
+            `🔍 Precisión: ±${locationData.accuracy.toFixed(2)} metros`
+          );
+        }, 1000);
+      }
+      
       // Mostrar confirmación visual
       setTimeout(() => {
         setQrMessage('');
@@ -222,10 +353,18 @@ const ClientSearch = ({
       // Cliente no encontrado
       setQrMessage(`❌ No se encontró cliente con teléfono: ${phoneNumber}`);
       
+      // Mostrar alerta con ubicación si aplica
+      if (locationData) {
+        showLocationAlert(locationData, 'phone');
+      }
+      
       // Preguntar si quiere buscar manualmente
       setTimeout(() => {
         const searchChoice = window.confirm(
           `No se encontró cliente con teléfono ${phoneNumber}.\n\n` +
+          (locationData ? 
+            `📍 Ubicación registrada: ${locationData.latitude}, ${locationData.longitude}\n\n` : 
+            '') +
           `¿Quieres buscarlo manualmente?`
         );
         
@@ -238,10 +377,10 @@ const ClientSearch = ({
         setQrMessage('');
       }, 5000);
     }
-  }, [findClientByPhone, onClientSelect]);
+  }, [findClientByPhone, onClientSelect, getCurrentLocation, showLocationAlert, business?.NegocioId]);
 
   // Procesar el código QR leído
-  const processQrCode = useCallback((qrData) => {
+  const processQrCode = useCallback(async (qrData) => {
     // Parsear el QR
     const parsedQR = parsePromoQR(qrData);
     
@@ -253,10 +392,10 @@ const ClientSearch = ({
     
     if (parsedQR.type === 'promo') {
       // Es un QR de promoción: PROMO:CampaId:PhoneNumber
-      handlePromoQR(parsedQR);
+      await handlePromoQR(parsedQR);
     } else if (parsedQR.type === 'phone') {
       // Es solo un teléfono
-      handlePhoneQR(parsedQR);
+      await handlePhoneQR(parsedQR);
     }
   }, [parsePromoQR, handlePromoQR, handlePhoneQR]);
 
@@ -265,6 +404,8 @@ const ClientSearch = ({
     try {
       setShowQrScanner(true);
       setQrMessage('Iniciando cámara...');
+      setLocation(null);
+      setLocationError('');
       
       // Solicitar acceso a la cámara
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -339,7 +480,7 @@ const ClientSearch = ({
   };
 
   // Escanear QR desde un archivo (alternativa)
-  const handleFileUpload = (event) => {
+  const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
     
@@ -360,7 +501,7 @@ const ClientSearch = ({
           const qrCode = jsQR(imageData.data, imageData.width, imageData.height);
           
           if (qrCode) {
-            processQrCode(qrCode.data);
+            await processQrCode(qrCode.data);
           } else {
             setQrMessage('No se encontró código QR en la imagen');
             setTimeout(() => setQrMessage(''), 3000);
@@ -409,6 +550,19 @@ const ClientSearch = ({
 
   const selectedClient = clients.find(client => client.id.toString() === selectedClientId);
 
+  // Mostrar badge de ubicación si es negocio ID 3
+  const renderLocationBadge = () => {
+    if (business?.NegocioId === 3) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium ml-2">
+          <MapPin className="w-3 h-3" />
+          Geo-activado
+        </span>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="space-y-6">
       {/* Buscador unificado con sugerencias */}
@@ -419,15 +573,18 @@ const ClientSearch = ({
           </label>
           
           {/* Botón para ver todos los clientes */}
-          <button
-            type="button"
-            onClick={toggleDropdown}
-            disabled={isLoading || clients.length === 0}
-            className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <List className="w-5 h-5 text-gray-600" />
-            <span className="text-sm font-medium">Ver Todos</span>
-          </button>
+          <div className="flex items-center gap-2">
+            {renderLocationBadge()}
+            <button
+              type="button"
+              onClick={toggleDropdown}
+              disabled={isLoading || clients.length === 0}
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <List className="w-5 h-5 text-gray-600" />
+              <span className="text-sm font-medium">Ver Todos</span>
+            </button>
+          </div>
         </div>
         
         <div className="flex gap-3">
@@ -523,6 +680,11 @@ const ClientSearch = ({
         
         <p className="text-sm text-gray-500 mt-1">
           {isLoading ? 'Cargando clientes...' : 'Busca por nombre, teléfono o correo, escanea QR o haz clic en "Ver Todos"'}
+          {business?.NegocioId === 3 && (
+            <span className="block text-xs text-purple-600 mt-1">
+              ⚡ Este negocio tiene geo-localización activada - se registrará la ubicación al escanear QR
+            </span>
+          )}
         </p>
       </div>
 
@@ -534,6 +696,12 @@ const ClientSearch = ({
               <h3 className="font-semibold text-gray-800 flex items-center gap-2">
                 <QrCode className="w-5 h-5" />
                 Escanear Código QR
+                {business?.NegocioId === 3 && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs">
+                    <MapPin className="w-3 h-3" />
+                    Geo-activado
+                  </span>
+                )}
               </h3>
               <button
                 onClick={stopQrScanner}
@@ -573,6 +741,12 @@ const ClientSearch = ({
                 </div>
               )}
               
+              {locationError && business?.NegocioId === 3 && (
+                <div className="mt-2 p-2 bg-yellow-50 text-yellow-700 rounded-lg text-xs border border-yellow-200">
+                  ⚠️ {locationError}
+                </div>
+              )}
+              
               <div className="mt-3 text-center">
                 <p className="text-sm text-gray-600">
                   Apunte el código QR del cliente hacia la cámara
@@ -580,6 +754,12 @@ const ClientSearch = ({
                 <p className="text-xs text-gray-500 mt-1">
                   El código debe contener el número de teléfono del cliente o una promoción
                 </p>
+                {business?.NegocioId === 3 && (
+                  <p className="text-xs text-purple-600 mt-2 flex items-center justify-center gap-1">
+                    <MapPin className="w-3 h-3" />
+                    Se solicitará permiso de ubicación al escanear
+                  </p>
+                )}
               </div>
               
               <div className="mt-4 flex gap-3">
@@ -615,6 +795,7 @@ const ClientSearch = ({
               <h4 className="font-medium text-gray-700 flex items-center gap-2">
                 <List className="w-4 h-4" />
                 Todos los Clientes ({clients.length})
+                {renderLocationBadge()}
               </h4>
               <button
                 type="button"

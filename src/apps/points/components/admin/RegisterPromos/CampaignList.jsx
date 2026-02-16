@@ -4,7 +4,6 @@ import { Gift, AlertCircle, Edit, Trash2, Power, Loader } from 'lucide-react';
 import LoadingSpinner from '../../LoadingSpinner';
 import EditCampaignModal from './EditCampaignModal';
 
-
     // Función utilitaria para formatear fechas para inputs (sin ajuste de zona horaria)
     const formatDate = (dateString) => {
         if (!dateString) return '';
