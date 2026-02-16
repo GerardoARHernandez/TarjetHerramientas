@@ -58,7 +58,7 @@ const PointsDisplay = ({ userPoints, accountData, color1, color2, detallesColor,
                 </h3>
                 
                 {/* Botón para generar QR */}
-                {business.NegocioModo == 'BS' && (
+                
                     <div className="mb-6">
                         <button
                             onClick={openQrModal}
@@ -75,7 +75,7 @@ const PointsDisplay = ({ userPoints, accountData, color1, color2, detallesColor,
                             Muestre este QR al personal para acumular puntos rápidamente
                         </p>
                     </div>
-                )}
+                
 
                 <div
                     style={{

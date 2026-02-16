@@ -191,7 +191,7 @@ const ClientSearch = ({
 
   // Mostrar ubicación en alerta (solo para negocio ID 3)
   const showLocationAlert = useCallback((locationData, qrType, clientInfo = null) => {
-    if (business?.NegocioId === 3 && locationData) {
+    if (business?.NegocioId == 3 && locationData) {
       const locationMessage = 
         `📍 INFORMACIÓN DE UBICACIÓN 📍\n\n` +
         `Latitud: ${locationData.latitude}\n` +
@@ -223,7 +223,7 @@ const ClientSearch = ({
     let locationData = null;
     
     // Solicitar ubicación SOLO si el negocioId es 3
-    if (business?.NegocioId === 3) {
+    if (business?.NegocioId == 3) {
       try {
         locationData = await getCurrentLocation();
       } catch (error) {
@@ -311,7 +311,7 @@ const ClientSearch = ({
     let locationData = null;
     
     // Solicitar ubicación SOLO si el negocioId es 3
-    if (business?.NegocioId === 3) {
+    if (business?.NegocioId == 3) {
       try {
         locationData = await getCurrentLocation();
       } catch (error) {
@@ -552,7 +552,7 @@ const ClientSearch = ({
 
   // Mostrar badge de ubicación si es negocio ID 3
   const renderLocationBadge = () => {
-    if (business?.NegocioId === 3) {
+    if (business?.NegocioId == 3) {
       return (
         <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium ml-2">
           <MapPin className="w-3 h-3" />
@@ -680,7 +680,7 @@ const ClientSearch = ({
         
         <p className="text-sm text-gray-500 mt-1">
           {isLoading ? 'Cargando clientes...' : 'Busca por nombre, teléfono o correo, escanea QR o haz clic en "Ver Todos"'}
-          {business?.NegocioId === 3 && (
+          {business?.NegocioId == 3 && (
             <span className="block text-xs text-purple-600 mt-1">
               ⚡ Este negocio tiene geo-localización activada - se registrará la ubicación al escanear QR
             </span>
@@ -696,7 +696,7 @@ const ClientSearch = ({
               <h3 className="font-semibold text-gray-800 flex items-center gap-2">
                 <QrCode className="w-5 h-5" />
                 Escanear Código QR
-                {business?.NegocioId === 3 && (
+                {business?.NegocioId == 3 && (
                   <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs">
                     <MapPin className="w-3 h-3" />
                     Geo-activado
@@ -741,7 +741,7 @@ const ClientSearch = ({
                 </div>
               )}
               
-              {locationError && business?.NegocioId === 3 && (
+              {locationError && business?.NegocioId == 3 && (
                 <div className="mt-2 p-2 bg-yellow-50 text-yellow-700 rounded-lg text-xs border border-yellow-200">
                   ⚠️ {locationError}
                 </div>
@@ -754,7 +754,7 @@ const ClientSearch = ({
                 <p className="text-xs text-gray-500 mt-1">
                   El código debe contener el número de teléfono del cliente o una promoción
                 </p>
-                {business?.NegocioId === 3 && (
+                {business?.NegocioId == 3 && (
                   <p className="text-xs text-purple-600 mt-2 flex items-center justify-center gap-1">
                     <MapPin className="w-3 h-3" />
                     Se solicitará permiso de ubicación al escanear
