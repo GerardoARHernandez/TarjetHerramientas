@@ -192,8 +192,8 @@ const uploadImage = async (campaId) => {
                 throw new Error(data.Mensaje || 'Error en la respuesta del servidor');
             }
 
-            // Si hay una imagen seleccionada y es el negocio correcto, subirla
-            if (imageFile && business?.NegocioId == 3) {
+            // Si hay una imagen seleccionada, subirla
+            if (imageFile) {
                 await uploadImage(campaign.CampaId);
             }
 
@@ -372,86 +372,82 @@ const uploadImage = async (campaId) => {
                         </div>
                     </div>
 
-                    {/* Sección de Imagen - Solo para NegocioId == 3 */}
-                    {business?.NegocioId == 3 && (
-                        <div className="space-y-2 pt-4 border-t border-gray-200">
-                            <div className="flex items-center gap-2">
-                                <ImageIcon className="w-5 h-5 text-purple-500" />
-                                <label className="text-sm font-semibold text-gray-700">
-                                    Imagen de la Promoción (Opcional)
-                                </label>
-                            </div>
-                            
-                            <div className="border-2 border-dashed border-gray-300 rounded-2xl p-6 text-center hover:border-purple-400 transition-colors duration-200">
-                                {imagePreview ? (
-                                    <div className="space-y-4">
-                                        <div className="relative mx-auto w-48 h-48 rounded-xl overflow-hidden">
-                                            <img 
-                                                src={imagePreview} 
-                                                alt="Preview" 
-                                                className="w-full h-full object-cover"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={handleRemoveImage}
-                                                className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
-                                            >
-                                                <X className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                        <p className="text-sm text-gray-600">
-                                            {imageFile?.name} ({(imageFile?.size / 1024).toFixed(2)} KB)
-                                        </p>
-                                    </div>
-                                ) : (
-                                    <>
-                                        <Upload className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                                        <p className="text-sm text-gray-600 mb-2">
-                                            Haz clic para agregar o cambiar la imagen
-                                        </p>
-                                        <p className="text-xs text-gray-500 mb-4">
-                                            Recomendado: 400x400px, formato JPG, PNG o WEBP (máx. 5MB)
-                                        </p>
-                                    </>
-                                )}
-                                
-                                <input
-                                    type="file"
-                                    id="edit-promotion-image"
-                                    accept="image/jpeg,image/png,image/webp,image/jpg"
-                                    onChange={handleImageChange}
-                                    className="hidden"
-                                    disabled={isSubmitting || isUploadingImage}
-                                />
-                                <label
-                                    htmlFor="edit-promotion-image"
-                                    className={`inline-block bg-purple-50 text-purple-700 px-4 py-2 rounded-lg cursor-pointer hover:bg-purple-100 transition-colors duration-200 text-sm font-medium
-                                        ${(isSubmitting || isUploadingImage) ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                >
-                                    {imagePreview ? 'Cambiar Imagen' : 'Agregar Imagen'}
-                                </label>
-                            </div>
-                            
-                            {isUploadingImage && (
-                                <div className="flex items-center gap-2 text-sm text-purple-600">
-                                    <Loader className="w-4 h-4 animate-spin" />
-                                    Subiendo imagen...
-                                </div>
-                            )}
+                    {/* Sección de Imagen  */}
+                    <div className="space-y-2 pt-4 border-t border-gray-200">
+                        <div className="flex items-center gap-2">
+                            <ImageIcon className="w-5 h-5 text-purple-500" />
+                            <label className="text-sm font-semibold text-gray-700">
+                                Imagen de la Promoción (Opcional)
+                            </label>
                         </div>
-                    )}
+                        
+                        <div className="border-2 border-dashed border-gray-300 rounded-2xl p-6 text-center hover:border-purple-400 transition-colors duration-200">
+                            {imagePreview ? (
+                                <div className="space-y-4">
+                                    <div className="relative mx-auto w-48 h-48 rounded-xl overflow-hidden">
+                                        <img 
+                                            src={imagePreview} 
+                                            alt="Preview" 
+                                            className="w-full h-full object-cover"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={handleRemoveImage}
+                                            className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                    <p className="text-sm text-gray-600">
+                                        {imageFile?.name} ({(imageFile?.size / 1024).toFixed(2)} KB)
+                                    </p>
+                                </div>
+                            ) : (
+                                <>
+                                    <Upload className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                                    <p className="text-sm text-gray-600 mb-2">
+                                        Haz clic para agregar o cambiar la imagen
+                                    </p>
+                                    <p className="text-xs text-gray-500 mb-4">
+                                        Recomendado: 400x400px, formato JPG, PNG o WEBP (máx. 5MB)
+                                    </p>
+                                </>
+                            )}
+                            
+                            <input
+                                type="file"
+                                id="edit-promotion-image"
+                                accept="image/jpeg,image/png,image/webp,image/jpg"
+                                onChange={handleImageChange}
+                                className="hidden"
+                                disabled={isSubmitting || isUploadingImage}
+                            />
+                            <label
+                                htmlFor="edit-promotion-image"
+                                className={`inline-block bg-purple-50 text-purple-700 px-4 py-2 rounded-lg cursor-pointer hover:bg-purple-100 transition-colors duration-200 text-sm font-medium
+                                    ${(isSubmitting || isUploadingImage) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                                {imagePreview ? 'Cambiar Imagen' : 'Agregar Imagen'}
+                            </label>
+                        </div>
+                        
+                        {isUploadingImage && (
+                            <div className="flex items-center gap-2 text-sm text-purple-600">
+                                <Loader className="w-4 h-4 animate-spin" />
+                                Subiendo imagen...
+                            </div>
+                        )}
+                    </div>
 
                     {/* Información adicional */}
                     <div className="bg-blue-50 rounded-2xl p-4 border border-blue-200">
                         <p className="text-sm text-blue-800">
                             <strong>💡 Nota:</strong> Puedes editar campañas con fechas pasadas para 
                             corregir información histórica o reactivar promociones.
-                            {business?.NegocioId == 3 && (
-                                <span className="block mt-1">
-                                    <strong>✨ Nueva función:</strong> Ahora puedes agregar o actualizar la imagen de tus promociones. 
-                                    La imagen se subirá automáticamente al guardar los cambios.
-                                </span>
-                            )}
+                            <span className="block mt-1">
+                                <strong>✨ Nueva función:</strong> Ahora puedes agregar o actualizar la imagen de tus promociones. 
+                                La imagen se subirá automáticamente al guardar los cambios.
+                            </span>
                         </p>
                     </div>
 
