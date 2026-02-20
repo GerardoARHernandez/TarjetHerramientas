@@ -1,12 +1,21 @@
 // src/apps/points-loyalty/components/admin/PromotionForm.jsx
-import { Save, Calendar, Gift, FileText, Star, Award, Image as ImageIcon } from 'lucide-react';
-import { useState } from 'react';
+import { Save, Calendar, Gift, FileText, Star, Award, Image as ImageIcon, X, Loader } from 'lucide-react';
 
-const PromotionForm = ({business, formData, onChange, onSubmit, isSubmitting, isValid }) => {
+const PromotionForm = ({
+  business,
+  formData,
+  onChange,
+  onImageChange,
+  onRemoveImage,
+  imageFile,
+  imagePreview,
+  onSubmit,
+  isSubmitting,
+  isUploadingImage,
+  isValid
+}) => {
   
   const today = new Date().toISOString().split('T')[0];
-  const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -16,36 +25,29 @@ const PromotionForm = ({business, formData, onChange, onSubmit, isSubmitting, is
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setImageFile(file);
+      // Validar tipo de archivo
+      if (!file.type.includes('webp') && !file.type.includes('jpeg') && !file.type.includes('png') && !file.type.includes('jpg')) {
+        alert('Formato de imagen no válido. Por favor sube JPG, PNG o WEBP');
+        return;
+      }
       
+      // Validar tamaño (máximo 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('La imagen no debe superar los 5MB');
+        return;
+      }
+
       // Crear preview
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result);
+        onImageChange(file, reader.result);
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleRemoveImage = () => {
-    setImageFile(null);
-    setImagePreview(null);
-  };
-
-  const handleSubmitWithImage = (e) => {
-    e.preventDefault();
-    
-    // Agregar logica cuando esté la API
-    onSubmit(e);
-    
-    // Por ahora solo mostramos un mensaje
-    if (imageFile && business?.NegocioId == 3) {
-      alert('Función de imagen disponible próximamente. La imagen se guardará cuando la API esté lista.');
-    }
-  };
-
   return (
-    <form onSubmit={handleSubmitWithImage} className="space-y-6">
+    <form onSubmit={onSubmit} className="space-y-6">
       
       {/* Nombre de la Campaña */}
       <div className="space-y-2">
@@ -61,6 +63,7 @@ const PromotionForm = ({business, formData, onChange, onSubmit, isSubmitting, is
           placeholder="ej. PAPAS A LA FRANCESA"
           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
           required
+          disabled={isSubmitting || isUploadingImage}
         />
         <p className="text-xs text-gray-500">Nombre atractivo que aparecerá en la app del cliente</p>
       </div>
@@ -79,6 +82,7 @@ const PromotionForm = ({business, formData, onChange, onSubmit, isSubmitting, is
           rows="3"
           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 resize-none"
           required
+          disabled={isSubmitting || isUploadingImage}
         />
         <p className="text-xs text-gray-500">Describe claramente cómo obtener la recompensa</p>
       </div>
@@ -98,6 +102,7 @@ const PromotionForm = ({business, formData, onChange, onSubmit, isSubmitting, is
             min={today}
             className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
             required
+            disabled={isSubmitting || isUploadingImage}
           />
         </div>
 
@@ -114,6 +119,7 @@ const PromotionForm = ({business, formData, onChange, onSubmit, isSubmitting, is
             min={formData.CampaVigeInico || today}
             className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
             required
+            disabled={isSubmitting || isUploadingImage}
           />
         </div>
       </div>
@@ -134,8 +140,9 @@ const PromotionForm = ({business, formData, onChange, onSubmit, isSubmitting, is
             min="1"
             className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
             required
+            disabled={isSubmitting || isUploadingImage}
           />
-          <p className="text-xs text-gray-500">Entre {business?.NegocioTipoPS === 'P' ? ' 80-120 puntos' : ' 5-15 sellos'}{' '} es lo recomendado</p>
+          <p className="text-xs text-gray-500">Entre {business?.NegocioTipoPS === 'P' ? '80-120 puntos' : '5-15 sellos'}{' '} es lo recomendado</p>
         </div>
 
         <div className="space-y-2">
@@ -151,84 +158,95 @@ const PromotionForm = ({business, formData, onChange, onSubmit, isSubmitting, is
             placeholder="ej. PAPAS Gratis"
             className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
             required
+            disabled={isSubmitting || isUploadingImage}
           />
           <p className="text-xs text-gray-500">Describe específicamente qué recibirá el cliente</p>
         </div>
       </div>
 
-      {/* Sección de Imagen - Solo para NegocioId == 3 */}
-      {business?.NegocioId == 3 && (
-        <div className="space-y-2 pt-2">
-          <div className="flex items-center gap-2">
-            <ImageIcon className="w-5 h-5 text-purple-500" />
-            <label className="text-sm font-semibold text-gray-700">
-              Imagen de la Promoción (Opcional)
-            </label>
-          </div>
-          
-          <div className="border-2 border-dashed border-gray-300 rounded-2xl p-6 text-center hover:border-purple-400 transition-colors duration-200">
-            {imagePreview ? (
-              <div className="space-y-4">
-                <div className="relative mx-auto w-48 h-48 rounded-xl overflow-hidden">
-                  <img 
-                    src={imagePreview} 
-                    alt="Preview" 
-                    className="w-full h-full object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleRemoveImage}
-                    className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-                <p className="text-sm text-gray-600">Imagen seleccionada</p>
-              </div>
-            ) : (
-              <>
-                <ImageIcon className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                <p className="text-sm text-gray-600 mb-2">
-                  Arrastra una imagen o haz clic para seleccionar
-                </p>
-                <p className="text-xs text-gray-500 mb-4">
-                  Recomendado: 400x400px, formato JPG o PNG
-                </p>
-              </>
-            )}
-            
-            <input
-              type="file"
-              id="promotion-image"
-              accept="image/*"
-              onChange={handleImageChange}
-              className="hidden"
-            />
-            <label
-              htmlFor="promotion-image"
-              className="inline-block bg-purple-50 text-purple-700 px-4 py-2 rounded-lg cursor-pointer hover:bg-purple-100 transition-colors duration-200 text-sm font-medium"
-            >
-              {imagePreview ? 'Cambiar Imagen' : 'Seleccionar Imagen'}
-            </label>
-          </div>
+      {/* Sección de Imagen - Para todos los negocios */}
+      <div className="space-y-2 pt-2">
+        <div className="flex items-center gap-2">
+          <ImageIcon className="w-5 h-5 text-purple-500" />
+          <label className="text-sm font-semibold text-gray-700">
+            Imagen de la Promoción (Opcional)
+          </label>
         </div>
-      )}
+        
+        <div className="border-2 border-dashed border-gray-300 rounded-2xl p-6 text-center hover:border-purple-400 transition-colors duration-200">
+          {imagePreview ? (
+            <div className="space-y-4">
+              <div className="relative mx-auto w-48 h-48 rounded-xl overflow-hidden">
+                <img 
+                  src={imagePreview} 
+                  alt="Preview" 
+                  className="w-full h-full object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={onRemoveImage}
+                  className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
+                  disabled={isSubmitting || isUploadingImage}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <p className="text-sm text-gray-600">
+                {imageFile?.name} ({(imageFile?.size / 1024).toFixed(2)} KB)
+              </p>
+            </div>
+          ) : (
+            <>
+              <ImageIcon className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+              <p className="text-sm text-gray-600 mb-2">
+                Arrastra una imagen o haz clic para seleccionar
+              </p>
+              <p className="text-xs text-gray-500 mb-4">
+                Recomendado: 400x400px, formato JPG, PNG o WEBP (máx. 5MB)
+              </p>
+            </>
+          )}
+          
+          <input
+            type="file"
+            id="promotion-image"
+            accept="image/jpeg,image/png,image/webp,image/jpg"
+            onChange={handleImageChange}
+            className="hidden"
+            disabled={isSubmitting || isUploadingImage}
+          />
+          <label
+            htmlFor="promotion-image"
+            className={`inline-block bg-purple-50 text-purple-700 px-4 py-2 rounded-lg cursor-pointer hover:bg-purple-100 transition-colors duration-200 text-sm font-medium
+              ${(isSubmitting || isUploadingImage) ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            {imagePreview ? 'Cambiar Imagen' : 'Seleccionar Imagen'}
+          </label>
+        </div>
+        
+        {isUploadingImage && (
+          <div className="flex items-center gap-2 text-sm text-purple-600">
+            <Loader className="w-4 h-4 animate-spin" />
+            Subiendo imagen...
+          </div>
+        )}
+      </div>
 
       {/* Botón de Envío */}
       <div className="pt-4">
         <button
           type="submit"
-          disabled={!isValid || isSubmitting}
+          disabled={!isValid || isSubmitting || isUploadingImage}
           className={`w-full py-4 rounded-2xl font-semibold text-lg transition-all duration-200 flex items-center justify-center gap-3
-            ${isValid && !isSubmitting
+            ${isValid && !isSubmitting && !isUploadingImage
               ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
               : 'bg-gray-200 text-gray-500 cursor-not-allowed'
             }`}
         >
-          {isSubmitting ? (
+          {isSubmitting || isUploadingImage ? (
             <>
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-              Creando Promoción...
+              <Loader className="w-5 h-5 animate-spin" />
+              {isUploadingImage ? 'Subiendo imagen...' : 'Creando Promoción...'}
             </>
           ) : (
             <>
@@ -243,7 +261,8 @@ const PromotionForm = ({business, formData, onChange, onSubmit, isSubmitting, is
       <div className="bg-cyan-50 rounded-2xl p-4 border border-cyan-200">
         <p className="text-sm text-cyan-800">
           <strong>📋 Importante:</strong> Una vez creada, la promoción estará disponible 
-          inmediatamente para los clientes. Asegúrate de que toda la información sea correcta.
+          inmediatamente para los clientes. Si seleccionaste una imagen, se subirá automáticamente
+          después de crear la campaña.
         </p>
       </div>
     </form>

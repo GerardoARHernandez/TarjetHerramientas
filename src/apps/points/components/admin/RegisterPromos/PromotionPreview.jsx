@@ -1,7 +1,7 @@
 // src/apps/points-loyalty/components/admin/PromotionPreview.jsx
-import { Star, Calendar, Gift, Award } from 'lucide-react';
+import { Star, Calendar, Gift, Award, Image as ImageIcon } from 'lucide-react';
 
-const PromotionPreview = ({ formData, business }) => {
+const PromotionPreview = ({ formData, business, imagePreview }) => {
   const formatDate = (dateString) => {
     if (!dateString) return '--';
     const date = new Date(dateString);
@@ -34,6 +34,19 @@ const PromotionPreview = ({ formData, business }) => {
 
       {/* Card como la vería el cliente */}
       <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-6 border-2 border-blue-200">
+        
+        {/* Imagen de la promoción (si existe) */}
+        {imagePreview && (
+          <div className="mb-4 flex justify-center">
+            <div className="w-32 h-32 rounded-xl overflow-hidden border-2 border-blue-200 shadow-sm">
+              <img 
+                src={imagePreview} 
+                alt="Promoción" 
+                className="w-full h-full object-cover"
+              />
+            </div>
+          </div>
+        )}
         
         {/* Header de la promoción */}
         <div className="flex items-center gap-3 mb-4">
@@ -120,6 +133,11 @@ const PromotionPreview = ({ formData, business }) => {
         <p className="text-xs text-blue-700">
           <strong>💡 Tip:</strong> Así verán los clientes tu promoción en su aplicación. 
           Asegúrate de que sea atractiva y clara.
+          {imagePreview && (
+            <span className="block mt-1 text-purple-600">
+              ✨ La imagen se mostrará arriba del título
+            </span>
+          )}
         </p>
       </div>
     </div>

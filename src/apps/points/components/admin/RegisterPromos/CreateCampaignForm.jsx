@@ -4,7 +4,7 @@ import { RefreshCw } from 'lucide-react';
 import PromotionForm from './PromotionForm';
 import PromotionPreview from './PromotionPreview';
 import LoadingSpinner from '../../LoadingSpinner';
-import { AlertCircle, Save } from 'lucide-react';
+import { AlertCircle, Save, CheckCircle, XCircle } from 'lucide-react';
 
 const CreateCampaignForm = ({ business, onCampaignCreated, showPreview, onTogglePreview }) => {
   const [formData, setFormData] = useState({
@@ -17,12 +17,142 @@ const CreateCampaignForm = ({ business, onCampaignCreated, showPreview, onToggle
     CampaRecompensa: ''
   });
 
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);
+  const [createdCampaignId, setCreatedCampaignId] = useState(null);
+  const [imageUploadStatus, setImageUploadStatus] = useState(null); // 'success', 'error', null
+  const [imageUrl, setImageUrl] = useState(null);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (submitStatus) setSubmitStatus(null);
+  };
+
+  const handleImageChange = (file, preview) => {
+    setImageFile(file);
+    setImagePreview(preview);
+  };
+
+  const handleRemoveImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    setImageUploadStatus(null);
+    setImageUrl(null);
+  };
+
+  // Función para convertir archivo a base64
+  const convertToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const base64String = reader.result.split(',')[1];
+        resolve(base64String);
+      };
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  // Función para subir la imagen
+  const uploadImage = async (campaId) => {
+    if (!imageFile) return null;
+
+    setIsUploadingImage(true);
+    setImageUploadStatus(null);
+    
+    try {
+      const base64String = await convertToBase64(imageFile);
+      
+      const fileExtension = imageFile.name.split('.').pop();
+      const fileName = `campana_${campaId}_${Date.now()}.${fileExtension}`;
+
+      const payload = {
+        CampaId: parseInt(campaId),
+        Base64File: base64String,
+        FileName: fileName
+      };
+
+      // Detectar entorno automáticamente
+      const isDevelopment = window.location.hostname === 'localhost' || 
+                           window.location.hostname === '127.0.0.1';
+      
+      const protocol = isDevelopment ? 'http' : 'https';
+      const url = `${protocol}://souvenir-site.com/WebPuntos/API1/images/Campanias/`;
+
+      console.log('Subiendo imagen a:', url);
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const responseText = await response.text();
+      console.log('Respuesta del servidor:', responseText);
+
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        throw new Error(`Respuesta no válida del servidor: ${responseText.substring(0, 100)}`);
+      }
+
+      if (data.error) {
+        throw new Error(data.Mensaje || 'Error al subir la imagen');
+      }
+
+      // Obtener la URL de la imagen desde la API de listado
+      const imageUrl = await getCampaignImageUrl(campaId);
+      
+      setImageUploadStatus('success');
+      setImageUrl(imageUrl);
+      
+      return {
+        success: true,
+        imageUrl: imageUrl
+      };
+      
+    } catch (err) {
+      console.error('Error uploading image:', err);
+      setImageUploadStatus('error');
+      return {
+        success: false,
+        error: err.message
+      };
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  // Función para obtener la URL de la imagen de la campaña
+  const getCampaignImageUrl = async (campaId) => {
+    try {
+      const isDevelopment = window.location.hostname === 'localhost' || 
+                           window.location.hostname === '127.0.0.1';
+      
+      const protocol = isDevelopment ? 'http' : 'https';
+      const url = `${protocol}://souvenir-site.com/WebPuntos/API1/Campanias/negocioid/${business.NegocioId}`;
+
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data.ListCampanias) {
+        const campaign = data.ListCampanias.find(c => parseInt(c.CampaId) === parseInt(campaId));
+        if (campaign && campaign.URLImagen) {
+          return campaign.URLImagen;
+        }
+      }
+      return null;
+    } catch (err) {
+      console.error('Error obteniendo URL de imagen:', err);
+      return null;
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -33,17 +163,20 @@ const CreateCampaignForm = ({ business, onCampaignCreated, showPreview, onToggle
       return;
     }
 
+    // Validación básica
+    if (!formData.CampaNombre || !formData.CampaDesc || !formData.CampaVigeInico || 
+        !formData.CampaVigeFin || !formData.CampaCantPSCanje || !formData.CampaRecompensa) {
+      setSubmitStatus('error');
+      return;
+    }
+
     setIsSubmitting(true);
     setSubmitStatus(null);
+    setImageUploadStatus(null);
+    setImageUrl(null);
 
     try {
-      // Validación básica
-      if (!formData.CampaNombre || !formData.CampaDesc || !formData.CampaVigeInico || 
-          !formData.CampaVigeFin || !formData.CampaCantPSCanje || !formData.CampaRecompensa) {
-        throw new Error('Todos los campos son obligatorios');
-      }
-
-      // Preparar payload para la API
+      // PASO 1: Crear la campaña
       const payload = {
         ListCampa: {
           ...formData,
@@ -52,7 +185,6 @@ const CreateCampaignForm = ({ business, onCampaignCreated, showPreview, onToggle
         }
       };
 
-      // Llamada real a la API
       const response = await fetch('https://souvenir-site.com/WebPuntos/API1/GeneraCampana', {
         method: 'POST',
         headers: {
@@ -71,11 +203,28 @@ const CreateCampaignForm = ({ business, onCampaignCreated, showPreview, onToggle
         throw new Error(data.Mensaje || 'Error en la respuesta del servidor');
       }
 
+      // Obtener el ID de la campaña creada (ajusta según lo que devuelva tu API)
+      // Si la API no devuelve el ID, necesitamos consultar el listado
+      let campaignId = data.CampaId;
+      
+      if (!campaignId) {
+        // Si no viene el ID, obtenemos la última campaña creada
+        campaignId = await getLastCreatedCampaignId();
+      }
+
+      setCreatedCampaignId(campaignId);
+
+      // PASO 2: Subir la imagen si existe
+      if (imageFile && campaignId) {
+        await uploadImage(campaignId);
+      }
+
       setSubmitStatus('success');
       
-      // Recargar las campañas y limpiar formulario
+      // Recargar las campañas y limpiar formulario después de 3 segundos
       setTimeout(() => {
         onCampaignCreated();
+        // Limpiar formulario
         setFormData({
           NegocioId: business.NegocioId,
           CampaNombre: '',
@@ -85,14 +234,41 @@ const CreateCampaignForm = ({ business, onCampaignCreated, showPreview, onToggle
           CampaCantPSCanje: '',
           CampaRecompensa: ''
         });
+        handleRemoveImage(); // Limpiar imagen
+        setCreatedCampaignId(null);
         setSubmitStatus(null);
-      }, 2000);
+        setImageUploadStatus(null);
+      }, 3000);
 
     } catch (error) {
       console.error('Error al crear promoción:', error);
       setSubmitStatus('error');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Función auxiliar para obtener el ID de la última campaña creada
+  const getLastCreatedCampaignId = async () => {
+    try {
+      const isDevelopment = window.location.hostname === 'localhost' || 
+                           window.location.hostname === '127.0.0.1';
+      
+      const protocol = isDevelopment ? 'http' : 'https';
+      const url = `${protocol}://souvenir-site.com/WebPuntos/API1/Campanias/negocioid/${business.NegocioId}`;
+
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data.ListCampanias && data.ListCampanias.length > 0) {
+        // Ordenar por ID descendente y tomar el primero
+        const sorted = data.ListCampanias.sort((a, b) => parseInt(b.CampaId) - parseInt(a.CampaId));
+        return sorted[0].CampaId;
+      }
+      return null;
+    } catch (err) {
+      console.error('Error obteniendo última campaña:', err);
+      return null;
     }
   };
 
@@ -125,7 +301,11 @@ const CreateCampaignForm = ({ business, onCampaignCreated, showPreview, onToggle
 
       {showPreview && (
         <div className="mb-6">
-          <PromotionPreview formData={formData} business={business} />
+          <PromotionPreview 
+            formData={formData} 
+            business={business} 
+            imagePreview={imagePreview}
+          />
         </div>
       )}
 
@@ -133,8 +313,13 @@ const CreateCampaignForm = ({ business, onCampaignCreated, showPreview, onToggle
         business={business}
         formData={formData} 
         onChange={handleInputChange}
+        onImageChange={handleImageChange}
+        onRemoveImage={handleRemoveImage}
+        imageFile={imageFile}
+        imagePreview={imagePreview}
         onSubmit={handleSubmit}
         isSubmitting={isSubmitting}
+        isUploadingImage={isUploadingImage}
         isValid={isFormValid}
       />
 
@@ -143,9 +328,37 @@ const CreateCampaignForm = ({ business, onCampaignCreated, showPreview, onToggle
         <div className="mt-6 bg-green-50 border border-green-200 rounded-2xl p-4">
           <div className="flex items-center gap-3 text-green-800">
             <div className="bg-green-200 rounded-full p-1">
-              <Save className="w-4 h-4" />
+              <CheckCircle className="w-5 h-5" />
             </div>
-            <p className="font-medium">¡Promoción creada exitosamente!</p>
+            <div>
+              <p className="font-medium">¡Promoción creada exitosamente!</p>
+              {createdCampaignId && (
+                <p className="text-sm text-green-600 mt-1">ID: {createdCampaignId}</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {imageUploadStatus === 'success' && imageUrl && (
+        <div className="mt-4 bg-purple-50 border border-purple-200 rounded-2xl p-4">
+          <div className="flex items-center gap-3 text-purple-800">
+            <div className="bg-purple-200 rounded-full p-1">
+              <CheckCircle className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="font-medium">✓ Imagen subida correctamente</p>
+              <p className="text-xs text-purple-600 mt-1 break-all">{imageUrl}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {imageUploadStatus === 'error' && (
+        <div className="mt-4 bg-orange-50 border border-orange-200 rounded-2xl p-4">
+          <div className="flex items-center gap-3 text-orange-800">
+            <XCircle className="w-5 h-5" />
+            <p className="font-medium">La campaña se creó pero hubo un error al subir la imagen</p>
           </div>
         </div>
       )}
@@ -159,9 +372,11 @@ const CreateCampaignForm = ({ business, onCampaignCreated, showPreview, onToggle
         </div>
       )}
 
-      {isSubmitting && (
+      {(isSubmitting || isUploadingImage) && (
         <div className="mt-6">
-          <LoadingSpinner message="Creando promoción..." />
+          <LoadingSpinner 
+            message={isUploadingImage ? "Subiendo imagen..." : "Creando promoción..."} 
+          />
         </div>
       )}
     </div>
