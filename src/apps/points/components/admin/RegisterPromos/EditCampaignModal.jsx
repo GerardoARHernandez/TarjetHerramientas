@@ -76,17 +76,17 @@ const EditCampaignModal = ({ campaign, business, onClose, onUpdateSuccess }) => 
         }
     };
 
-    // Función para subir la imagen - VERSIÓN CORREGIDA CON LA URL DE POSTMAN
+    // Función para subir la imagen 
 const uploadImage = async (campaId) => {
     if (!imageFile) return;
 
     setIsUploadingImage(true);
     try {
-        // Convertir el archivo a base64
         const base64String = await convertToBase64(imageFile);
         
-        // Usar extensión webp como recomiendan
-        const fileName = `campana_${campaId}_${Date.now()}.webp`;
+        // Usar la extensión original
+        const fileExtension = imageFile.name.split('.').pop();
+        const fileName = `campana_${campaId}_${Date.now()}.${fileExtension}`;
 
         const payload = {
             CampaId: parseInt(campaId),
@@ -94,10 +94,12 @@ const uploadImage = async (campaId) => {
             FileName: fileName
         };
 
-        console.log('Enviando imagen a:', 'http://25.62.74.73/KBPuntosNETFrameworkSQLServer/API1/Images/Campanias');
-        console.log('Payload:', { ...payload, Base64File: payload.Base64File.substring(0, 50) + '...' });
+        // IMPORTANTE: Usar HTTP en desarrollo (no HTTPS)
+        const url = 'http://souvenir-site.com/WebPuntos/API1/images/Campanias/';
 
-        const response = await fetch('http://25.62.74.73/KBPuntosNETFrameworkSQLServer/API1/Images/Campanias', {
+        console.log('Enviando imagen a:', url);
+        
+        const response = await fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -114,10 +116,6 @@ const uploadImage = async (campaId) => {
         } catch (e) {
             console.error('No se pudo parsear JSON:', responseText);
             throw new Error(`Respuesta no válida del servidor: ${responseText.substring(0, 100)}`);
-        }
-
-        if (!response.ok) {
-            throw new Error(data.Mensaje || `Error HTTP: ${response.status}`);
         }
 
         if (data.error) {
