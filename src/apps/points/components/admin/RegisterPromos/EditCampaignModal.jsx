@@ -1,6 +1,6 @@
 // src/apps/points-loyalty/views/admin/RegisterPromotion/components/admin/EditCampaignModal.jsx
-import { useState } from 'react';
-import { X, Save, Calendar, Gift, FileText, Star, Award, Loader, Image as ImageIcon, Upload } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, Save, Calendar, Gift, FileText, Star, Award, Loader, Image as ImageIcon, Upload, ExternalLink } from 'lucide-react';
 
 const EditCampaignModal = ({ campaign, business, onClose, onUpdateSuccess }) => {
     const [formData, setFormData] = useState({
@@ -16,6 +16,8 @@ const EditCampaignModal = ({ campaign, business, onClose, onUpdateSuccess }) => 
     const [error, setError] = useState('');
     const [imageFile, setImageFile] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
+    const [existingImageUrl, setExistingImageUrl] = useState(null);
+    const [isLoadingImage, setIsLoadingImage] = useState(false);
     const [uploadSuccess, setUploadSuccess] = useState(false);
 
     // Obtener la fecha actual en formato YYYY-MM-DD
@@ -26,6 +28,46 @@ const EditCampaignModal = ({ campaign, business, onClose, onUpdateSuccess }) => 
         if (!dateString) return false;
         return new Date(dateString) < new Date(today);
     };
+
+    // Cargar la imagen existente de la campaña
+    useEffect(() => {
+        const loadExistingImage = async () => {
+            if (!campaign?.CampaId || !business?.NegocioId) return;
+
+            setIsLoadingImage(true);
+            try {
+                // Detectar entorno
+                const isDevelopment = window.location.hostname === 'localhost' || 
+                                     window.location.hostname === '127.0.0.1';
+                const protocol = isDevelopment ? 'http' : 'https';
+                
+                // Obtener la lista de campañas para este negocio
+                const url = `${protocol}://souvenir-site.com/WebPuntos/API1/Campanias/negocioid/${business.NegocioId}`;
+                
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.ListCampanias) {
+                    // Buscar la campaña actual por ID
+                    const currentCampaign = data.ListCampanias.find(c => 
+                        parseInt(c.CampaId) === parseInt(campaign.CampaId)
+                    );
+                    
+                    if (currentCampaign && currentCampaign.URLImagen) {
+                        setExistingImageUrl(currentCampaign.URLImagen);
+                        // Establecer como preview inicial
+                        setImagePreview(currentCampaign.URLImagen);
+                    }
+                }
+            } catch (err) {
+                console.error('Error cargando imagen existente:', err);
+            } finally {
+                setIsLoadingImage(false);
+            }
+        };
+
+        loadExistingImage();
+    }, [campaign?.CampaId, business?.NegocioId]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -67,7 +109,7 @@ const EditCampaignModal = ({ campaign, business, onClose, onUpdateSuccess }) => 
 
             setImageFile(file);
             
-            // Crear preview
+            // Crear preview de la nueva imagen
             const reader = new FileReader();
             reader.onloadend = () => {
                 setImagePreview(reader.result);
@@ -77,66 +119,67 @@ const EditCampaignModal = ({ campaign, business, onClose, onUpdateSuccess }) => 
     };
 
     // Función para subir la imagen 
-const uploadImage = async (campaId) => {
-    if (!imageFile) return;
+    const uploadImage = async (campaId) => {
+        if (!imageFile) return;
 
-    setIsUploadingImage(true);
-    try {
-        const base64String = await convertToBase64(imageFile);
-        
-        // Usar la extensión original
-        const fileExtension = imageFile.name.split('.').pop();
-        const fileName = `campana_${campaId}_${Date.now()}.${fileExtension}`;
-
-        const payload = {
-            CampaId: parseInt(campaId),
-            Base64File: base64String,
-            FileName: fileName
-        };
-
-        // IMPORTANTE: Usar HTTP en desarrollo (no HTTPS)
-        const url = 'http://souvenir-site.com/WebPuntos/API1/images/Campanias/';
-
-        console.log('Enviando imagen a:', url);
-        
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload)
-        });
-
-        const responseText = await response.text();
-        console.log('Respuesta del servidor:', responseText);
-
-        let data;
+        setIsUploadingImage(true);
         try {
-            data = JSON.parse(responseText);
-        } catch (e) {
-            console.error('No se pudo parsear JSON:', responseText);
-            throw new Error(`Respuesta no válida del servidor: ${responseText.substring(0, 100)}`);
-        }
+            const base64String = await convertToBase64(imageFile);
+            
+            // Usar la extensión original
+            const fileExtension = imageFile.name.split('.').pop();
+            const fileName = `campana_${campaId}_${Date.now()}.${fileExtension}`;
 
-        if (data.error) {
-            throw new Error(data.Mensaje || 'Error al subir la imagen');
-        }
+            const payload = {
+                CampaId: parseInt(campaId),
+                Base64File: base64String,
+                FileName: fileName
+            };
 
-        setUploadSuccess(true);
-        console.log('Imagen subida exitosamente:', data);
-        
-    } catch (err) {
-        console.error('Error uploading image:', err);
-        setError(`Error al subir la imagen: ${err.message}`);
-        throw err;
-    } finally {
-        setIsUploadingImage(false);
-    }
-};
+            // IMPORTANTE: Usar HTTP en desarrollo (no HTTPS)
+            const url = 'http://souvenir-site.com/WebPuntos/API1/images/Campanias/';
+
+            console.log('Enviando imagen a:', url);
+            
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const responseText = await response.text();
+            console.log('Respuesta del servidor:', responseText);
+
+            let data;
+            try {
+                data = JSON.parse(responseText);
+            } catch (e) {
+                console.error('No se pudo parsear JSON:', responseText);
+                throw new Error(`Respuesta no válida del servidor: ${responseText.substring(0, 100)}`);
+            }
+
+            if (data.error) {
+                throw new Error(data.Mensaje || 'Error al subir la imagen');
+            }
+
+            setUploadSuccess(true);
+            console.log('Imagen subida exitosamente:', data);
+            
+        } catch (err) {
+            console.error('Error uploading image:', err);
+            setError(`Error al subir la imagen: ${err.message}`);
+            throw err;
+        } finally {
+            setIsUploadingImage(false);
+        }
+    };
 
     const handleRemoveImage = () => {
         setImageFile(null);
         setImagePreview(null);
+        setExistingImageUrl(null);
         setUploadSuccess(false);
     };
 
@@ -215,7 +258,7 @@ const uploadImage = async (campaId) => {
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-                {/* Header - sin cambios */}
+                {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-200">
                     <div className="flex items-center gap-3">
                         <div className="bg-green-500 p-2 rounded-xl">
@@ -372,23 +415,32 @@ const uploadImage = async (campaId) => {
                         </div>
                     </div>
 
-                    {/* Sección de Imagen  */}
+                    {/* Sección de Imagen */}
                     <div className="space-y-2 pt-4 border-t border-gray-200">
                         <div className="flex items-center gap-2">
                             <ImageIcon className="w-5 h-5 text-purple-500" />
                             <label className="text-sm font-semibold text-gray-700">
-                                Imagen de la Promoción (Opcional)
+                                Imagen de la Promoción
                             </label>
                         </div>
                         
                         <div className="border-2 border-dashed border-gray-300 rounded-2xl p-6 text-center hover:border-purple-400 transition-colors duration-200">
-                            {imagePreview ? (
+                            {isLoadingImage ? (
+                                <div className="py-8">
+                                    <Loader className="w-8 h-8 animate-spin text-purple-500 mx-auto mb-2" />
+                                    <p className="text-sm text-gray-600">Cargando imagen...</p>
+                                </div>
+                            ) : imagePreview ? (
                                 <div className="space-y-4">
                                     <div className="relative mx-auto w-48 h-48 rounded-xl overflow-hidden">
                                         <img 
                                             src={imagePreview} 
                                             alt="Preview" 
                                             className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                e.target.onerror = null;
+                                                e.target.src = 'https://via.placeholder.com/400x400?text=Error+al+cargar+imagen';
+                                            }}
                                         />
                                         <button
                                             type="button"
@@ -398,15 +450,34 @@ const uploadImage = async (campaId) => {
                                             <X className="w-4 h-4" />
                                         </button>
                                     </div>
-                                    <p className="text-sm text-gray-600">
-                                        {imageFile?.name} ({(imageFile?.size / 1024).toFixed(2)} KB)
-                                    </p>
+                                    
+                                    {/* Información de la imagen */}
+                                    <div className="text-sm text-gray-600">
+                                        {imageFile ? (
+                                            // Nueva imagen seleccionada
+                                            <p>{imageFile.name} ({(imageFile.size / 1024).toFixed(2)} KB)</p>
+                                        ) : existingImageUrl && (
+                                            // Imagen existente
+                                            <div className="flex flex-col items-center gap-2">
+                                                <p className="text-green-600">✓ Imagen actual</p>
+                                                <a 
+                                                    href={existingImageUrl} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-1 text-xs text-purple-600 hover:text-purple-800"
+                                                >
+                                                    <ExternalLink className="w-3 h-3" />
+                                                    Ver imagen original
+                                                </a>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             ) : (
                                 <>
                                     <Upload className="w-12 h-12 text-gray-400 mx-auto mb-3" />
                                     <p className="text-sm text-gray-600 mb-2">
-                                        Haz clic para agregar o cambiar la imagen
+                                        Haz clic para agregar una imagen
                                     </p>
                                     <p className="text-xs text-gray-500 mb-4">
                                         Recomendado: 400x400px, formato JPG, PNG o WEBP (máx. 5MB)
@@ -420,14 +491,14 @@ const uploadImage = async (campaId) => {
                                 accept="image/jpeg,image/png,image/webp,image/jpg"
                                 onChange={handleImageChange}
                                 className="hidden"
-                                disabled={isSubmitting || isUploadingImage}
+                                disabled={isSubmitting || isUploadingImage || isLoadingImage}
                             />
                             <label
                                 htmlFor="edit-promotion-image"
                                 className={`inline-block bg-purple-50 text-purple-700 px-4 py-2 rounded-lg cursor-pointer hover:bg-purple-100 transition-colors duration-200 text-sm font-medium
-                                    ${(isSubmitting || isUploadingImage) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    ${(isSubmitting || isUploadingImage || isLoadingImage) ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
-                                {imagePreview ? 'Cambiar Imagen' : 'Agregar Imagen'}
+                                {imagePreview ? 'Cambiar Imagen' : 'Seleccionar Imagen'}
                             </label>
                         </div>
                         
@@ -437,6 +508,13 @@ const uploadImage = async (campaId) => {
                                 Subiendo imagen...
                             </div>
                         )}
+
+                        {/* Mensaje informativo si hay imagen existente */}
+                        {existingImageUrl && !imageFile && (
+                            <p className="text-xs text-gray-500 mt-1">
+                                Si seleccionas una nueva imagen, reemplazará la actual
+                            </p>
+                        )}
                     </div>
 
                     {/* Información adicional */}
@@ -445,8 +523,9 @@ const uploadImage = async (campaId) => {
                             <strong>💡 Nota:</strong> Puedes editar campañas con fechas pasadas para 
                             corregir información histórica o reactivar promociones.
                             <span className="block mt-1">
-                                <strong>✨ Nueva función:</strong> Ahora puedes agregar o actualizar la imagen de tus promociones. 
-                                La imagen se subirá automáticamente al guardar los cambios.
+                                <strong>✨ Imagen:</strong> {existingImageUrl ? 
+                                    'La campaña tiene una imagen actualmente. Puedes cambiarla seleccionando un archivo nuevo.' : 
+                                    'Esta campaña no tiene imagen. Puedes agregar una seleccionando un archivo.'}
                             </span>
                         </p>
                     </div>
