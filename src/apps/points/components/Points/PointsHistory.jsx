@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 const PointsHistory = ({ accountData, detallesColor, onViewFullHistory, rules }) => {
     
     const navigate = useNavigate();
+    const [isExpanded, setIsExpanded] = useState(false);
 
     const pointsHistory = accountData?.Movimientos ? accountData.Movimientos.map(mov => {
         const dateLocalString = `${mov.TransaccionFecha}T00:00:00`;
@@ -98,7 +99,6 @@ const PointsHistory = ({ accountData, detallesColor, onViewFullHistory, rules })
                     const reglasObservaciones = rules?.ReglasObservaciones;
                     if (!reglasObservaciones) return null;
                     
-                    const [isExpanded, setIsExpanded] = useState(false);
                     const charLimit = 500;
                     const needsTruncation = reglasObservaciones.length > charLimit;
                     

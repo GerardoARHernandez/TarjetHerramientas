@@ -115,8 +115,8 @@ const StampsCampaigns = ({ campaigns, userStamps, business, color1, color2, deta
                                     borderColor: `${detallesColor}30`
                                 }}
                             >
-                                {/* Sección de Imagen - Solo para NegocioId == 3 */}
-                                {campaign.URLImagen !== "" && (
+                                {/* Sección de Imagen */}
+                                {campaign.URLImagen !== "https://souvenir-site.com/WebPuntos/images/Campanas/" && (
                                     <div className="mb-4">
                                         <div className="relative rounded-xl overflow-hidden border-2" style={{ borderColor: `${detallesColor}30` }}>
                                             <div className="relative h-48 md:h-56 lg:h-64 w-full">
