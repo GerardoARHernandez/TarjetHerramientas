@@ -90,7 +90,7 @@ const StampsCampaigns = ({ campaigns, userStamps, business, color1, color2, deta
                 <div className="flex items-center justify-between mb-6">
                     <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
                         <Gift className="w-6 h-6" style={{ color: detallesColor }}/>
-                        Promociones de Sellos Activas
+                        Promociones
                     </h3>
                     <span className="text-sm font-medium px-3 py-1 rounded-full"
                         style={{
@@ -109,7 +109,7 @@ const StampsCampaigns = ({ campaigns, userStamps, business, color1, color2, deta
                         return (
                             <div 
                                 key={campaign.CampaId} 
-                                className="rounded-2xl p-6 border-2 overflow-hidden"
+                                className="rounded-2xl p-0.5 border-2 overflow-hidden"
                                 style={{
                                     backgroundImage: `linear-gradient(to bottom right, ${detallesColor}15, ${detallesColor}08)`,
                                     borderColor: `${detallesColor}30`
@@ -118,12 +118,6 @@ const StampsCampaigns = ({ campaigns, userStamps, business, color1, color2, deta
                                 {/* Sección de Imagen - Solo para NegocioId == 3 */}
                                 {campaign.URLImagen !== "" && (
                                     <div className="mb-4">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <ImageIcon className="w-4 h-4" style={{ color: detallesColor }} />
-                                            <span className="text-xs font-medium" style={{ color: detallesColor }}>
-                                                Vista previa de la promoción
-                                            </span>
-                                        </div>
                                         <div className="relative rounded-xl overflow-hidden border-2" style={{ borderColor: `${detallesColor}30` }}>
                                             <div className="relative h-48 md:h-56 lg:h-64 w-full">
                                                 <img
@@ -144,10 +138,6 @@ const StampsCampaigns = ({ campaigns, userStamps, business, color1, color2, deta
                                                 {/* Overlay sutil */}
                                                 <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent"></div>
                                             </div>
-                                            {/* Badge en esquina */}
-                                            <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-lg px-2 py-1 shadow-sm">
-                                                <span className="text-xs font-bold" style={{ color: detallesColor }}>PROMO</span>
-                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -159,9 +149,6 @@ const StampsCampaigns = ({ campaigns, userStamps, business, color1, color2, deta
                                             Válida hasta: {new Date(campaign.CampaVigeFin).toLocaleDateString()}
                                         </p>
                                     </div>
-                                    <span className="font-bold text-xl" style={{ color: color2 }}>
-                                        {requiredStamps} sellos
-                                    </span>
                                 </div>
 
                                 <p className="text-sm text-gray-600 mb-4 leading-relaxed">

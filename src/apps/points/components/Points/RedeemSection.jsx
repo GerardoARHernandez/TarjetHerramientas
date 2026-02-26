@@ -34,9 +34,7 @@ const RedeemSection = ({ campaigns, businessName, detallesColor }) => {
                 }}
             >
                 <p className="mb-2"><strong>Proceso de canje:</strong></p>
-                <p className="mb-2">• Se necesita ir al negocio para aprobación previa.</p>
-                <p>• Una vez ahí, serás atendido y validado que la promoción es valida.</p>
-                <p>• El cajero deberá darte la promoción en caso de ser canjeada.</p>
+                <p className="mb-2">• Consulte los términos y condiciones vigentes con su vendedor.</p>
             </div>
         </div>
     );
