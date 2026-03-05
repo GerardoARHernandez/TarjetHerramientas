@@ -51,25 +51,7 @@ const ClientLogin = ({ onLogin, isLoading, onSwitchToAdmin, negocioInfo, negocio
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Campo de Email */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Email:
-          </label>
-          <div className="relative">
-            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="correo@ejemplo.com"
-              disabled={!negocioId}
-            />
-          </div>
-        </div>
-
+      <form onSubmit={handleSubmit} className="space-y-6">       
         {/* Campo de Teléfono */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -83,6 +65,24 @@ const ClientLogin = ({ onLogin, isLoading, onSwitchToAdmin, negocioInfo, negocio
               onChange={(e) => setPhone(e.target.value)}
               className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="5555555555"
+              disabled={!negocioId}
+            />
+          </div>
+        </div>
+
+        {/* Campo de Email */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Correo Electrónico (opcional):
+          </label>
+          <div className="relative">
+            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="correo@ejemplo.com"
               disabled={!negocioId}
             />
           </div>

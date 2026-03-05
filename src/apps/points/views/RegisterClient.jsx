@@ -1,22 +1,23 @@
-// src/apps/points/views/RegisterClient
+// src/apps/points/views/RegisterClient.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { User, Phone, Mail } from 'lucide-react';
+import { User, Phone, Mail, Calendar } from 'lucide-react';
 import { usePoints } from '../../../contexts/PointsContext';
 
 const RegisterClient = () => {
   const [formData, setFormData] = useState({ 
     name: '', 
     phone: '',
-    email: '' 
+    email: '',
+    birthDate: '' // Nuevo campo de fecha de nacimiento
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   const { addClient, clients } = usePoints();
   const [message, setMessage] = useState('');
-  const { negocioId } = useParams(); // Obtener negocioId de la URL
-  const [negocioInfo, setNegocioInfo] = useState(null); // Estado para almacenar la info del negocio
-  const [loadingNegocio, setLoadingNegocio] = useState(true); // Estado de carga del negocio
+  const { negocioId } = useParams();
+  const [negocioInfo, setNegocioInfo] = useState(null);
+  const [loadingNegocio, setLoadingNegocio] = useState(true);
 
   // Obtener información del negocio desde la API
   useEffect(() => {
@@ -65,8 +66,9 @@ const RegisterClient = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.phone || !formData.email) {
-      setMessage('Por favor completa todos los campos');
+    // Validaciones básicas (solo nombre y teléfono son obligatorios)
+    if (!formData.name || !formData.phone) {
+      setMessage('Por favor completa los campos obligatorios (Nombre y Teléfono)');
 
       setTimeout(() => {
         setMessage('');
@@ -83,14 +85,16 @@ const RegisterClient = () => {
       return;
     }
 
-    // Validar formato de email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      setMessage('Por favor ingresa un correo electrónico válido');
-      setTimeout(() => {
-        setMessage('');
-      }, 3000);
-      return;
+    // Validar formato de email solo si se proporcionó
+    if (formData.email && formData.email.trim() !== '') {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        setMessage('Por favor ingresa un correo electrónico válido');
+        setTimeout(() => {
+          setMessage('');
+        }, 3000);
+        return;
+      }
     }
 
     // Verificar si el teléfono ya está registrado
@@ -104,15 +108,17 @@ const RegisterClient = () => {
       return;
     }
 
-    // Verificar si el email ya está registrado
-    const emailExists = clients.some(client => client.email === formData.email);
-    if (emailExists) {
-      setMessage('Este correo electrónico ya está registrado. Por favor inicie sesión.');
-      setTimeout(() => {
-        setMessage('');
-        navigate(`/points-loyalty/login/${negocioId}`);
-      }, 3000);
-      return;
+    // Verificar si el email ya está registrado (solo si se proporcionó)
+    if (formData.email && formData.email.trim() !== '') {
+      const emailExists = clients.some(client => client.email === formData.email);
+      if (emailExists) {
+        setMessage('Este correo electrónico ya está registrado. Por favor inicie sesión.');
+        setTimeout(() => {
+          setMessage('');
+          navigate(`/points-loyalty/login/${negocioId}`);
+        }, 3000);
+        return;
+      }
     }
     
     setIsSubmitting(true);
@@ -121,18 +127,25 @@ const RegisterClient = () => {
       // Dividir nombre en nombre y apellido
       const nameParts = formData.name.split(' ');
       const firstName = nameParts[0];
-      const lastName = nameParts.slice(1).join(' ') || ''; // Si no hay apellido, dejamos vacío
+      const lastName = nameParts.slice(1).join(' ') || '';
 
-      // Preparar datos para la API según la nueva estructura
+      // Preparar datos para la API
       const requestData = {
         ListUsuario: {
-          NegocioId: parseInt(negocioId), // Usar el negocioId de la URL
+          NegocioId: parseInt(negocioId),
           UsuarioNombre: firstName,
           UsuarioApellido: lastName,
           UsuarioTelefono: formData.phone,
-          UsuarioCorreo: formData.email
+          UsuarioCorreo: formData.email || '', // Si está vacío, enviar string vacío
         }
       };
+
+      // Agregar fecha de nacimiento solo si se proporcionó
+      if (formData.birthDate) {
+        // Formatear fecha de YYYY-MM-DD a DD-MM-YYYY
+        const [year, month, day] = formData.birthDate.split('-');
+        requestData.ListUsuario.UsuarioFecha = `${day}-${month}-${year}`;
+      }
 
       // Llamar a la API
       const response = await fetch('https://souvenir-site.com/WebPuntos/API1/RegistrarCliente', {
@@ -150,9 +163,7 @@ const RegisterClient = () => {
         throw new Error('Error en el registro');
       }
 
-      // Verificar si la respuesta contiene un error del servidor
       if (result.error) {
-        // Mostrar mensaje personalizado en lugar del de la API
         setMessage('Ocurrió un error. Intente nuevamente o verifique si el usuario ya está registrado.');
         
         setTimeout(() => {
@@ -161,9 +172,7 @@ const RegisterClient = () => {
         return;
       }
 
-      // Verificar si el usuarioId es 0 (indicando error)
       if (result.usuarioId == 0) {
-        // Mostrar mensaje personalizado en lugar del de la API
         setMessage('Ocurrió un error. Intente nuevamente o verifique si el usuario ya está registrado.');
         
         setTimeout(() => {
@@ -172,19 +181,20 @@ const RegisterClient = () => {
         return;
       }
 
-      // Si la API responde con éxito, crear el cliente localmente
+      // Crear el cliente localmente
       const newClient = {
-        id: result.usuarioId || Date.now(), // Usar el ID del servidor si está disponible
+        id: result.usuarioId || Date.now(),
         name: formData.name,
         phone: formData.phone,
-        email: formData.email,
+        email: formData.email || '',
+        birthDate: formData.birthDate || '',
         registrationDate: new Date().toLocaleDateString('es-MX'),
         points: 0
       };
 
       addClient(newClient);
       
-      setMessage(`¡Registro exitoso! Bienvenido ${formData.name}\n\nAhora puede iniciar sesión con su teléfono y contraseña`);
+      setMessage(`¡Registro exitoso! Bienvenido ${formData.name}\n\nAhora puede iniciar sesión con su teléfono`);
 
       setTimeout(() => {
         setMessage('');
@@ -208,7 +218,6 @@ const RegisterClient = () => {
       return '/images/header-client.jpeg';
     }
     
-    // Si la URL está vacía o solo contiene espacios
     if (negocioInfo.NegocioImagenUrl.trim() === '') {
       return '/images/header-client.jpeg';
     }
@@ -247,9 +256,10 @@ const RegisterClient = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Campo obligatorio - Nombre */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Nombre Completo
+                Nombre Completo <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -259,13 +269,15 @@ const RegisterClient = () => {
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                   placeholder="Ingrese su nombre completo"
+                  required
                 />
               </div>
             </div>
 
+            {/* Campo obligatorio - Teléfono */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Teléfono
+                Teléfono <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -276,14 +288,16 @@ const RegisterClient = () => {
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                   placeholder="10 dígitos sin espacios"
                   maxLength="10"
+                  required
                 />
               </div>
               <p className="text-sm text-gray-500 mt-1">Ejemplo: 5512345678</p>
             </div>
 
+            {/* Campo opcional - Correo Electrónico */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Correo Electrónico
+                Correo Electrónico <span className="text-gray-400 text-xs">(opcional)</span>
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -295,6 +309,24 @@ const RegisterClient = () => {
                   placeholder="correo@ejemplo.com"
                 />
               </div>
+            </div>
+
+            {/* Nuevo campo opcional - Fecha de Nacimiento */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Fecha de Nacimiento <span className="text-gray-400 text-xs">(opcional)</span>
+              </label>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="date"
+                  value={formData.birthDate}
+                  onChange={(e) => setFormData({...formData, birthDate: e.target.value})}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  max={new Date().toISOString().split('T')[0]} // No permitir fechas futuras
+                />
+              </div>
+              <p className="text-sm text-gray-500 mt-1">Formato: DD/MM/YYYY</p>
             </div>
 
             <button
@@ -334,7 +366,8 @@ const RegisterClient = () => {
             <p className="text-sm text-gray-600 font-semibold mb-2">Información importante:</p>
             <ul className="text-sm text-gray-600 space-y-1">
               <li>• Use su número de teléfono para iniciar sesión</li>
-              <li>• Correo electronico necesario. </li>
+              <li>• Los campos marcados con <span className="text-red-500">*</span> son obligatorios</li>
+              <li>• El correo electrónico y fecha de nacimiento son opcionales</li>
               <li>• Después del registro podrá iniciar sesión inmediatamente</li>
             </ul>
           </div>

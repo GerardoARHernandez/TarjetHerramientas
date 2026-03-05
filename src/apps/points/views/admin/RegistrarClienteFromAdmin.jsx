@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Phone, Mail, ArrowLeft } from 'lucide-react';
+import { User, Phone, Mail, Calendar, ArrowLeft } from 'lucide-react';
 import { useBusiness } from '../../../../contexts/BusinessContext';
 import { usePoints } from '../../../../contexts/PointsContext';
 import Footer from '../../components/Footer';
@@ -9,7 +9,8 @@ const RegistrarClienteFromAdmin = () => {
   const [formData, setFormData] = useState({ 
     name: '', 
     phone: '',
-    email: '' 
+    email: '',
+    birthDate: '' // Nuevo campo de fecha de nacimiento
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState('');
@@ -22,9 +23,9 @@ const RegistrarClienteFromAdmin = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validaciones básicas
-    if (!formData.name || !formData.phone || !formData.email) {
-      setMessage('Por favor completa todos los campos');
+    // Validaciones básicas (solo nombre y teléfono son obligatorios)
+    if (!formData.name || !formData.phone) {
+      setMessage('Por favor completa los campos obligatorios (Nombre y Teléfono)');
       setTimeout(() => setMessage(''), 3000);
       return;
     }
@@ -35,12 +36,14 @@ const RegistrarClienteFromAdmin = () => {
       return;
     }
 
-    // Validar formato de email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      setMessage('Por favor ingresa un correo electrónico válido');
-      setTimeout(() => setMessage(''), 3000);
-      return;
+    // Validar formato de email solo si se proporcionó
+    if (formData.email && formData.email.trim() !== '') {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        setMessage('Por favor ingresa un correo electrónico válido');
+        setTimeout(() => setMessage(''), 3000);
+        return;
+      }
     }
 
     // Verificar si el teléfono ya está registrado
@@ -51,12 +54,14 @@ const RegistrarClienteFromAdmin = () => {
       return;
     }
 
-    // Verificar si el email ya está registrado
-    const emailExists = clients.some(client => client.email === formData.email);
-    if (emailExists) {
-      setMessage('Este correo electrónico ya está registrado');
-      setTimeout(() => setMessage(''), 3000);
-      return;
+    // Verificar si el email ya está registrado (solo si se proporcionó)
+    if (formData.email && formData.email.trim() !== '') {
+      const emailExists = clients.some(client => client.email === formData.email);
+      if (emailExists) {
+        setMessage('Este correo electrónico ya está registrado');
+        setTimeout(() => setMessage(''), 3000);
+        return;
+      }
     }
 
     // Verificar que tenemos información del negocio
@@ -72,18 +77,25 @@ const RegistrarClienteFromAdmin = () => {
       // Dividir nombre en nombre y apellido
       const nameParts = formData.name.split(' ');
       const firstName = nameParts[0];
-      const lastName = nameParts.slice(1).join(' ') || ''; // Si no hay apellido, dejamos vacío
+      const lastName = nameParts.slice(1).join(' ') || '';
 
-      // Preparar datos para la API según la nueva estructura
+      // Preparar datos para la API
       const requestData = {
         ListUsuario: {
-          NegocioId: parseInt(business.NegocioId), // Usar el negocioId del contexto
+          NegocioId: parseInt(business.NegocioId),
           UsuarioNombre: firstName,
           UsuarioApellido: lastName,
           UsuarioTelefono: formData.phone,
-          UsuarioCorreo: formData.email
+          UsuarioCorreo: formData.email || '' // Si está vacío, enviar string vacío
         }
       };
+
+      // Agregar fecha de nacimiento solo si se proporcionó
+      if (formData.birthDate) {
+        // Formatear fecha de YYYY-MM-DD a DD-MM-YYYY
+        const [year, month, day] = formData.birthDate.split('-');
+        requestData.ListUsuario.UsuarioFecha = `${day}-${month}-${year}`;
+      }
 
       // Llamar a la API
       const response = await fetch('https://souvenir-site.com/WebPuntos/API1/RegistrarCliente', {
@@ -120,7 +132,8 @@ const RegistrarClienteFromAdmin = () => {
         id: result.usuarioId || Date.now(),
         name: formData.name,
         phone: formData.phone,
-        email: formData.email,
+        email: formData.email || '',
+        birthDate: formData.birthDate || '', // Guardar fecha de nacimiento si se proporcionó
         registrationDate: new Date().toLocaleDateString('es-MX'),
         points: 0
       };
@@ -130,7 +143,7 @@ const RegistrarClienteFromAdmin = () => {
       setMessage(`¡Registro exitoso! Cliente ${formData.name} registrado correctamente`);
 
       // Limpiar formulario después de registro exitoso
-      setFormData({ name: '', phone: '', email: '' });
+      setFormData({ name: '', phone: '', email: '', birthDate: '' });
 
       setTimeout(() => {
         setMessage('');
@@ -169,9 +182,10 @@ const RegistrarClienteFromAdmin = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Campo obligatorio - Nombre */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Nombre Completo
+                Nombre Completo <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -186,9 +200,10 @@ const RegistrarClienteFromAdmin = () => {
               </div>
             </div>
 
+            {/* Campo obligatorio - Teléfono */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Teléfono
+                Teléfono <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -205,9 +220,10 @@ const RegistrarClienteFromAdmin = () => {
               <p className="text-sm text-gray-500 mt-1">Ejemplo: 5512345678</p>
             </div>
 
+            {/* Campo opcional - Correo Electrónico */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Correo Electrónico
+                Correo Electrónico <span className="text-gray-400 text-xs">(opcional)</span>
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -217,9 +233,26 @@ const RegistrarClienteFromAdmin = () => {
                   onChange={(e) => setFormData({...formData, email: e.target.value})}
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="correo@ejemplo.com"
-                  required
                 />
               </div>
+            </div>
+
+            {/* Nuevo campo opcional - Fecha de Nacimiento */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Fecha de Nacimiento <span className="text-gray-400 text-xs">(opcional)</span>
+              </label>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="date"
+                  value={formData.birthDate}
+                  onChange={(e) => setFormData({...formData, birthDate: e.target.value})}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  max={new Date().toISOString().split('T')[0]} // No permitir fechas futuras
+                />
+              </div>
+              <p className="text-sm text-gray-500 mt-1">Formato: DD/MM/YYYY</p>
             </div>
 
             <button
@@ -249,7 +282,8 @@ const RegistrarClienteFromAdmin = () => {
             <p className="text-sm text-gray-600 font-semibold mb-2">Información importante:</p>
             <ul className="text-sm text-gray-600 space-y-1">
               <li>• El cliente usará su número de teléfono para iniciar sesión</li>
-              <li>• El correo electrónico es necesario para notificaciones</li>
+              <li>• Los campos marcados con <span className="text-red-500">*</span> son obligatorios</li>
+              <li>• El correo electrónico y fecha de nacimiento son opcionales</li>
               <li>• El cliente podrá iniciar sesión inmediatamente después del registro</li>
               <li>• Se asignarán 0 puntos iniciales automáticamente</li>
             </ul>
