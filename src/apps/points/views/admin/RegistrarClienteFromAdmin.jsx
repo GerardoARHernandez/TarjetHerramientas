@@ -283,7 +283,7 @@ const RegistrarClienteFromAdmin = () => {
             <ul className="text-sm text-gray-600 space-y-1">
               <li>• El cliente usará su número de teléfono para iniciar sesión</li>
               <li>• Los campos marcados con <span className="text-red-500">*</span> son obligatorios</li>
-              <li>• El correo electrónico y fecha de nacimiento son opcionales</li>
+              <li>• La fecha de nacimiento se podria utilizar para enviarte promociones y descuentos el día de tu cumpleaños.</li>
               <li>• El cliente podrá iniciar sesión inmediatamente después del registro</li>
               <li>• Se asignarán 0 puntos iniciales automáticamente</li>
             </ul>

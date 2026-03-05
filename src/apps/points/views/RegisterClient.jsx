@@ -367,7 +367,7 @@ const RegisterClient = () => {
             <ul className="text-sm text-gray-600 space-y-1">
               <li>• Use su número de teléfono para iniciar sesión</li>
               <li>• Los campos marcados con <span className="text-red-500">*</span> son obligatorios</li>
-              <li>• El correo electrónico y fecha de nacimiento son opcionales</li>
+              <li>• La fecha de nacimiento se podria utilizar para enviarte promociones y descuentos el día de tu cumpleaños.</li>
               <li>• Después del registro podrá iniciar sesión inmediatamente</li>
             </ul>
           </div>
