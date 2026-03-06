@@ -1,7 +1,7 @@
 // src/apps/points/components/admin/RegisterPurchase/ClientSearch.jsx
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../../../contexts/AuthContext';
-import { Search, User, Phone, Mail, Check, List, QrCode, Camera, X, MapPin } from 'lucide-react';
+import { Search, User, Phone, Mail, Check, List, QrCode, X, MapPin } from 'lucide-react';
 
 const ClientSearch = ({ 
   selectedClientId, 
@@ -618,7 +618,6 @@ const ClientSearch = ({
                 className="p-2 text-gray-400 hover:text-gray-600 cursor-pointer"
                 title="Subir QR desde imagen"
               >
-                <Camera className="h-5 w-5" />
               </label>
             </div>
             
