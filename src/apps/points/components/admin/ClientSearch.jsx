@@ -602,24 +602,7 @@ const ClientSearch = ({
               className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
               placeholder="Buscar por nombre, teléfono o correo..."
               disabled={isLoading}
-            />
-            
-            {/* Botón para subir imagen QR */}
-            <div className="absolute inset-y-0 right-0 flex items-center pr-10">
-              <input
-                type="file"
-                id="qr-file"
-                accept="image/*"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
-              <label
-                htmlFor="qr-file"
-                className="p-2 text-gray-400 hover:text-gray-600 cursor-pointer"
-                title="Subir QR desde imagen"
-              >
-              </label>
-            </div>
+            />            
             
             {/* Sugerencias en tiempo real */}
             {showSuggestions && filteredClients.length > 0 && (
