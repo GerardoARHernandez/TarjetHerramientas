@@ -10,7 +10,6 @@ import {
     Store,
     Check,
     AlertCircle,
-    Camera,
     XCircle
 } from 'lucide-react';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
@@ -478,7 +477,6 @@ const RedeemPurchaseModal = ({ isOpen, onClose, businessName }) => {
                                                 className="px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors flex items-center justify-center min-w-[48px]"
                                                 title="Escanear código de barras"
                                             >
-                                                <Camera className="w-5 h-5" />
                                             </button>
                                         </div>
                                         <p className="text-xs text-gray-500 mt-1">
