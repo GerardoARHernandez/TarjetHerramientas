@@ -137,15 +137,11 @@ const RegisterClient = () => {
           UsuarioApellido: lastName,
           UsuarioTelefono: formData.phone,
           UsuarioCorreo: formData.email || '', // Si está vacío, enviar string vacío
+          UsuarioFecha: formData.birthDate 
+          ? formData.birthDate.split('-').reverse().join('-') // Convierte YYYY-MM-DD a DD-MM-YYYY
+          : '01-01-1900' // Fecha por defecto
         }
       };
-
-      // Agregar fecha de nacimiento solo si se proporcionó
-      if (formData.birthDate) {
-        // Formatear fecha de YYYY-MM-DD a DD-MM-YYYY
-        const [year, month, day] = formData.birthDate.split('-');
-        requestData.ListUsuario.UsuarioFecha = `${day}-${month}-${year}`;
-      }
 
       // Llamar a la API
       const response = await fetch('https://souvenir-site.com/WebPuntos/API1/RegistrarCliente', {
@@ -160,11 +156,12 @@ const RegisterClient = () => {
 
       // Validar respuesta del servidor
       if (!response.ok) {
-        throw new Error('Error en el registro');
+        throw new Error(result.Mensaje || 'Error en el registro');
       }
 
       if (result.error) {
-        setMessage('Ocurrió un error. Intente nuevamente o verifique si el usuario ya está registrado.');
+        // Mostrar el mensaje específico que viene de la API
+        setMessage(result.Mensaje || 'Error en el registro');
         
         setTimeout(() => {
           setMessage('');
@@ -173,7 +170,8 @@ const RegisterClient = () => {
       }
 
       if (result.usuarioId == 0) {
-        setMessage('Ocurrió un error. Intente nuevamente o verifique si el usuario ya está registrado.');
+        // Mostrar el mensaje específico que viene de la API
+        setMessage(result.Mensaje || 'Error en el registro');
         
         setTimeout(() => {
           setMessage('');
