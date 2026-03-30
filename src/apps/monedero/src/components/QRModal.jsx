@@ -9,29 +9,20 @@ const QRModal = ({ isOpen, onClose, phoneNumber, usuarioId }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Color para el QR (usando el mismo indigo del tema)
+  // Color para el QR
   const qrColor = '#4f46e5'; // indigo-600
   const lightColor = '#FFFFFF';
 
-  // Formatear el número de teléfono con ID
-  const formatPhoneWithId = () => {
-    if (!phoneNumber) return '';
-    const cleanPhone = phoneNumber.replace(/\D/g, '');
-    if (usuarioId) {
-      return `${usuarioId}-${cleanPhone}`;
-    }
-    // Si no hay ID, formatear solo el teléfono
-    if (cleanPhone.length === 10) {
-      return `${cleanPhone.slice(0, 3)}-${cleanPhone.slice(3, 6)}-${cleanPhone.slice(6)}`;
-    }
-    return phoneNumber;
+  // Formatear el número de teléfono (solo dígitos)
+  const formatPhoneNumber = (phone) => {
+    if (!phone) return '';
+    return phone.replace(/\D/g, '');
   };
 
-  // Formatear el número de teléfono para mostrar (con guiones)
+  // Formatear el número de teléfono para mostrar (solo números)
   const formatPhoneForDisplay = (phone) => {
     if (!phone) return '';
-    const clean = phone.toString().trim();
-    
+    const clean = phone.toString().replace(/\D/g, '');
     return clean;
   };
 
@@ -43,17 +34,16 @@ const QRModal = ({ isOpen, onClose, phoneNumber, usuarioId }) => {
     setError('');
     
     try {
-      // Crear contenido del QR con formato: ID-NÚMERO_TELÉFONO
-      const cleanPhone = phoneNumber.replace(/\D/g, '');
+      const cleanPhone = formatPhoneNumber(phoneNumber);
       let qrContent;
       
       if (usuarioId) {
-        qrContent = `${usuarioId}-${cleanPhone}`;
+        // Formato: ID espacio NÚMERO (sin guión)
+        qrContent = `${usuarioId} ${cleanPhone}`;
       } else {
         qrContent = `tel:${cleanPhone}`;
       }
       
-      // Generar QR como Data URL
       const url = await QRCode.toDataURL(qrContent, {
         width: 400,
         margin: 2,
@@ -151,7 +141,7 @@ const QRModal = ({ isOpen, onClose, phoneNumber, usuarioId }) => {
             </div>
           </div>
 
-          {/* Información del identificador */}
+          {/* Información del identificador - AHORA SIN GUION */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 text-center mb-2">
               Identificador para pago:
@@ -163,7 +153,7 @@ const QRModal = ({ isOpen, onClose, phoneNumber, usuarioId }) => {
                   <span className="text-lg font-mono font-bold text-indigo-700 dark:text-indigo-300">
                     {usuarioId}
                   </span>
-                  <span className="text-lg font-mono font-bold text-indigo-700 dark:text-indigo-300 mx-1">-</span>
+                  <span className="text-lg font-mono font-bold text-indigo-700 dark:text-indigo-300 mx-2"> </span>
                   <span className="text-lg font-mono font-bold text-indigo-700 dark:text-indigo-300">
                     {formatPhoneForDisplay(phoneNumber)}
                   </span>
