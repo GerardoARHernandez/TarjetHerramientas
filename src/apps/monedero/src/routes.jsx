@@ -7,27 +7,30 @@ import RegisterFromAdmin from "./views/admin/RegisterFromAdmin";
 import Abonar from "./views/admin/Abonar";
 import Canjear from "./views/admin/Canjear";
 import Historial from "./views/Historial";
+import TerminosCondiciones from "./views/TerminosCondiciones.jsx";
 
 const DigitalWalletRoutes = () => {
   return (
     <Routes>
-      {/* Ruta base de digitalwallet - redirige a login */}
+      {/* Ruta base - redirige a login */}
       <Route index element={<Navigate to="/digitalwallet/login" replace />} />
       
-      {/* Todas las rutas ahora tienen el prefijo digitalwallet */}
+      {/* Rutas públicas */}
       <Route path="login" element={<Login />} />
+      
+      {/* Rutas de cliente */}
       <Route path="client" element={<ClientHome />} />
       <Route path="client/historial" element={<Historial />} />
+      <Route path="client/terminos" element={<TerminosCondiciones />} />
+      
+      {/* Rutas de admin */}
       <Route path="admin" element={<AdminHome />} />
       <Route path="admin/registrar" element={<RegisterFromAdmin />} />
-      <Route path="admin/canjear" element={<Canjear />} />
       <Route path="admin/abonar" element={<Abonar />} />
+      <Route path="admin/canjear" element={<Canjear />} />
       
-      {/* Ruta comodín - redirige a login */}
-      <Route 
-        path="*" 
-        element={<Navigate to="/digitalwallet/login" replace />} 
-      />
+      {/* Ruta comodín */}
+      <Route path="*" element={<Navigate to="/digitalwallet/login" replace />} />
     </Routes>
   );
 };

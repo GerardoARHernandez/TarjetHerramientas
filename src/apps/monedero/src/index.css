@@ -1,7 +1,9 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Importa la fuente */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600;700&display=swap');
+@import "tailwindcss";
 
-* {
-  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+
+/* Aplica la fuente globalmente */
+body {
+  font-family: 'Poppins', sans-serif;
 }

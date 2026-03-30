@@ -1,9 +1,10 @@
-// src/views/AdminHome.jsx
+// src/views/admin/AdminHome.jsx
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import AdminHeader from "../../components/AdminHeader";
 import AdminFooter from "../../components/AdminFooter";
 import { useTheme } from "../../context/ThemeContext";
+import WhatsAppButton from "../../components/WhatsAppButton"; 
 
 const AdminHome = () => {
   const navigate = useNavigate();
@@ -15,20 +16,17 @@ const AdminHome = () => {
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Verificar si hay usuario admin en localStorage
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (!storedUser) {
-      navigate("/");
+      navigate("/digitalwallet/login");
       return;
     }
     
     const user = JSON.parse(storedUser);
     const negocioId = user.negocioId || 1;
     
-    // Cargar información del negocio
     fetchBusiness(negocioId);
-    // Cargar usuarios del negocio
     fetchUsers(negocioId);
   }, [navigate]);
 
@@ -46,7 +44,6 @@ const AdminHome = () => {
 
       if (data.success) {
         setBusiness(data.data);
-        // Guardar en localStorage para persistencia
         localStorage.setItem("business", JSON.stringify(data.data));
       } else {
         console.error("Error al cargar negocio:", data.message);
@@ -72,7 +69,6 @@ const AdminHome = () => {
       const data = await response.json();
 
       if (data.success) {
-        // Para cada usuario, obtener su saldo actual
         const usersWithBalance = await Promise.all(
           data.data.map(async (user) => {
             const balanceData = await fetchUserBalance(user.usuarioId);
@@ -113,7 +109,6 @@ const AdminHome = () => {
     }
   };
 
-  // Función para formatear el teléfono
   const formatPhoneNumber = (phone) => {
     if (!phone) return "No especificado";
     const clean = phone.toString().trim();
@@ -123,12 +118,10 @@ const AdminHome = () => {
     return clean;
   };
 
-  // Función para formatear saldo
   const formatBalance = (balance) => {
     return `$${balance?.toFixed(2) || "0.00"}`;
   };
 
-  // Filtrar usuarios por búsqueda
   const filteredUsers = users.filter(user => {
     const searchLower = searchTerm.toLowerCase();
     return (
@@ -139,7 +132,6 @@ const AdminHome = () => {
     );
   });
 
-  // Calcular estadísticas
   const stats = {
     totalUsuarios: users.length,
     totalTitulares: users.filter(u => u.titular === 1).length,
@@ -149,7 +141,7 @@ const AdminHome = () => {
 
   if (loading || loadingBusiness) {
     return (
-      <div className="min-h-screen flex flex-col bg-blue-100 dark:bg-gray-950">
+      <div className={`min-h-screen flex flex-col ${isDark ? 'bg-gray-950' : 'bg-gray-100'} transition-colors duration-300`}>
         <AdminHeader />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
@@ -157,7 +149,7 @@ const AdminHome = () => {
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            <p className="mt-4 text-gray-600 dark:text-gray-400">Cargando información...</p>
+            <p className={`mt-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Cargando información...</p>
           </div>
         </main>
         <AdminFooter />
@@ -167,7 +159,7 @@ const AdminHome = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen flex flex-col bg-blue-100 dark:bg-gray-950">
+      <div className={`min-h-screen flex flex-col ${isDark ? 'bg-gray-950' : 'bg-gray-100'} transition-colors duration-300`}>
         <AdminHeader />
         <main className="flex-1 flex items-center justify-center">
           <div className="bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-700 rounded-lg p-6 max-w-md">
@@ -191,10 +183,11 @@ const AdminHome = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-blue-100 dark:bg-gray-950 transition-colors duration-300">
+    <div className={`min-h-screen flex flex-col ${isDark ? 'bg-gray-950' : 'bg-gray-100'} transition-colors duration-300`}>
       <AdminHeader />
 
       <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-8 space-y-6">
+        
         {/* Banner de información del negocio */}
         {business && (
           <div 
@@ -228,41 +221,40 @@ const AdminHome = () => {
           </div>
         )}
 
-        {/* Stats Cards */}
+        {/* Stats Cards - Usando isDark directamente */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-300 dark:border-gray-700">
-            <p className="text-xs text-gray-500 dark:text-gray-400">Total usuarios</p>
-            <p className="text-2xl font-bold text-gray-800 dark:text-white">{stats.totalUsuarios}</p>
+          <div className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl p-4 shadow-sm border transition-colors duration-300`}>
+            <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Total usuarios</p>
+            <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{stats.totalUsuarios}</p>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-300 dark:border-gray-700">
-            <p className="text-xs text-gray-500 dark:text-gray-400">Cuentas titulares</p>
-            <p className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.totalTitulares}</p>
+          <div className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl p-4 shadow-sm border transition-colors duration-300`}>
+            <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Cuentas titulares</p>
+            <p className={`text-2xl font-bold ${isDark ? 'text-green-400' : 'text-green-600'}`}>{stats.totalTitulares}</p>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-300 dark:border-gray-700">
-            <p className="text-xs text-gray-500 dark:text-gray-400">Cuentas adicionales</p>
-            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.totalAdicionales}</p>
+          <div className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl p-4 shadow-sm border transition-colors duration-300`}>
+            <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Cuentas adicionales</p>
+            <p className={`text-2xl font-bold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{stats.totalAdicionales}</p>
           </div>
         </div>
 
-        {/* Users table */}
-        <div className="bg-blue-50 dark:bg-gray-800 rounded-2xl border border-gray-300 dark:border-gray-700 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-500 dark:border-gray-700">
+        {/* Users table - Usando isDark directamente */}
+        <div className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-2xl shadow-sm border transition-colors duration-300 overflow-hidden`}>
+          <div className={`px-6 py-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <h2 className="font-semibold text-gray-800 dark:text-white">Usuarios registrados</h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                <h2 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Usuarios registrados</h2>
+                <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'} mt-1`}>
                   Total: {users.length} usuarios
                 </p>
               </div>
               <div className="flex gap-3">
-                {/* Buscador */}
                 <div className="relative">
                   <input
                     type="text"
                     placeholder="Buscar por nombre, teléfono o email..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-64 px-4 py-2 rounded-lg border border-gray-400 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className={`w-64 px-4 py-2 rounded-lg border ${isDark ? 'border-gray-600 bg-gray-700 text-white' : 'border-gray-300 bg-white text-gray-900'} text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-300`}
                   />
                   {searchTerm && (
                     <button
@@ -274,7 +266,7 @@ const AdminHome = () => {
                   )}
                 </div>
                 <Link
-                  to="/admin/registrar"
+                  to="/digitalwallet/admin/registrar"
                   className="text-xs bg-amber-400 text-gray-900 font-semibold px-4 py-2 rounded-lg hover:bg-amber-300 transition inline-flex items-center gap-1"
                 >
                   <span>+</span> Nuevo usuario
@@ -289,7 +281,7 @@ const AdminHome = () => {
                 <svg className="w-16 h-16 mx-auto text-gray-400 dark:text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
-                <p className="text-gray-500 dark:text-gray-400">No se encontraron usuarios</p>
+                <p className={`${isDark ? 'text-gray-400' : 'text-gray-500'}`}>No se encontraron usuarios</p>
                 {searchTerm && (
                   <button
                     onClick={() => setSearchTerm("")}
@@ -301,7 +293,7 @@ const AdminHome = () => {
               </div>
             ) : (
               <table className="w-full text-sm">
-                <thead className="bg-blue-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 uppercase text-xs">
+                <thead className={`${isDark ? 'bg-gray-900 text-gray-400' : 'bg-gray-50 text-gray-600'} uppercase text-xs transition-colors duration-300`}>
                   <tr>
                     <th className="px-6 py-3 text-left">ID</th>
                     <th className="px-6 py-3 text-left">Nombre completo</th>
@@ -310,63 +302,69 @@ const AdminHome = () => {
                     <th className="px-6 py-3 text-left">Tipo</th>
                     <th className="px-6 py-3 text-left">Saldo</th>
                     <th className="px-6 py-3 text-left">Acciones</th>
-                  </tr>
+                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-300 dark:divide-gray-700">
+                <tbody className={`divide-y ${isDark ? 'divide-gray-700' : 'divide-gray-200'} transition-colors duration-300`}>
                   {filteredUsers.map((user) => (
-                    <tr key={user.usuarioId} className="hover:bg-blue-100 dark:hover:bg-gray-700/50 transition">
-                      <td className="px-6 py-4 text-gray-500 dark:text-gray-400 text-xs font-mono">
+                    <tr key={user.usuarioId} className={`${isDark ? 'hover:bg-gray-700/50' : 'hover:bg-gray-50'} transition`}>
+                      <td className={`px-6 py-4 ${isDark ? 'text-gray-400' : 'text-gray-500'} text-xs font-mono`}>
                         {user.usuarioId}
                       </td>
                       <td className="px-6 py-4">
                         <div>
-                          <p className="text-gray-900 dark:text-white font-medium">
+                          <p className={`${isDark ? 'text-white' : 'text-gray-900'} font-medium`}>
                             {user.usuarioNombre} {user.usuarioApellido}
                           </p>
                           {user.titular === 1 && (
-                            <span className="inline-block mt-1 text-xs bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded">
+                            <span className={`inline-block mt-1 text-xs ${isDark ? 'bg-indigo-900/50 text-indigo-300' : 'bg-indigo-100 text-indigo-700'} px-2 py-0.5 rounded`}>
                               Titular
                             </span>
                           )}
                           {user.idTitular !== user.usuarioId && user.idTitular > 0 && (
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'} mt-1`}>
                               ID Titular: {user.idTitular}
                             </p>
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
+                      <td className={`px-6 py-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                         {formatPhoneNumber(user.usuarioTelefono)}
                       </td>
-                      <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
+                      <td className={`px-6 py-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                         {user.usuarioCorreo || "No especificado"}
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-block px-2 py-1 text-xs rounded-full ${
                           user.titular === 1 
-                            ? "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300" 
-                            : "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
+                            ? isDark ? "bg-green-900/50 text-green-300" : "bg-green-100 text-green-700"
+                            : isDark ? "bg-blue-900/50 text-blue-300" : "bg-blue-100 text-blue-700"
                         }`}>
                           {user.titular === 1 ? "Principal" : "Adicional"}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-amber-600 dark:text-amber-400 font-semibold">
+                      <td className={`px-6 py-4 ${isDark ? 'text-amber-400' : 'text-amber-600'} font-semibold`}>
                         {formatBalance(user.balance)}
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-wrap">
                           <Link
-                            to={`/admin/abonar?usuarioId=${user.usuarioId}`}
+                            to={`/digitalwallet/admin/abonar?usuarioId=${user.usuarioId}`}
                             className="text-xs bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded transition"
                           >
                             Abonar
                           </Link>
                           <Link
-                            to={`/admin/canjear?usuarioId=${user.usuarioId}`}
+                            to={`/digitalwallet/admin/canjear?usuarioId=${user.usuarioId}`}
                             className="text-xs bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded transition"
                           >
                             Canjear
                           </Link>
+                          <WhatsAppButton
+                            phoneNumber={user.usuarioTelefono}
+                            businessName={business?.negocioNombre || "Monedero Cashback"}
+                            negocioDesc={business?.negocioDesc || "Tu programa de recompensas favorito"}
+                            userName={`${user.usuarioNombre || ''} ${user.usuarioApellido || ''}`.trim()}
+                          />
                         </div>
                       </td>
                     </tr>
@@ -376,9 +374,8 @@ const AdminHome = () => {
             )}
           </div>
 
-          {/* Resumen de estadísticas */}
           {users.length > 0 && (
-            <div className="px-6 py-4 border-t border-gray-500 dark:border-gray-700 bg-blue-50 dark:bg-gray-900">
+            <div className={`px-6 py-4 border-t ${isDark ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-gray-50'} transition-colors duration-300`}>
               <div className="flex flex-wrap justify-between items-center gap-4 text-sm text-gray-400 dark:text-gray-500">                
                 Última actualización: {new Date().toLocaleString('es-MX')}
               </div>

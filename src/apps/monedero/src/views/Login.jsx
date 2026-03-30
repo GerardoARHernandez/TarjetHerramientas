@@ -20,17 +20,32 @@ const Login = () => {
     setLoading(true);
     setError("");
     
-    // Limpiar el número de teléfono (quitar espacios, guiones, etc.)
     const cleanPhone = phone.replace(/\D/g, "");
     
     // Verificar si es el admin (número especial, cualquier contraseña funciona)
     if (cleanPhone === ADMIN_PHONE) {
-      navigate("/admin");
+      // ✅ GUARDAR DATOS DEL ADMIN EN LOCALSTORAGE
+      const adminUser = {
+        usuarioId: 1,  // ID ficticio para admin especial
+        usuarioNombre: "Admin",
+        usuarioApellido: "Sistema",
+        usuarioTelefono: ADMIN_PHONE,
+        usuarioRol: "ADMIN",
+        tipoUsuario: "ADMIN",
+        titular: 1,
+        idTitular: null,
+        negocioId: 1
+      };
+      
+      localStorage.setItem("user", JSON.stringify(adminUser));
+      console.log('Admin especial guardado en localStorage:', adminUser);
+      
+      navigate("/digitalwallet/admin");
       setLoading(false);
       return;
     }
     
-    // Si no es admin, intentar login normal con la API
+    // Resto del código para login normal...
     try {
       const response = await fetch("https://souvenir-site.com/TarjetCashBack/api/auth/login", {
         method: "POST",
@@ -46,8 +61,7 @@ const Login = () => {
       const data = await response.json();
 
       if (data.success) {
-        // Guardar información del usuario
-        localStorage.setItem("user", JSON.stringify({
+        const userData = {
           usuarioId: data.data.usuarioId,
           usuarioNombre: data.data.usuarioNombre,
           usuarioApellido: data.data.usuarioApellido,
@@ -56,14 +70,16 @@ const Login = () => {
           tipoUsuario: data.data.tipoUsuario,
           titular: data.data.titular,
           idTitular: data.data.idTitular,
-          negocioId: data.data.negocioId || 1 // Guardar el negocioId del usuario
-        }));
+          negocioId: data.data.negocioId || 1
+        };
         
-        // Redirigir según el rol
+        localStorage.setItem("user", JSON.stringify(userData));
+        console.log('Usuario guardado en localStorage:', userData);
+        
         if (data.data.usuarioRol === "ADMIN") {
-          navigate("/admin");
+          navigate("/digitalwallet/admin");
         } else {
-          navigate("/client");
+          navigate("/digitalwallet/client");
         }
       } else {
         setError(data.message || "Credenciales incorrectas");
@@ -98,25 +114,25 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-100 to-indigo-200 dark:from-indigo-900 dark:to-indigo-950 flex items-center justify-center px-4 transition-colors duration-300">
+    <div className={`min-h-screen bg-gradient-to-br ${isDark ? 'from-indigo-900 to-indigo-950' : 'from-indigo-100 to-indigo-200'} flex items-center justify-center px-4 transition-colors duration-300`}>
       <div className="w-full max-w-md">
         {/* Card */}
         <div className="p-2 mb-6">
           <img src="/1.jpeg" alt="Logo Monedero" className="w-full h-auto rounded-t-2xl" />
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+        <div className={` ${isDark ? 'dark:bg-gray-800' : 'bg-white'} rounded-2xl shadow-xl p-8`}>
           <div className="flex flex-col items-center mb-8">
             <div className="self-end mb-2">
               <ThemeToggle />
             </div>
-            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Monedero</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Inicia sesión en tu monedero</p>
+            <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>Monedero</h1>
+            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'} mt-1`}>Inicia sesión en tu monedero</p>
           </div>
 
           {/* Form */}
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className={`block text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
                 Número de teléfono
               </label>
               <div className="relative">
@@ -127,15 +143,23 @@ const Login = () => {
                   placeholder="55-1234-5678"
                   required
                   disabled={loading}
-                  className={`w-full pl-10 pr-4 py-2.5 rounded-lg border ${
-                    error ? 'border-red-500 dark:border-red-500' : 'border-gray-400 dark:border-gray-600'
-                  } bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition disabled:opacity-50 disabled:cursor-not-allowed`}
+                  className={`
+                    w-full pl-10 pr-4 py-2.5 rounded-lg border text-sm 
+                    focus:outline-none focus:ring-2 focus:ring-indigo-500 
+                    focus:border-transparent transition disabled:opacity-50 
+                    disabled:cursor-not-allowed
+                    ${error 
+                      ? 'border-red-500' 
+                      : (isDark ? 'border-gray-600' : 'border-gray-400')
+                    }
+                    ${isDark ? 'bg-gray-700 text-white' : 'bg-white text-gray-900'}
+                  `}
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className={`block text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
                 Contraseña
               </label>
               <div className="relative">
@@ -146,28 +170,36 @@ const Login = () => {
                   placeholder="••••••••"
                   required
                   disabled={loading}
-                  className={`w-full pl-10 pr-4 py-2.5 rounded-lg border ${
-                    error ? 'border-red-500 dark:border-red-500' : 'border-gray-400 dark:border-gray-600'
-                  } bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition disabled:opacity-50 disabled:cursor-not-allowed`}
+                  className={`
+                    w-full pl-10 pr-4 py-2.5 rounded-lg border text-sm 
+                    focus:outline-none focus:ring-2 focus:ring-indigo-500 
+                    focus:border-transparent transition disabled:opacity-50 
+                    disabled:cursor-not-allowed
+                    ${error 
+                      ? 'border-red-500' 
+                      : (isDark ? 'border-gray-600' : 'border-gray-400')
+                    }
+                    ${isDark ? 'bg-gray-700 text-white' : 'bg-white text-gray-900'}
+                  `}
                 />
               </div>
             </div>
 
             {/* Mensaje de error */}
             {error && (
-              <div className="bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-700 rounded-lg p-3">
-                <p className="text-red-800 dark:text-red-300 text-sm text-center">
+              <div className={`${isDark ? 'bg-red-900/30 border-red-700' : 'bg-red-100 border-red-400'} border rounded-lg p-3`}>
+                <p className={`${isDark ? 'text-red-300' : 'text-red-800'} text-sm text-center`}>
                   ❌ {error}
                 </p>
               </div>
             )}
 
             <div className="flex items-center justify-between text-sm">
-              <label className="flex items-center gap-2 text-gray-600 dark:text-gray-400 cursor-pointer">
-                <input type="checkbox" className="rounded dark:bg-gray-700" />
+              <label className={`flex items-center gap-2 ${isDark ? 'text-gray-400' : 'text-gray-600'} cursor-pointer`}>
+                <input type="checkbox" className={`rounded ${isDark ? 'bg-gray-700' : ''}`} />
                 Recordarme
               </label>
-              <a href="#" className="text-indigo-600 dark:text-indigo-400 hover:underline">
+              <a href="#" className={`${isDark ? 'text-indigo-400' : 'text-indigo-600'} hover:underline`}>
                 ¿Olvidaste tu contraseña?
               </a>
             </div>

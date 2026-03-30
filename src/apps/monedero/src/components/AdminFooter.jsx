@@ -1,10 +1,16 @@
-// src/components/AdminFooter.jsx 
+// src/components/AdminFooter.jsx
+import { Link } from "react-router-dom";
+import { useTheme } from "../context/ThemeContext";
+
 const AdminFooter = () => {
+  const { isDark } = useTheme();
+  
   return (
-    <footer className="bg-gray-800 dark:bg-gray-900 text-gray-400 dark:text-gray-500 text-sm border-t border-gray-200 dark:border-gray-700 transition-colors duration-300">
-      <div className="max-w-7xl mx-auto px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-2">
-        <p>© {new Date().getFullYear()} Monedero - TekRobot. Todos los derechos reservados.</p>
-        <p className="text-xs text-gray-500 dark:text-gray-600">v1.0.0· - TekRobot </p>
+    <footer className={`${isDark ? 'bg-gray-900 border-gray-700' : 'bg-indigo-800 border-indigo-600'} border-t py-6 transition-colors duration-300`}>
+      <div className="max-w-7xl mx-auto px-6 text-center text-sm">
+        <p className={`${isDark ? 'text-gray-400' : 'text-indigo-200'}`}>
+          <p>© {new Date().getFullYear()} Monedero - TekRobot. Todos los derechos reservados.</p>
+        </p>
       </div>
     </footer>
   );

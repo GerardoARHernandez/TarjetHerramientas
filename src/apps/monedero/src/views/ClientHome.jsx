@@ -16,18 +16,16 @@ const ClientHome = () => {
   const [transactions, setTransactions] = useState([]);
   const [error, setError] = useState("");
 
-  // Obtener el usuario del localStorage al cargar
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (!storedUser) {
-      navigate("/");
+      navigate("/digitalwallet/login");
       return;
     }
     
     const user = JSON.parse(storedUser);
     setUserData(user);
     
-    // Cargar información del negocio
     const negocioId = user.negocioId || 1;
     fetchBusiness(negocioId);
     fetchUserBalance(user.usuarioId);
@@ -46,7 +44,6 @@ const ClientHome = () => {
 
       if (data.success) {
         setBusiness(data.data);
-        // Guardar en localStorage para persistencia
         localStorage.setItem("business", JSON.stringify(data.data));
       } else {
         console.error("Error al cargar negocio:", data.message);
@@ -76,7 +73,6 @@ const ClientHome = () => {
           montoUtilizado: data.data.usuario.montoUtilizado
         }));
         
-        // Ordenar transacciones por fecha (más reciente primero)
         const sortedTransactions = (data.data.transacciones || []).sort((a, b) => 
           new Date(b.transaccionFecha) - new Date(a.transaccionFecha)
         );
@@ -92,34 +88,24 @@ const ClientHome = () => {
     }
   };
 
-  // Función para obtener la descripción de la transacción
   const getTransactionDescription = (tx) => {
-    if (tx.transaccionTipo === "A") {
-      return "Recarga de saldo";
-    } else if (tx.transaccionTipo === "C") {
-      return "Canje de saldo";
-    }
+    if (tx.transaccionTipo === "A") return "Recarga de saldo";
+    if (tx.transaccionTipo === "C") return "Canje de saldo";
     return "Movimiento";
   };
 
-  // Función para obtener el número de referencia
   const getReferenceNumber = (tx) => {
-    if (tx.transaccionTipo === "A") {
-      return tx.transaccionNoReferen;
-    } else if (tx.transaccionTipo === "C") {
+    if (tx.transaccionTipo === "A" || tx.transaccionTipo === "C") {
       return tx.transaccionNoReferen;
     }
     return "";
   };
 
-  // Función para formatear el teléfono para mostrar
   const formatPhoneForDisplay = (phone) => {
     if (!phone) return "";
-    const clean = phone.toString().replace(/\s/g, "");
     return phone;
   };
 
-  // Función para formatear fecha
   const formatDate = (dateString) => {
     if (!dateString) return "";
     const date = new Date(dateString);
@@ -130,7 +116,6 @@ const ClientHome = () => {
     });
   };
 
-  // Función para formatear hora
   const formatTime = (dateString) => {
     if (!dateString) return "";
     const date = new Date(dateString);
@@ -140,7 +125,6 @@ const ClientHome = () => {
     });
   };
 
-  // Calcular estadísticas de transacciones (solo si es titular)
   const calculateStats = () => {
     if (userData?.titular !== 1) {
       return {
@@ -162,11 +146,8 @@ const ClientHome = () => {
     transactions.forEach(tx => {
       const txDate = new Date(tx.transaccionFecha);
       if (txDate.getMonth() === currentMonth && txDate.getFullYear() === currentYear) {
-        if (tx.transaccionTipo === "A") {
-          ingresosMes += tx.transaccionImporte;
-        } else if (tx.transaccionTipo === "C") {
-          gastosMes += tx.transaccionImporte;
-        }
+        if (tx.transaccionTipo === "A") ingresosMes += tx.transaccionImporte;
+        else if (tx.transaccionTipo === "C") gastosMes += tx.transaccionImporte;
       }
     });
     
@@ -182,20 +163,19 @@ const ClientHome = () => {
   const stats = calculateStats();
   const esTitular = userData?.titular === 1;
   
-  // Colores del negocio
-  const color1 = business?.negocioColor1 || "#4f46e5"; // indigo-600 como fallback
-  const color2 = business?.negocioColor2 || "#7c3aed"; // indigo-500 como fallback
+  const color1 = business?.negocioColor1 || "#4f46e5";
+  const color2 = business?.negocioColor2 || "#7c3aed";
   const imagenUrl = business?.negocioImagenUrl;
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className={`min-h-screen flex items-center justify-center ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
         <div className="text-center">
           <svg className="animate-spin h-12 w-12 text-indigo-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Cargando tu información...</p>
+          <p className={`mt-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Cargando tu información...</p>
         </div>
       </div>
     );
@@ -203,10 +183,10 @@ const ClientHome = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className={`min-h-screen flex items-center justify-center ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
         <div className="text-center">
-          <div className="bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-700 rounded-lg p-6 max-w-md">
-            <p className="text-red-800 dark:text-red-300">❌ {error}</p>
+          <div className={`${isDark ? 'bg-red-900/30 border-red-700' : 'bg-red-100 border-red-400'} border rounded-lg p-6 max-w-md`}>
+            <p className={`${isDark ? 'text-red-300' : 'text-red-800'}`}>❌ {error}</p>
             <button
               onClick={() => fetchUserBalance(userData?.usuarioId)}
               className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition"
@@ -220,13 +200,13 @@ const ClientHome = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+    <div className={`min-h-screen flex flex-col ${isDark ? 'bg-gray-900' : 'bg-gray-50'} transition-colors duration-300`}>
       <ClientHeader esTitular={esTitular} color1={color1} color2={color2} />
 
       <main className="flex-1 max-w-6xl mx-auto w-full px-6 py-8 space-y-6">
         {/* Balance card */}
         <div className="flex flex-col md:flex-row gap-4 md:gap-6">
-          {/* Imagen - Usar imagen del negocio si existe */}
+          {/* Imagen */}
           <div className="md:w-1/2 order-1 md:order-1">
             <div className="relative rounded-2xl overflow-hidden shadow-lg h-full">
               <img 
@@ -239,57 +219,95 @@ const ClientHome = () => {
 
           {/* Saldo y acciones QR */}
           <div className="md:w-1/2 order-2 md:order-2 space-y-4">
-            {/* Tarjeta de saldo - Usar colores del negocio */}
-            <div 
-              className="rounded-2xl p-6 text-white shadow-lg"
-              style={{ 
-                background: `linear-gradient(145deg, ${color1}, ${color2})` 
-              }}
-            >
-              <div>
-                <div className="bottom-4 left-4 text-white">
-                  <p className="text-sm font-medium opacity-90">Bienvenido a <strong>tu monedero digital</strong></p>                
-                </div>
-                <p className="text-sm font-medium flex items-center gap-2 pt-2 text-white" >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Saldo disponible
-                </p>
-                <p className="text-4xl font-bold mt-2">
-                  ${userData?.montoDisponible?.toFixed(2) || "0.00"}
-                </p>
-              </div>
-              
-              <div className="mt-4 pt-4 border-t" style={{ borderColor: `${color1}40` }}>
-                <div className="flex items-center justify-between">
-                  <div className="text-white">
-                    <p className="text-sm">
-                      {userData?.usuarioNombre} {userData?.usuarioApellido}
-                    </p>
-                    <p className="text-xs flex items-center gap-1 mt-1">
-                      {userData?.titular === 1 ? "Cuenta Titular" : "Cuenta Adicional"}
-                      {userData?.idTitular > 0 && ` · ID Titular: ${userData.idTitular}`}
-                    </p>
+            {/* Tarjeta de saldo */}
+            {isDark ? (
+              <div className="rounded-2xl p-6 shadow-lg bg-gray-800 border border-gray-700">
+                <div>
+                  <div className="bottom-4 left-4">
+                    <p className="text-sm font-medium text-gray-300">Bienvenido a <strong className="text-white">tu monedero digital</strong></p>                
                   </div>
-                  <div className="text-right text-white">
-                    <p className="text-xs" >Saldo utilizado</p>
-                    <p className="text-sm font-semibold">
-                      ${userData?.montoUtilizado?.toFixed(2) || "0.00"}
-                    </p>
+                  <p className="text-sm font-medium flex items-center gap-2 pt-2 text-gray-300">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Saldo disponible
+                  </p>
+                  <p className="text-4xl font-bold mt-2 text-white">
+                    ${userData?.montoDisponible?.toFixed(2) || "0.00"}
+                  </p>
+                </div>
+                
+                <div className="mt-4 pt-4 border-t border-gray-700">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-300">
+                        {userData?.usuarioNombre} {userData?.usuarioApellido}
+                      </p>
+                      <p className="text-xs flex items-center gap-1 mt-1 text-gray-400">
+                        {userData?.titular === 1 ? "Cuenta Titular" : "Cuenta Adicional"}
+                        {userData?.idTitular > 0 && ` · ID Titular: ${userData.idTitular}`}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-gray-400">Saldo utilizado</p>
+                      <p className="text-sm font-semibold text-gray-300">
+                        ${userData?.montoUtilizado?.toFixed(2) || "0.00"}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div 
+                className="rounded-2xl p-6 text-white shadow-lg"
+                style={{ background: `linear-gradient(145deg, ${color1}, ${color2})` }}
+              >
+                <div>
+                  <div className="bottom-4 left-4 text-white">
+                    <p className="text-sm font-medium opacity-90">Bienvenido a <strong>tu monedero digital</strong></p>                
+                  </div>
+                  <p className="text-sm font-medium flex items-center gap-2 pt-2 text-white">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Saldo disponible
+                  </p>
+                  <p className="text-4xl font-bold mt-2">
+                    ${userData?.montoDisponible?.toFixed(2) || "0.00"}
+                  </p>
+                </div>
+                
+                <div className="mt-4 pt-4 border-t" style={{ borderColor: `${color1}40` }}>
+                  <div className="flex items-center justify-between">
+                    <div className="text-white">
+                      <p className="text-sm">
+                        {userData?.usuarioNombre} {userData?.usuarioApellido}
+                      </p>
+                      <p className="text-xs flex items-center gap-1 mt-1">
+                        {userData?.titular === 1 ? "Cuenta Titular" : "Cuenta Adicional"}
+                        {userData?.idTitular > 0 && ` · ID Titular: ${userData.idTitular}`}
+                      </p>
+                    </div>
+                    <div className="text-right text-white">
+                      <p className="text-xs">Saldo utilizado</p>
+                      <p className="text-sm font-semibold">
+                        ${userData?.montoUtilizado?.toFixed(2) || "0.00"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
-            {/* Botón de QR - Usar colores del negocio */}
+            {/* Botón de QR */}
             <button
               onClick={() => setIsQRModalOpen(true)}
-              className="w-full flex items-center justify-center gap-2 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 font-semibold py-4 px-4 rounded-xl border-2 transition-all duration-300 transform hover:scale-105"
-              style={{ 
-                color: color1,
-                borderColor: color1
-              }}
+              className={`w-full flex items-center justify-center gap-2 font-semibold py-4 px-4 rounded-xl border-2 transition-all duration-300 transform hover:scale-105 ${
+                isDark 
+                  ? 'bg-gray-800 hover:bg-gray-700 text-gray-300 border-gray-600 hover:text-white' 
+                  : 'bg-white hover:bg-gray-50'
+              }`}
+              style={!isDark ? { color: color1, borderColor: color1 } : {}}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
@@ -299,45 +317,45 @@ const ClientHome = () => {
           </div>
         </div>
 
-        {/* Quick stats - Solo mostrar si es titular */}
+        {/* Quick stats */}
         {esTitular && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: "Ingresos del mes", value: `$${stats.ingresosMes.toFixed(2)}`, color: "text-green-600 dark:text-green-400" },
-              { label: "Gastos del mes", value: `$${stats.gastosMes.toFixed(2)}`, color: "text-red-500 dark:text-red-400" },
-              { label: "Movimientos", value: stats.totalMovimientos.toString(), color: `text-gray-600 dark:text-white` },
-              { label: "Recargas", value: stats.totalRecargas.toString(), color: `text-gray-600 dark:text-white` },
+              { label: "Ingresos del mes", value: `$${stats.ingresosMes.toFixed(2)}`, color: isDark ? "text-green-400" : "text-green-600" },
+              { label: "Gastos del mes", value: `$${stats.gastosMes.toFixed(2)}`, color: isDark ? "text-red-400" : "text-red-500" },
+              { label: "Movimientos", value: stats.totalMovimientos.toString(), color: isDark ? "text-white" : "text-gray-600" },
+              { label: "Recargas", value: stats.totalRecargas.toString(), color: isDark ? "text-white" : "text-gray-600" },
             ].map((stat) => (
-              <div key={stat.label} className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-400 dark:border-gray-700">
-                <p className="text-xs text-gray-500 dark:text-gray-400">{stat.label}</p>
+              <div key={stat.label} className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl p-4 shadow-sm border`}>
+                <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{stat.label}</p>
                 <p className={`text-xl font-bold mt-1 ${stat.color}`}>{stat.value}</p>
               </div>
             ))}
           </div>
         )}
 
-        {/* Recent transactions - Solo mostrar si es titular */}
+        {/* Recent transactions */}
         {esTitular && (
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-400 dark:border-gray-700">
-            <div className="px-6 py-4 border-b border-gray-400 dark:border-gray-700 flex items-center justify-between">
-              <h2 className="font-semibold text-gray-800 dark:text-white">Movimientos recientes</h2>
+          <div className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-2xl shadow-sm border`}>
+            <div className={`px-6 py-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'} flex items-center justify-between`}>
+              <h2 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Movimientos recientes</h2>
               <Link 
-                to="/client/historial" 
+                to="/digitalwallet/client/historial" 
                 className="text-sm hover:underline"
-                style={{ color: color1 }}
+                style={!isDark ? { color: color1 } : { color: '#9ca3af' }}
               >
                 Ver todos
               </Link>
             </div>
             {transactions.length === 0 ? (
               <div className="px-6 py-12 text-center">
-                <svg className="w-16 h-16 mx-auto text-gray-400 dark:text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                <p className="text-gray-500 dark:text-gray-400">No hay movimientos registrados</p>
+                <p className={`${isDark ? 'text-gray-400' : 'text-gray-500'}`}>No hay movimientos registrados</p>
               </div>
             ) : (
-              <ul className="divide-y divide-gray-400 dark:divide-gray-700">
+              <ul className={`divide-y ${isDark ? 'divide-gray-700' : 'divide-gray-200'}`}>
                 {transactions.slice(0, 5).map((tx) => {
                   const isCredit = tx.transaccionTipo === "A";
                   const amount = tx.transaccionImporte;
@@ -345,38 +363,38 @@ const ClientHome = () => {
                   const reference = getReferenceNumber(tx);
                   
                   return (
-                    <li key={tx.transaccionId} className="px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                    <li key={tx.transaccionId} className={`px-6 py-4 ${isDark ? 'hover:bg-gray-700/50' : 'hover:bg-gray-50'} transition`}>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3 flex-1">
                           <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg
                             ${isCredit 
-                              ? "bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-400" 
-                              : "bg-red-100 dark:bg-red-900/50 text-red-500 dark:text-red-400"}`}>
+                              ? isDark ? "bg-green-900/50 text-green-400" : "bg-green-100 text-green-600"
+                              : isDark ? "bg-red-900/50 text-red-400" : "bg-red-100 text-red-500"}`}>
                             {isCredit ? "↓" : "↑"}
                           </div>
                           <div className="flex-1">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <p className="text-sm font-medium text-gray-800 dark:text-white">
+                              <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>
                                 {description}
                               </p>
                               {reference && reference !== "0" && (
-                                <span className="text-xs font-mono text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">
+                                <span className={`text-xs font-mono ${isDark ? 'text-gray-400 bg-gray-700' : 'text-gray-500 bg-gray-100'} px-2 py-0.5 rounded`}>
                                   {reference}
                                 </span>
                               )}
                             </div>
                             <div className="flex items-center gap-2 mt-1">
-                              <p className="text-xs text-gray-400 dark:text-gray-500">
+                              <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                                 {formatDate(tx.transaccionFecha)}
                               </p>
                               <span className="text-xs text-gray-400">•</span>
-                              <p className="text-xs text-gray-400 dark:text-gray-500">
+                              <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                                 {formatTime(tx.transaccionFecha)}
                               </p>
                               {tx.transaccionTipo === "C" && tx.transaccionFolioTick !== "0" && (
                                 <>
                                   <span className="text-xs text-gray-400">•</span>
-                                  <p className="text-xs text-gray-400 dark:text-gray-500">
+                                  <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                                     Folio: {tx.transaccionFolioTick}
                                   </p>
                                 </>
@@ -385,8 +403,8 @@ const ClientHome = () => {
                           </div>
                         </div>
                         <span className={`text-sm font-bold ${isCredit 
-                          ? "text-green-600 dark:text-green-400" 
-                          : "text-red-500 dark:text-red-400"}`}>
+                          ? isDark ? "text-green-400" : "text-green-600"
+                          : isDark ? "text-red-400" : "text-red-500"}`}>
                           {isCredit ? "+" : "-"}${amount.toFixed(2)}
                         </span>
                       </div>
@@ -396,11 +414,11 @@ const ClientHome = () => {
               </ul>
             )}
             {transactions.length > 5 && (
-              <div className="px-6 py-3 border-t border-gray-400 dark:border-gray-700 text-center">
+              <div className={`px-6 py-3 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'} text-center`}>
                 <Link 
-                  to="/client/historial" 
+                  to="/digitalwallet/client/historial" 
                   className="text-sm hover:underline"
-                  style={{ color: color1 }}
+                  style={!isDark ? { color: color1 } : { color: '#9ca3af' }}
                 >
                   Ver los {transactions.length - 5} movimientos restantes
                 </Link>
@@ -411,21 +429,20 @@ const ClientHome = () => {
 
         {/* Mensaje para cuentas adicionales */}
         {!esTitular && (
-          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-6 text-center">
-            <svg className="w-12 h-12 mx-auto text-amber-500 dark:text-amber-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className={`${isDark ? 'bg-amber-900/20 border-amber-800' : 'bg-amber-50 border-amber-200'} border rounded-xl p-6 text-center`}>
+            <svg className={`w-12 h-12 mx-auto ${isDark ? 'text-amber-400' : 'text-amber-500'} mb-3`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <p className="text-amber-700 dark:text-amber-300 font-medium">
+            <p className={`${isDark ? 'text-amber-300' : 'text-amber-700'} font-medium`}>
               Esta es una cuenta adicional
             </p>
-            <p className="text-sm text-amber-600 dark:text-amber-400 mt-1">
+            <p className={`text-sm ${isDark ? 'text-amber-400' : 'text-amber-600'} mt-1`}>
               El historial de movimientos solo está disponible para cuentas titulares.
             </p>
           </div>
         )}
       </main>
 
-      {/* Modal QR */}
       <QRModal 
         isOpen={isQRModalOpen}
         onClose={() => setIsQRModalOpen(false)}

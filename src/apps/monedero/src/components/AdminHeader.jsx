@@ -1,18 +1,20 @@
-// src/components/AdminHeader.jsx 
+// src/components/AdminHeader.jsx
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import ThemeToggle from "./ThemeToggle";
 import { useBusiness } from "../context/BusinessContext";
+import { useTheme } from "../context/ThemeContext"; 
 
 const AdminHeader = () => {
   const navigate = useNavigate();
   const { business } = useBusiness();
+  const { isDark } = useTheme(); 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem("user");
     localStorage.removeItem("business");
-    navigate("/login");
+    navigate("/digitalwallet/login"); 
   };
 
   const toggleMenu = () => {
@@ -25,7 +27,7 @@ const AdminHeader = () => {
 
   return (
     <>
-      <header className="bg-gray-900 dark:bg-gray-950 text-white shadow-lg border-b border-gray-700 dark:border-gray-800 transition-colors duration-300 sticky top-0 z-40">
+      <header className={`${isDark ? 'bg-gray-900' : 'bg-indigo-800'} text-white shadow-lg border-b ${isDark ? 'border-gray-700' : 'border-indigo-600'} transition-colors duration-300 sticky top-0 z-40`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
             {/* Logo */}
@@ -50,10 +52,10 @@ const AdminHeader = () => {
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-300">
-              <Link to="/admin" className="hover:text-white transition-colors">Dashboard</Link>
-              <Link to="/admin/abonar" className="hover:text-white transition-colors">Abonar</Link>
-              <Link to="/admin/canjear" className="hover:text-white transition-colors">Canjear</Link>
-              <Link to="/admin/registrar" className="hover:text-white transition-colors">Registrar</Link>
+              <Link to="/digitalwallet/admin" className="hover:text-white transition-colors">Dashboard</Link>
+              <Link to="/digitalwallet/admin/abonar" className="hover:text-white transition-colors">Abonar</Link>
+              <Link to="/digitalwallet/admin/canjear" className="hover:text-white transition-colors">Canjear</Link>
+              <Link to="/digitalwallet/admin/registrar" className="hover:text-white transition-colors">Registrar</Link>
             </nav>
 
             {/* Admin user y ThemeToggle - Desktop */}
@@ -95,7 +97,7 @@ const AdminHeader = () => {
 
       {/* Mobile Menu Dropdown */}
       <div 
-        className={`md:hidden fixed top-[73px] left-0 right-0 bg-gray-900 dark:bg-gray-950 border-b border-gray-700 dark:border-gray-800 shadow-lg transition-all duration-300 z-30 ${
+        className={`md:hidden fixed top-[73px] left-0 right-0 ${isDark ? 'bg-gray-900' : 'bg-indigo-800'} border-b ${isDark ? 'border-gray-700' : 'border-indigo-600'} shadow-lg transition-all duration-300 z-30 ${
           isMenuOpen ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'
         }`}
       >
@@ -113,28 +115,28 @@ const AdminHeader = () => {
 
           {/* Navigation Links - Mobile */}
           <Link
-            to="/admin"
+            to="/digitalwallet/admin"
             onClick={closeMenu}
             className="block py-3 px-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
           >
             Dashboard
           </Link>
           <Link
-            to="/admin/abonar"
+            to="/digitalwallet/admin/abonar"
             onClick={closeMenu}
             className="block py-3 px-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
           >
             Abonar
           </Link>
           <Link
-            to="/admin/canjear"
+            to="/digitalwallet/admin/canjear"
             onClick={closeMenu}
             className="block py-3 px-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
           >
             Canjear
           </Link>
           <Link
-            to="/admin/registrar"
+            to="/digitalwallet/admin/registrar"
             onClick={closeMenu}
             className="block py-3 px-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
           >
