@@ -11,9 +11,10 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [rememberMe, setRememberMe] = useState(false); // Nuevo estado
 
   // Número de teléfono específico para admin
-  const ADMIN_PHONE = "5512345678"; // Cambia esto por el número que quieras
+  const ADMIN_PHONE = "5512345678";
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -24,9 +25,8 @@ const Login = () => {
     
     // Verificar si es el admin (número especial, cualquier contraseña funciona)
     if (cleanPhone === ADMIN_PHONE) {
-      // ✅ GUARDAR DATOS DEL ADMIN EN LOCALSTORAGE
       const adminUser = {
-        usuarioId: 1,  // ID ficticio para admin especial
+        usuarioId: 1,
         usuarioNombre: "Admin",
         usuarioApellido: "Sistema",
         usuarioTelefono: ADMIN_PHONE,
@@ -37,15 +37,25 @@ const Login = () => {
         negocioId: 1
       };
       
-      localStorage.setItem("user", JSON.stringify(adminUser));
-      console.log('Admin especial guardado en localStorage:', adminUser);
+      // Guardar según la opción "Recordarme"
+      if (rememberMe) {
+        localStorage.setItem("user", JSON.stringify(adminUser));
+        localStorage.setItem("rememberMe", "true");
+      } else {
+        sessionStorage.setItem("user", JSON.stringify(adminUser));
+        // Limpiar localStorage si existe
+        localStorage.removeItem("user");
+        localStorage.removeItem("rememberMe");
+      }
+      
+      console.log('Admin especial guardado:', rememberMe ? 'localStorage' : 'sessionStorage');
       
       navigate("/digitalwallet/admin");
       setLoading(false);
       return;
     }
     
-    // Resto del código para login normal...
+    // Login normal
     try {
       const response = await fetch("https://souvenir-site.com/TarjetCashBack/api/auth/login", {
         method: "POST",
@@ -66,15 +76,25 @@ const Login = () => {
           usuarioNombre: data.data.usuarioNombre,
           usuarioApellido: data.data.usuarioApellido,
           usuarioTelefono: data.data.usuarioTelefono,
-          usuarioRol: data.data.usuarioRol,
+          usuarioRol: data.data.usuarioRol === "CLIE" ? "CLIENT" : data.data.usuarioRol,
           tipoUsuario: data.data.tipoUsuario,
           titular: data.data.titular,
           idTitular: data.data.idTitular,
           negocioId: data.data.negocioId || 1
         };
         
-        localStorage.setItem("user", JSON.stringify(userData));
-        console.log('Usuario guardado en localStorage:', userData);
+        // Guardar según la opción "Recordarme"
+        if (rememberMe) {
+          localStorage.setItem("user", JSON.stringify(userData));
+          localStorage.setItem("rememberMe", "true");
+        } else {
+          sessionStorage.setItem("user", JSON.stringify(userData));
+          // Limpiar localStorage si existe
+          localStorage.removeItem("user");
+          localStorage.removeItem("rememberMe");
+        }
+        
+        console.log('Usuario guardado:', rememberMe ? 'localStorage' : 'sessionStorage');
         
         if (data.data.usuarioRol === "ADMIN") {
           navigate("/digitalwallet/admin");
@@ -94,22 +114,18 @@ const Login = () => {
 
   // Función para formatear el número de teléfono mientras se escribe
   const formatPhoneNumber = (value) => {
-    // Eliminar todo lo que no sea número
     const numbers = value.replace(/\D/g, "");
-    
     return numbers;    
   };
 
   const handlePhoneChange = (e) => {
     const formatted = formatPhoneNumber(e.target.value);
     setPhone(formatted);
-    // Limpiar error cuando el usuario empieza a escribir
     if (error) setError("");
   };
 
   const handlePasswordChange = (e) => {
     setPassword(e.target.value);
-    // Limpiar error cuando el usuario empieza a escribir
     if (error) setError("");
   };
 
@@ -196,7 +212,12 @@ const Login = () => {
 
             <div className="flex items-center justify-between text-sm">
               <label className={`flex items-center gap-2 ${isDark ? 'text-gray-400' : 'text-gray-600'} cursor-pointer`}>
-                <input type="checkbox" className={`rounded ${isDark ? 'bg-gray-700' : ''}`} />
+                <input 
+                  type="checkbox" 
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className={`rounded ${isDark ? 'bg-gray-700' : ''}`} 
+                />
                 Recordarme
               </label>
               <a href="#" className={`${isDark ? 'text-indigo-400' : 'text-indigo-600'} hover:underline`}>

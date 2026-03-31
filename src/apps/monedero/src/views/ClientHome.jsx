@@ -16,14 +16,29 @@ const ClientHome = () => {
   const [transactions, setTransactions] = useState([]);
   const [error, setError] = useState("");
 
+  // Función para obtener el usuario actual (de localStorage o sessionStorage)
+  const getCurrentUser = () => {
+    const rememberMe = localStorage.getItem("rememberMe") === "true";
+    const userStr = rememberMe ? localStorage.getItem("user") : sessionStorage.getItem("user");
+    
+    if (userStr) {
+      try {
+        return JSON.parse(userStr);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  };
+
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (!storedUser) {
+    const user = getCurrentUser();
+    
+    if (!user) {
       navigate("/digitalwallet/login");
       return;
     }
     
-    const user = JSON.parse(storedUser);
     setUserData(user);
     
     const negocioId = user.negocioId || 1;
@@ -55,6 +70,7 @@ const ClientHome = () => {
 
   const fetchUserBalance = async (usuarioId) => {
     setLoading(true);
+    setError("");
     try {
       const response = await fetch(`https://souvenir-site.com/TarjetCashBack/api/account/${usuarioId}/balance`, {
         method: "GET",
@@ -64,16 +80,19 @@ const ClientHome = () => {
       });
 
       const data = await response.json();
+      console.log("Balance data:", data); // Para debug
 
       if (data.success) {
+        // Asegurarse de que los datos existan antes de actualizar
+        const userBalanceData = data.data?.usuario || {};
+        
         setUserData(prev => ({
           ...prev,
-          ...data.data.usuario,
-          montoDisponible: data.data.usuario.montoDisponible,
-          montoUtilizado: data.data.usuario.montoUtilizado
+          montoDisponible: userBalanceData.montoDisponible || 0,
+          montoUtilizado: userBalanceData.montoUtilizado || 0
         }));
         
-        const sortedTransactions = (data.data.transacciones || []).sort((a, b) => 
+        const sortedTransactions = (data.data?.transacciones || []).sort((a, b) => 
           new Date(b.transaccionFecha) - new Date(a.transaccionFecha)
         );
         setTransactions(sortedTransactions);
@@ -108,21 +127,29 @@ const ClientHome = () => {
 
   const formatDate = (dateString) => {
     if (!dateString) return "";
-    const date = new Date(dateString);
-    return date.toLocaleDateString('es-MX', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('es-MX', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      });
+    } catch (error) {
+      return "Fecha inválida";
+    }
   };
 
   const formatTime = (dateString) => {
     if (!dateString) return "";
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('es-MX', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleTimeString('es-MX', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      return "";
+    }
   };
 
   const calculateStats = () => {
@@ -144,10 +171,14 @@ const ClientHome = () => {
     let gastosMes = 0;
     
     transactions.forEach(tx => {
-      const txDate = new Date(tx.transaccionFecha);
-      if (txDate.getMonth() === currentMonth && txDate.getFullYear() === currentYear) {
-        if (tx.transaccionTipo === "A") ingresosMes += tx.transaccionImporte;
-        else if (tx.transaccionTipo === "C") gastosMes += tx.transaccionImporte;
+      try {
+        const txDate = new Date(tx.transaccionFecha);
+        if (txDate.getMonth() === currentMonth && txDate.getFullYear() === currentYear) {
+          if (tx.transaccionTipo === "A") ingresosMes += tx.transaccionImporte;
+          else if (tx.transaccionTipo === "C") gastosMes += tx.transaccionImporte;
+        }
+      } catch (error) {
+        console.error("Error parsing date:", tx.transaccionFecha);
       }
     });
     
@@ -167,6 +198,7 @@ const ClientHome = () => {
   const color2 = business?.negocioColor2 || "#7c3aed";
   const imagenUrl = business?.negocioImagenUrl;
 
+  // Si está cargando, mostrar spinner
   if (loading) {
     return (
       <div className={`min-h-screen flex items-center justify-center ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
@@ -181,6 +213,7 @@ const ClientHome = () => {
     );
   }
 
+  // Si hay error, mostrar mensaje
   if (error) {
     return (
       <div className={`min-h-screen flex items-center justify-center ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
@@ -188,10 +221,34 @@ const ClientHome = () => {
           <div className={`${isDark ? 'bg-red-900/30 border-red-700' : 'bg-red-100 border-red-400'} border rounded-lg p-6 max-w-md`}>
             <p className={`${isDark ? 'text-red-300' : 'text-red-800'}`}>❌ {error}</p>
             <button
-              onClick={() => fetchUserBalance(userData?.usuarioId)}
+              onClick={() => {
+                const user = getCurrentUser();
+                if (user) {
+                  fetchUserBalance(user.usuarioId);
+                }
+              }}
               className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition"
             >
               Reintentar
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Si no hay userData después de cargar, mostrar error
+  if (!userData) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
+        <div className="text-center">
+          <div className={`${isDark ? 'bg-yellow-900/30 border-yellow-700' : 'bg-yellow-100 border-yellow-400'} border rounded-lg p-6 max-w-md`}>
+            <p className={`${isDark ? 'text-yellow-300' : 'text-yellow-800'}`}>⚠️ No se pudo cargar la información del usuario</p>
+            <button
+              onClick={() => navigate("/digitalwallet/login")}
+              className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition"
+            >
+              Volver al login
             </button>
           </div>
         </div>
@@ -208,7 +265,7 @@ const ClientHome = () => {
         <div className="flex flex-col md:flex-row gap-4 md:gap-6">
           {/* Imagen */}
           <div className="md:w-1/2 order-1 md:order-1">
-            <div className="relative rounded-2xl overflow-hidden shadow-lg h-full">
+            <div className="relative rounded-2xl overflow-hidden shadow-lg h-full min-h-[300px]">
               <img 
                 src={imagenUrl && imagenUrl !== "" ? imagenUrl : "/1.jpeg"} 
                 alt={business?.negocioNombre || "Wallet illustration"} 
@@ -245,7 +302,7 @@ const ClientHome = () => {
                       </p>
                       <p className="text-xs flex items-center gap-1 mt-1 text-gray-400">
                         {userData?.titular === 1 ? "Cuenta Titular" : "Cuenta Adicional"}
-                        {userData?.idTitular > 0 && ` · ID Titular: ${userData.idTitular}`}
+                        {userData?.idTitular > 0 && userData?.idTitular !== userData?.usuarioId && ` · ID Titular: ${userData.idTitular}`}
                       </p>
                     </div>
                     <div className="text-right">
@@ -285,7 +342,7 @@ const ClientHome = () => {
                       </p>
                       <p className="text-xs flex items-center gap-1 mt-1">
                         {userData?.titular === 1 ? "Cuenta Titular" : "Cuenta Adicional"}
-                        {userData?.idTitular > 0 && ` · ID Titular: ${userData.idTitular}`}
+                        {userData?.idTitular > 0 && userData?.idTitular !== userData?.usuarioId && ` · ID Titular: ${userData.idTitular}`}
                       </p>
                     </div>
                     <div className="text-right text-white">

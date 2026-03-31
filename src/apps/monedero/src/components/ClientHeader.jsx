@@ -26,7 +26,7 @@ const ClientHeader = ({ esTitular = true, color1 = "#4f46e5", color2 = "#7c3aed"
   const getHeaderStyles = () => {
     if (isDark) {
       return {
-        background: `linear-gradient(135deg, #1f2937, #111827)`,
+        background: `linear-gradient(135deg, ${color1}, ${color2})`,
       };
     }
     return {

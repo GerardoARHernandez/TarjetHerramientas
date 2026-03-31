@@ -46,12 +46,84 @@ const ClientDetailsModal = ({ client, onClose, business }) => {
     }
   };
 
+  // Función mejorada para validar y formatear fechas
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('es-MX', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+    // Validar si la fecha está vacía o es inválida
+    if (!dateString || 
+        dateString === "  /  /" || 
+        dateString === "//" || 
+        dateString === "" ||
+        dateString.trim() === "") {
+      return "No registrada";
+    }
+
+    try {
+      // Intentar parsear la fecha
+      const date = new Date(dateString);
+      
+      // Verificar si la fecha es válida
+      if (isNaN(date.getTime())) {
+        // Si no se puede parsear directamente, intentar con formato DD/MM/YYYY
+        const parts = dateString.split('/');
+        if (parts.length === 3) {
+          const day = parseInt(parts[0], 10);
+          const month = parseInt(parts[1], 10) - 1; // Meses en JS son 0-11
+          const year = parseInt(parts[2], 10);
+          const alternativeDate = new Date(year, month, day);
+          
+          if (!isNaN(alternativeDate.getTime())) {
+            return alternativeDate.toLocaleDateString('es-MX', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            });
+          }
+        }
+        return "Fecha inválida";
+      }
+      
+      // Formatear fecha válida
+      return date.toLocaleDateString('es-MX', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return "Fecha inválida";
+    }
+  };
+
+  // Función para validar si una fecha es válida
+  const isValidDate = (dateString) => {
+    if (!dateString || 
+        dateString === "  /  /" || 
+        dateString === "//" || 
+        dateString === "" ||
+        dateString.trim() === "") {
+      return false;
+    }
+    
+    try {
+      const date = new Date(dateString);
+      if (!isNaN(date.getTime())) {
+        return true;
+      }
+      
+      // Intentar con formato DD/MM/YYYY
+      const parts = dateString.split('/');
+      if (parts.length === 3) {
+        const day = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1;
+        const year = parseInt(parts[2], 10);
+        const alternativeDate = new Date(year, month, day);
+        return !isNaN(alternativeDate.getTime());
+      }
+      
+      return false;
+    } catch {
+      return false;
+    }
   };
 
   const getTransactionType = (type) => {
@@ -83,23 +155,39 @@ const ClientDetailsModal = ({ client, onClose, business }) => {
         </div>
 
         {/* Información básica del cliente */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-blue-50 p-4 rounded-lg">
             <p className="text-sm text-blue-600">Nombre completo</p>
             <p className="text-lg font-bold">
               {client.UsuarioNombre} {client.UsuarioApellido}
             </p>
           </div>
-          <div className="bg-green-50 p-4 rounded-lg">
-            <p className="text-sm text-green-600">Correo electrónico</p>
-            <p className="text-lg font-bold">{client.UsuarioCorreo}</p>
-          </div>
+          {client.UsuarioCorreo && (
+            <div className="bg-green-50 p-4 rounded-lg">
+              <p className="text-sm text-green-600">Correo electrónico</p>
+              <p className="text-lg font-bold">{client.UsuarioCorreo}</p>
+            </div>
+          )}
           {client.UsuarioTelefono && (
             <div className="bg-yellow-50 p-4 rounded-lg">
               <p className="text-sm text-yellow-600">Teléfono</p>
               <p className="text-lg font-bold">{client.UsuarioTelefono}</p>
             </div>
           )}
+          {/* Sección de cumpleaños mejorada */}
+          <div className={`${isValidDate(client.UsuarioFecha) ? 'bg-blue-50' : 'bg-gray-50'} p-4 rounded-lg`}>
+            <p className={`text-sm ${isValidDate(client.UsuarioFecha) ? 'text-blue-600' : 'text-gray-500'}`}>
+              Cumpleaños
+            </p>
+            <p className={`text-lg font-bold ${!isValidDate(client.UsuarioFecha) && 'text-gray-500'}`}>
+              {formatDate(client.UsuarioFecha)}
+            </p>
+            {!isValidDate(client.UsuarioFecha) && (
+              <p className="text-xs text-gray-400 mt-1">
+                No registrado
+              </p>
+            )}
+          </div>
 
           <div>
             <WhatsAppButton

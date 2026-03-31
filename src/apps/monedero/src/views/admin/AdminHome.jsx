@@ -16,14 +16,29 @@ const AdminHome = () => {
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
 
+  // Función para obtener el usuario actual (de localStorage o sessionStorage)
+  const getCurrentUser = () => {
+    const rememberMe = localStorage.getItem("rememberMe") === "true";
+    const userStr = rememberMe ? localStorage.getItem("user") : sessionStorage.getItem("user");
+    
+    if (userStr) {
+      try {
+        return JSON.parse(userStr);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  };
+
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (!storedUser) {
+    const user = getCurrentUser();
+    
+    if (!user) {
       navigate("/digitalwallet/login");
       return;
     }
     
-    const user = JSON.parse(storedUser);
     const negocioId = user.negocioId || 1;
     
     fetchBusiness(negocioId);
@@ -166,8 +181,7 @@ const AdminHome = () => {
             <p className="text-red-800 dark:text-red-300 text-center">❌ {error}</p>
             <button
               onClick={() => {
-                const storedUser = localStorage.getItem("user");
-                const user = storedUser ? JSON.parse(storedUser) : null;
+                const user = getCurrentUser();
                 const negocioId = user?.negocioId || 1;
                 fetchUsers(negocioId);
               }}
@@ -302,7 +316,7 @@ const AdminHome = () => {
                     <th className="px-6 py-3 text-left">Tipo</th>
                     <th className="px-6 py-3 text-left">Saldo</th>
                     <th className="px-6 py-3 text-left">Acciones</th>
-                   </tr>
+                  </tr>
                 </thead>
                 <tbody className={`divide-y ${isDark ? 'divide-gray-700' : 'divide-gray-200'} transition-colors duration-300`}>
                   {filteredUsers.map((user) => (

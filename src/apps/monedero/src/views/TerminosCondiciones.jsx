@@ -8,23 +8,23 @@ const TerminosCondiciones = () => {
   const { isDark } = useTheme();
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+    <div className={`min-h-screen flex flex-col ${isDark ? 'bg-gray-900' : 'bg-gray-50'} transition-colors duration-300`}>
       <ClientHeader esTitular={true} />
 
       <main className="flex-1 max-w-4xl mx-auto w-full px-6 py-8 space-y-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
+            <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
               Términos y Condiciones
             </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'} mt-1`}>
               Lee detenidamente los términos de uso de nuestro servicio de cashback
             </p>
           </div>
           <Link
             to="/digitalwallet/client"
-            className="inline-flex items-center gap-2 text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
+            className={`inline-flex items-center gap-2 text-sm ${isDark ? 'text-indigo-400' : 'text-indigo-600'} hover:underline`}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -34,17 +34,17 @@ const TerminosCondiciones = () => {
         </div>
 
         {/* Contenido de Términos y Condiciones */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-300 dark:border-gray-700 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-300 dark:border-gray-700">
-            <h2 className="font-semibold text-gray-800 dark:text-white">
+        <div className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-2xl shadow-sm border overflow-hidden transition-colors duration-300`}>
+          <div className={`px-6 py-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+            <h2 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>
               Términos de Uso del Servicio Cashback
             </h2>
           </div>
           
-          <div className="px-6 py-8 space-y-6 text-gray-700 dark:text-gray-300">
+          <div className={`px-6 py-8 space-y-6 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
             {/* Sección 1: Descripción del Servicio */}
             <section>
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">
+              <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-800'} mb-3`}>
                 1. Descripción del Servicio
               </h3>
               <p className="leading-relaxed">
@@ -56,7 +56,7 @@ const TerminosCondiciones = () => {
 
             {/* Sección 2: Datos Personales */}
             <section>
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">
+              <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-800'} mb-3`}>
                 2. Datos Personales
               </h3>
               <p className="leading-relaxed mb-2">
@@ -76,7 +76,7 @@ const TerminosCondiciones = () => {
 
             {/* Sección 3: Recargas de Saldo */}
             <section>
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">
+              <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-800'} mb-3`}>
                 3. Recargas de Saldo
               </h3>
               <p className="leading-relaxed">
@@ -88,7 +88,7 @@ const TerminosCondiciones = () => {
 
             {/* Sección 4: Canje de Saldo */}
             <section>
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">
+              <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-800'} mb-3`}>
                 4. Canje de Saldo
               </h3>
               <p className="leading-relaxed">
@@ -100,7 +100,7 @@ const TerminosCondiciones = () => {
 
             {/* Sección 5: Responsabilidades del Usuario */}
             <section>
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">
+              <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-800'} mb-3`}>
                 5. Responsabilidades del Usuario
               </h3>
               <ul className="list-disc list-inside space-y-2 ml-4">
@@ -113,7 +113,7 @@ const TerminosCondiciones = () => {
 
             {/* Sección 6: Modificaciones */}
             <section>
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">
+              <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-800'} mb-3`}>
                 6. Modificaciones a los Términos
               </h3>
               <p className="leading-relaxed">
@@ -124,7 +124,7 @@ const TerminosCondiciones = () => {
             </section>
 
             {/* Fecha de actualización */}
-            <div className="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
+            <div className={`pt-4 mt-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'} text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
               <p>Última actualización: 30 de marzo de 2026</p>
             </div>
           </div>

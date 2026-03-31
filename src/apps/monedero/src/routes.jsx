@@ -8,26 +8,104 @@ import Abonar from "./views/admin/Abonar";
 import Canjear from "./views/admin/Canjear";
 import Historial from "./views/Historial";
 import TerminosCondiciones from "./views/TerminosCondiciones.jsx";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const DigitalWalletRoutes = () => {
+  // Función para obtener el usuario actual
+  const getCurrentUser = () => {
+    const rememberMe = localStorage.getItem("rememberMe") === "true";
+    const userStr = rememberMe ? localStorage.getItem("user") : sessionStorage.getItem("user");
+    
+    if (userStr) {
+      try {
+        return JSON.parse(userStr);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  };
+
+  const user = getCurrentUser();
+
   return (
     <Routes>
-      {/* Ruta base - redirige a login */}
-      <Route index element={<Navigate to="/digitalwallet/login" replace />} />
+      {/* Ruta base - redirige según sesión guardada */}
+      <Route 
+        index 
+        element={
+          user ? (
+            user.usuarioRol === "ADMIN" ? 
+              <Navigate to="/digitalwallet/admin" replace /> : 
+              <Navigate to="/digitalwallet/client" replace />
+          ) : (
+            <Navigate to="/digitalwallet/login" replace />
+          )
+        } 
+      />
       
       {/* Rutas públicas */}
       <Route path="login" element={<Login />} />
       
-      {/* Rutas de cliente */}
-      <Route path="client" element={<ClientHome />} />
-      <Route path="client/historial" element={<Historial />} />
-      <Route path="client/terminos" element={<TerminosCondiciones />} />
+      {/* Rutas de cliente - protegidas */}
+      <Route 
+        path="client" 
+        element={
+          <ProtectedRoute requiredRole="CLIENT">
+            <ClientHome />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="client/historial" 
+        element={
+          <ProtectedRoute requiredRole="CLIENT">
+            <Historial />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="client/terminos" 
+        element={
+          <ProtectedRoute requiredRole="CLIENT">
+            <TerminosCondiciones />
+          </ProtectedRoute>
+        } 
+      />
       
-      {/* Rutas de admin */}
-      <Route path="admin" element={<AdminHome />} />
-      <Route path="admin/registrar" element={<RegisterFromAdmin />} />
-      <Route path="admin/abonar" element={<Abonar />} />
-      <Route path="admin/canjear" element={<Canjear />} />
+      {/* Rutas de admin - protegidas */}
+      <Route 
+        path="admin" 
+        element={
+          <ProtectedRoute requiredRole="ADMIN">
+            <AdminHome />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="admin/registrar" 
+        element={
+          <ProtectedRoute requiredRole="ADMIN">
+            <RegisterFromAdmin />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="admin/abonar" 
+        element={
+          <ProtectedRoute requiredRole="ADMIN">
+            <Abonar />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="admin/canjear" 
+        element={
+          <ProtectedRoute requiredRole="ADMIN">
+            <Canjear />
+          </ProtectedRoute>
+        } 
+      />
       
       {/* Ruta comodín */}
       <Route path="*" element={<Navigate to="/digitalwallet/login" replace />} />
