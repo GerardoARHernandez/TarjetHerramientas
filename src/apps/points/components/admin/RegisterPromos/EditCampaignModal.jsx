@@ -40,9 +40,9 @@ const EditCampaignModal = ({ campaign, business, onClose, onUpdateSuccess }) => 
                 const isDevelopment = window.location.hostname === 'localhost' || 
                                      window.location.hostname === '127.0.0.1';
                 const protocol = isDevelopment ? 'http' : 'https';
-                
+                const timestamp = Date.now();                
                 // Obtener la lista de campañas para este negocio
-                const url = `${protocol}://souvenir-site.com/WebPuntos/API1/Campanias/negocioid/${business.NegocioId}`;
+                const url = `${protocol}://souvenir-site.com/WebPuntos/API1/Campanias/negocioid/${business.NegocioId}?t=${timestamp}`;
                 
                 const response = await fetch(url);
                 const data = await response.json();
@@ -77,6 +77,9 @@ const EditCampaignModal = ({ campaign, business, onClose, onUpdateSuccess }) => 
         }));
         setError('');
     };
+
+    console.log(imagePreview);
+
 
     // Función para convertir archivo a base64
     const convertToBase64 = (file) => {
@@ -136,8 +139,8 @@ const EditCampaignModal = ({ campaign, business, onClose, onUpdateSuccess }) => 
                 FileName: fileName
             };
 
-            // IMPORTANTE: Usar HTTP en desarrollo (no HTTPS)
-            const url = 'http://souvenir-site.com/WebPuntos/API1/images/Campanias/';
+            
+            const url = 'https://souvenir-site.com/WebPuntos/API1/images/Campanias/';
 
             console.log('Enviando imagen a:', url);
             
