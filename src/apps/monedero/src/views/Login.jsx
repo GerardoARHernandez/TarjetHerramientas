@@ -1,5 +1,5 @@
 // src/views/Login.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react"; // Agrega useEffect
 import { Link, useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import ThemeToggle from "../components/ThemeToggle";
@@ -11,10 +11,48 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [rememberMe, setRememberMe] = useState(false); // Nuevo estado
+  const [rememberMe, setRememberMe] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true); // Estado para verificar sesión
 
   // Número de teléfono específico para admin
   const ADMIN_PHONE = "5512345678";
+
+  // Función para obtener el usuario actual
+  const getCurrentUser = () => {
+    const rememberMe = localStorage.getItem("rememberMe") === "true";
+    const userStr = rememberMe ? localStorage.getItem("user") : sessionStorage.getItem("user");
+    
+    if (userStr) {
+      try {
+        return JSON.parse(userStr);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  };
+
+  // Verificar si ya hay una sesión iniciada al cargar el componente
+  useEffect(() => {
+    const user = getCurrentUser();
+    
+    if (user) {
+      // Normalizar el rol
+      const userRole = user.usuarioRol === "CLIE" ? "CLIENT" : user.usuarioRol;
+      
+      // Redirigir según el rol
+      if (userRole === "ADMIN") {
+        navigate("/digitalwallet/admin", { replace: true });
+      } else if (userRole === "CLIENT") {
+        navigate("/digitalwallet/client", { replace: true });
+      } else {
+        // Si el rol no es reconocido, mantener en login
+        setCheckingSession(false);
+      }
+    } else {
+      setCheckingSession(false);
+    }
+  }, [navigate]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -128,6 +166,21 @@ const Login = () => {
     setPassword(e.target.value);
     if (error) setError("");
   };
+
+  // Mostrar un spinner mientras verificamos la sesión
+  if (checkingSession) {
+    return (
+      <div className={`min-h-screen bg-gradient-to-br ${isDark ? 'from-indigo-900 to-indigo-950' : 'from-indigo-100 to-indigo-200'} flex items-center justify-center px-4 transition-colors duration-300`}>
+        <div className="text-center">
+          <svg className="animate-spin h-12 w-12 text-indigo-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <p className={`mt-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Verificando sesión...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-screen bg-gradient-to-br ${isDark ? 'from-indigo-900 to-indigo-950' : 'from-indigo-100 to-indigo-200'} flex items-center justify-center px-4 transition-colors duration-300`}>
