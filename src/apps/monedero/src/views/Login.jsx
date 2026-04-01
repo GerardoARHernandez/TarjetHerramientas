@@ -31,7 +31,7 @@ const Login = () => {
         usuarioApellido: "Sistema",
         usuarioTelefono: ADMIN_PHONE,
         usuarioRol: "ADMIN",
-        tipoUsuario: "ADMIN",
+        tipoUsuario: "Admin",
         titular: 1,
         idTitular: null,
         negocioId: 1
