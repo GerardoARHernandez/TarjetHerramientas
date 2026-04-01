@@ -53,36 +53,93 @@ const ChangePasswordModal = ({ isOpen, onClose, usuarioId }) => {
     setSuccess("");
     
     try {
-      const response = await fetch(
-        `https://souvenir-site.com/TarjetCashBack/api/account/${usuarioId}/password`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(formData)
+      // Probar con diferentes métodos HTTP
+      const methods = ['POST', 'PUT', 'PATCH'];
+      let response = null;
+      let successMethod = null;
+      
+      for (const method of methods) {
+        try {
+          const res = await fetch(
+            `https://souvenir-site.com/TarjetCashBack/api/account/${usuarioId}/password`,
+            {
+              method: method,
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(formData)
+            }
+          );
+          
+          // Si la respuesta es exitosa (2xx)
+          if (res.ok) {
+            response = res;
+            successMethod = method;
+            break;
+          }
+          // Si es 405, continuamos con el siguiente método
+          if (res.status !== 405) {
+            response = res;
+            break;
+          }
+        } catch (err) {
+          console.error(`Error con método ${method}:`, err);
         }
-      );
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        setSuccess("Contraseña actualizada correctamente");
-        // Limpiar formulario después de 2 segundos y cerrar modal
-        setTimeout(() => {
-          setFormData({
-            passwordActual: "",
-            passwordNuevo: "",
-            passwordNuevoConfirmar: ""
-          });
-          onClose();
-        }, 2000);
-      } else {
-        setError(data.message || "Error al cambiar la contraseña");
       }
+      
+      if (!response) {
+        throw new Error("No se pudo conectar con el servidor");
+      }
+      
+      // Verificar si la respuesta tiene contenido
+      const contentType = response.headers.get("content-type");
+      let data = null;
+      
+      if (contentType && contentType.includes("application/json")) {
+        const text = await response.text();
+        if (text && text.trim()) {
+          try {
+            data = JSON.parse(text);
+          } catch (e) {
+            console.error("Error parsing JSON:", text);
+            throw new Error("Respuesta del servidor inválida");
+          }
+        }
+      }
+      
+      if (!response.ok) {
+        // Manejar diferentes códigos de error
+        if (response.status === 400) {
+          throw new Error(data?.message || "Datos inválidos. Verifica tu contraseña actual.");
+        } else if (response.status === 401) {
+          throw new Error("Contraseña actual incorrecta");
+        } else if (response.status === 404) {
+          throw new Error("Usuario no encontrado");
+        } else {
+          throw new Error(data?.message || `Error ${response.status}: No se pudo cambiar la contraseña`);
+        }
+      }
+      
+      // Verificar si la respuesta fue exitosa
+      if (data && data.success === false) {
+        throw new Error(data.message || "Error al cambiar la contraseña");
+      }
+      
+      setSuccess("Contraseña actualizada correctamente");
+      
+      // Limpiar formulario después de 2 segundos y cerrar modal
+      setTimeout(() => {
+        setFormData({
+          passwordActual: "",
+          passwordNuevo: "",
+          passwordNuevoConfirmar: ""
+        });
+        onClose();
+      }, 2000);
+      
     } catch (error) {
       console.error("Error al cambiar contraseña:", error);
-      setError("Error al conectar con el servidor");
+      setError(error.message || "Error al conectar con el servidor");
     } finally {
       setLoading(false);
     }
@@ -147,6 +204,7 @@ const ChangePasswordModal = ({ isOpen, onClose, usuarioId }) => {
                   : 'bg-white border-gray-300 text-gray-900 focus:ring-indigo-500 focus:border-transparent'
               }`}
               disabled={loading}
+              autoComplete="current-password"
             />
           </div>
           
@@ -167,6 +225,7 @@ const ChangePasswordModal = ({ isOpen, onClose, usuarioId }) => {
                   : 'bg-white border-gray-300 text-gray-900 focus:ring-indigo-500 focus:border-transparent'
               }`}
               disabled={loading}
+              autoComplete="new-password"
             />
           </div>
           
@@ -187,7 +246,12 @@ const ChangePasswordModal = ({ isOpen, onClose, usuarioId }) => {
                   : 'bg-white border-gray-300 text-gray-900 focus:ring-indigo-500 focus:border-transparent'
               }`}
               disabled={loading}
+              autoComplete="new-password"
             />
+          </div>
+          
+          <div className="text-xs text-gray-500 mt-2">
+            <p>La contraseña debe tener al menos 6 caracteres</p>
           </div>
           
           <div className="flex gap-3 pt-4">
