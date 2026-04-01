@@ -273,9 +273,6 @@ const Login = () => {
                 />
                 Recordarme
               </label>
-              <a href="#" className={`${isDark ? 'text-indigo-400' : 'text-indigo-600'} hover:underline`}>
-                ¿Olvidaste tu contraseña?
-              </a>
             </div>
 
             <button
