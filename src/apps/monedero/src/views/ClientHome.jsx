@@ -258,7 +258,7 @@ const ClientHome = () => {
 
   return (
     <div className={`min-h-screen flex flex-col ${isDark ? 'bg-gray-900' : 'bg-gray-50'} transition-colors duration-300`}>
-      <ClientHeader esTitular={esTitular} color1={color1} color2={color2} />
+      <ClientHeader esTitular={esTitular} color1={color1} color2={color2} userData={userData} />
 
       <main className="flex-1 max-w-6xl mx-auto w-full px-6 py-8 space-y-6">
         {/* Balance card */}

@@ -1,6 +1,6 @@
 // src/apps/points-loyalty/views/admin/RegisterPromotion/components/admin/EditCampaignModal.jsx
 import { useState, useEffect } from 'react';
-import { X, Save, Calendar, Gift, FileText, Star, Award, Loader, Image as ImageIcon, Upload, ExternalLink } from 'lucide-react';
+import { X, Save, Calendar, Gift, FileText, Star, Award, Loader, Image as ImageIcon, Upload, ExternalLink, RefreshCw } from 'lucide-react';
 
 const EditCampaignModal = ({ campaign, business, onClose, onUpdateSuccess }) => {
     const [formData, setFormData] = useState({
@@ -19,14 +19,35 @@ const EditCampaignModal = ({ campaign, business, onClose, onUpdateSuccess }) => 
     const [existingImageUrl, setExistingImageUrl] = useState(null);
     const [isLoadingImage, setIsLoadingImage] = useState(false);
     const [uploadSuccess, setUploadSuccess] = useState(false);
+    const [imageTimestamp, setImageTimestamp] = useState(Date.now());
 
     // Obtener la fecha actual en formato YYYY-MM-DD
     const today = new Date().toISOString().split('T')[0];
+
+    // Función para construir la URL de la imagen con timestamp
+    const getImageUrlWithTimestamp = (baseUrl) => {
+        if (!baseUrl) return null;
+        // Si la URL ya tiene timestamp, actualizarlo
+        if (baseUrl.includes('?t=')) {
+            return baseUrl.replace(/t=\d+/, `t=${Date.now()}`);
+        }
+        return `${baseUrl}?t=${Date.now()}`;
+    };
 
     // Función para verificar si una fecha es anterior a hoy
     const isPastDate = (dateString) => {
         if (!dateString) return false;
         return new Date(dateString) < new Date(today);
+    };
+
+    // Función para probar si una imagen existe
+    const checkImageExists = (url) => {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => resolve(true);
+            img.onerror = () => resolve(false);
+            img.src = url;
+        });
     };
 
     // Cargar la imagen existente de la campaña
@@ -36,27 +57,54 @@ const EditCampaignModal = ({ campaign, business, onClose, onUpdateSuccess }) => 
 
             setIsLoadingImage(true);
             try {
-                // Detectar entorno
-                const isDevelopment = window.location.hostname === 'localhost' || 
-                                     window.location.hostname === '127.0.0.1';
-                const protocol = isDevelopment ? 'http' : 'https';
-                const timestamp = Date.now();                
-                // Obtener la lista de campañas para este negocio
-                const url = `${protocol}://souvenir-site.com/WebPuntos/API1/Campanias/negocioid/${business.NegocioId}?t=${timestamp}`;
+                // Construir la URL base
+                const directImageUrl = `https://souvenir-site.com/WebPuntos/images/Campanas/ImgCamp${campaign.CampaId}`;
                 
-                const response = await fetch(url);
-                const data = await response.json();
-
-                if (data.ListCampanias) {
-                    // Buscar la campaña actual por ID
-                    const currentCampaign = data.ListCampanias.find(c => 
-                        parseInt(c.CampaId) === parseInt(campaign.CampaId)
-                    );
+                // Verificar qué extensión existe (jpg, png, jpeg, webp)
+                const extensions = ['jpg', 'png', 'jpeg', 'webp'];
+                let foundImageUrl = null;
+                
+                for (const ext of extensions) {
+                    const testUrl = `${directImageUrl}.${ext}`;
+                    const exists = await checkImageExists(testUrl);
+                    if (exists) {
+                        foundImageUrl = testUrl;
+                        break;
+                    }
+                }
+                
+                if (foundImageUrl) {
+                    // Agregar timestamp para evitar caché
+                    const imageUrlWithTimestamp = getImageUrlWithTimestamp(foundImageUrl);
+                    setExistingImageUrl(imageUrlWithTimestamp);
+                    setImagePreview(imageUrlWithTimestamp);
+                } else {
+                    // Si no encontramos la imagen por construcción, consultamos la API
+                    const isDevelopment = window.location.hostname === 'localhost' || 
+                                         window.location.hostname === '127.0.0.1';
+                    const protocol = isDevelopment ? 'http' : 'https';
+                    const timestamp = Date.now();                
                     
-                    if (currentCampaign && currentCampaign.URLImagen) {
-                        setExistingImageUrl(currentCampaign.URLImagen);
-                        // Establecer como preview inicial
-                        setImagePreview(currentCampaign.URLImagen);
+                    const url = `${protocol}://souvenir-site.com/WebPuntos/API1/Campanias/negocioid/${business.NegocioId}?t=${timestamp}`;
+                    
+                    const response = await fetch(url, {
+                        headers: {
+                            'Cache-Control': 'no-cache, no-store, must-revalidate',
+                            'Pragma': 'no-cache'
+                        }
+                    });
+                    const data = await response.json();
+
+                    if (data.ListCampanias) {
+                        const currentCampaign = data.ListCampanias.find(c => 
+                            parseInt(c.CampaId) === parseInt(campaign.CampaId)
+                        );
+                        
+                        if (currentCampaign && currentCampaign.URLImagen) {
+                            const imageUrlWithTimestamp = getImageUrlWithTimestamp(currentCampaign.URLImagen);
+                            setExistingImageUrl(imageUrlWithTimestamp);
+                            setImagePreview(imageUrlWithTimestamp);
+                        }
                     }
                 }
             } catch (err) {
@@ -69,6 +117,55 @@ const EditCampaignModal = ({ campaign, business, onClose, onUpdateSuccess }) => 
         loadExistingImage();
     }, [campaign?.CampaId, business?.NegocioId]);
 
+    // Función para refrescar la imagen manualmente
+    const handleRefreshImage = async () => {
+        setIsLoadingImage(true);
+        try {
+            const newTimestamp = Date.now();
+            setImageTimestamp(newTimestamp);
+            
+            if (existingImageUrl) {
+                // Actualizar la URL con nuevo timestamp
+                const baseUrl = existingImageUrl.split('?')[0];
+                const refreshedUrl = getImageUrlWithTimestamp(baseUrl);
+                setExistingImageUrl(refreshedUrl);
+                setImagePreview(refreshedUrl);
+            } else {
+                // Recargar desde la API
+                const isDevelopment = window.location.hostname === 'localhost' || 
+                                     window.location.hostname === '127.0.0.1';
+                const protocol = isDevelopment ? 'http' : 'https';
+                
+                const url = `${protocol}://souvenir-site.com/WebPuntos/API1/Campanias/negocioid/${business.NegocioId}?t=${newTimestamp}`;
+                
+                const response = await fetch(url, {
+                    headers: {
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    }
+                });
+                const data = await response.json();
+
+                if (data.ListCampanias) {
+                    const currentCampaign = data.ListCampanias.find(c => 
+                        parseInt(c.CampaId) === parseInt(campaign.CampaId)
+                    );
+                    
+                    if (currentCampaign && currentCampaign.URLImagen) {
+                        const imageUrlWithTimestamp = getImageUrlWithTimestamp(currentCampaign.URLImagen);
+                        setExistingImageUrl(imageUrlWithTimestamp);
+                        setImagePreview(imageUrlWithTimestamp);
+                    }
+                }
+            }
+        } catch (err) {
+            console.error('Error refrescando imagen:', err);
+            setError('Error al refrescar la imagen');
+        } finally {
+            setIsLoadingImage(false);
+        }
+    };
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({
@@ -78,16 +175,12 @@ const EditCampaignModal = ({ campaign, business, onClose, onUpdateSuccess }) => 
         setError('');
     };
 
-    console.log(imagePreview);
-
-
     // Función para convertir archivo a base64
     const convertToBase64 = (file) => {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.readAsDataURL(file);
             reader.onload = () => {
-                // Eliminar el prefijo "data:image/xxx;base64," para obtener solo el string base64
                 const base64String = reader.result.split(',')[1];
                 resolve(base64String);
             };
@@ -139,7 +232,6 @@ const EditCampaignModal = ({ campaign, business, onClose, onUpdateSuccess }) => 
                 FileName: fileName
             };
 
-            
             const url = 'https://souvenir-site.com/WebPuntos/API1/images/Campanias/';
 
             console.log('Enviando imagen a:', url);
@@ -169,6 +261,13 @@ const EditCampaignModal = ({ campaign, business, onClose, onUpdateSuccess }) => 
 
             setUploadSuccess(true);
             console.log('Imagen subida exitosamente:', data);
+            
+            // Después de subir, actualizar la URL con timestamp
+            const newImageUrl = `https://souvenir-site.com/WebPuntos/images/Campanas/ImgCamp${campaId}.${fileExtension}`;
+            const imageUrlWithTimestamp = getImageUrlWithTimestamp(newImageUrl);
+            setExistingImageUrl(imageUrlWithTimestamp);
+            setImagePreview(imageUrlWithTimestamp);
+            setImageTimestamp(Date.now());
             
         } catch (err) {
             console.error('Error uploading image:', err);
@@ -420,11 +519,24 @@ const EditCampaignModal = ({ campaign, business, onClose, onUpdateSuccess }) => 
 
                     {/* Sección de Imagen */}
                     <div className="space-y-2 pt-4 border-t border-gray-200">
-                        <div className="flex items-center gap-2">
-                            <ImageIcon className="w-5 h-5 text-purple-500" />
-                            <label className="text-sm font-semibold text-gray-700">
-                                Imagen de la Promoción
-                            </label>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <ImageIcon className="w-5 h-5 text-purple-500" />
+                                <label className="text-sm font-semibold text-gray-700">
+                                    Imagen de la Promoción
+                                </label>
+                            </div>
+                            {existingImageUrl && !imageFile && (
+                                <button
+                                    type="button"
+                                    onClick={handleRefreshImage}
+                                    className="flex items-center gap-1 text-xs text-purple-600 hover:text-purple-800 transition-colors"
+                                    title="Refrescar imagen"
+                                >
+                                    <RefreshCw className="w-3 h-3" />
+                                    Refrescar
+                                </button>
+                            )}
                         </div>
                         
                         <div className="border-2 border-dashed border-gray-300 rounded-2xl p-6 text-center hover:border-purple-400 transition-colors duration-200">
@@ -437,12 +549,13 @@ const EditCampaignModal = ({ campaign, business, onClose, onUpdateSuccess }) => 
                                 <div className="space-y-4">
                                     <div className="relative mx-auto w-48 h-48 rounded-xl overflow-hidden">
                                         <img 
+                                            key={imageTimestamp}
                                             src={imagePreview} 
                                             alt="Preview" 
                                             className="w-full h-full object-cover"
                                             onError={(e) => {
                                                 e.target.onerror = null;
-                                                e.target.src = 'https://via.placeholder.com/400x400?text=Error+al+cargar+imagen';
+                                                e.target.src = 'https://via.placeholder.com/400x400?text=Imagen+no+encontrada';
                                             }}
                                         />
                                         <button
@@ -464,7 +577,7 @@ const EditCampaignModal = ({ campaign, business, onClose, onUpdateSuccess }) => 
                                             <div className="flex flex-col items-center gap-2">
                                                 <p className="text-green-600">✓ Imagen actual</p>
                                                 <a 
-                                                    href={existingImageUrl} 
+                                                    href={existingImageUrl.split('?')[0]} 
                                                     target="_blank" 
                                                     rel="noopener noreferrer"
                                                     className="inline-flex items-center gap-1 text-xs text-purple-600 hover:text-purple-800"
