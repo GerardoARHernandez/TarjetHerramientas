@@ -53,43 +53,16 @@ const ChangePasswordModal = ({ isOpen, onClose, usuarioId }) => {
     setSuccess("");
     
     try {
-      // Probar con diferentes métodos HTTP
-      const methods = ['POST', 'PUT', 'PATCH'];
-      let response = null;
-      let successMethod = null;
-      
-      for (const method of methods) {
-        try {
-          const res = await fetch(
-            `https://souvenir-site.com/TarjetCashBack/api/account/${usuarioId}/password`,
-            {
-              method: method,
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify(formData)
-            }
-          );
-          
-          // Si la respuesta es exitosa (2xx)
-          if (res.ok) {
-            response = res;
-            successMethod = method;
-            break;
-          }
-          // Si es 405, continuamos con el siguiente método
-          if (res.status !== 405) {
-            response = res;
-            break;
-          }
-        } catch (err) {
-          console.error(`Error con método ${method}:`, err);
+      const response = await fetch(
+        `https://souvenir-site.com/TarjetCashBack/api/account/${usuarioId}/password`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData)
         }
-      }
-      
-      if (!response) {
-        throw new Error("No se pudo conectar con el servidor");
-      }
+      );
       
       // Verificar si la respuesta tiene contenido
       const contentType = response.headers.get("content-type");
@@ -115,6 +88,8 @@ const ChangePasswordModal = ({ isOpen, onClose, usuarioId }) => {
           throw new Error("Contraseña actual incorrecta");
         } else if (response.status === 404) {
           throw new Error("Usuario no encontrado");
+        } else if (response.status === 405) {
+          throw new Error("Método no permitido. El servidor espera otro método HTTP.");
         } else {
           throw new Error(data?.message || `Error ${response.status}: No se pudo cambiar la contraseña`);
         }
