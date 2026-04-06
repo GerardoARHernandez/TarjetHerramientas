@@ -1,9 +1,11 @@
 // src/components/ChangePasswordModal.jsx
 import { useState } from "react";
 import { useTheme } from "../context/ThemeContext";
+import { useNavigate } from "react-router-dom";
 
 const ChangePasswordModal = ({ isOpen, onClose, usuarioId }) => {
   const { isDark } = useTheme();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     passwordActual: "",
     passwordNuevo: "",
@@ -41,6 +43,22 @@ const ChangePasswordModal = ({ isOpen, onClose, usuarioId }) => {
       return false;
     }
     return true;
+  };
+
+  const handleLogoutAfterPasswordChange = () => {
+    // Limpiar todo el localStorage y sessionStorage
+    localStorage.removeItem("user");
+    localStorage.removeItem("rememberMe");
+    localStorage.removeItem("business");
+    sessionStorage.removeItem("user");
+    
+    // Cerrar el modal
+    onClose();
+    
+    // Redirigir al login después de 1 segundo
+    setTimeout(() => {
+      navigate("/digitalwallet/login");
+    }, 1000);
   };
 
   const handleSubmit = async (e) => {
@@ -100,16 +118,11 @@ const ChangePasswordModal = ({ isOpen, onClose, usuarioId }) => {
         throw new Error(data.message || "Error al cambiar la contraseña");
       }
       
-      setSuccess("Contraseña actualizada correctamente");
+      setSuccess("Contraseña actualizada correctamente. Serás redirigido al inicio de sesión...");
       
-      // Limpiar formulario después de 2 segundos y cerrar modal
+      // Cerrar sesión después de 2 segundos
       setTimeout(() => {
-        setFormData({
-          passwordActual: "",
-          passwordNuevo: "",
-          passwordNuevoConfirmar: ""
-        });
-        onClose();
+        handleLogoutAfterPasswordChange();
       }, 2000);
       
     } catch (error) {
@@ -137,6 +150,7 @@ const ChangePasswordModal = ({ isOpen, onClose, usuarioId }) => {
               className={`p-1 rounded-lg transition ${
                 isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-500'
               }`}
+              disabled={loading}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
