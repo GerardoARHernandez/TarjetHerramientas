@@ -26,6 +26,21 @@ const Canjear = () => {
   const dropdownRef = useRef(null);
   const inputRef = useRef(null);
 
+  // Función para obtener el usuario actual (de localStorage o sessionStorage)
+  const getCurrentUser = () => {
+    const rememberMe = localStorage.getItem("rememberMe") === "true";
+    const userStr = rememberMe ? localStorage.getItem("user") : sessionStorage.getItem("user");
+    
+    if (userStr) {
+      try {
+        return JSON.parse(userStr);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  };
+
   // Cargar todos los usuarios al montar el componente
   useEffect(() => {
     cargarUsuarios();
@@ -81,8 +96,7 @@ const Canjear = () => {
   const cargarUsuarios = async () => {
     setLoadingUsers(true);
     try {
-      const storedUser = localStorage.getItem("user");
-      const user = storedUser ? JSON.parse(storedUser) : null;
+      const user = getCurrentUser();
       const negocioId = user?.negocioId || 1;
       
       const response = await fetch(`https://souvenir-site.com/TarjetCashBack/api/users/${negocioId}`, {

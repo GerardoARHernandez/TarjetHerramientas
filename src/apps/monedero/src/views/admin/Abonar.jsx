@@ -24,6 +24,21 @@ const Abonar = () => {
   const dropdownRef = useRef(null);
   const inputRef = useRef(null);
 
+  // Función para obtener el usuario actual (de localStorage o sessionStorage)
+  const getCurrentUser = () => {
+    const rememberMe = localStorage.getItem("rememberMe") === "true";
+    const userStr = rememberMe ? localStorage.getItem("user") : sessionStorage.getItem("user");
+    
+    if (userStr) {
+      try {
+        return JSON.parse(userStr);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  };
+
   // Cargar todos los usuarios al montar el componente
   useEffect(() => {
     cargarUsuarios();
@@ -79,9 +94,10 @@ const Abonar = () => {
   const cargarUsuarios = async () => {
     setLoadingUsers(true);
     try {
-      const storedUser = localStorage.getItem("user");
-      const user = storedUser ? JSON.parse(storedUser) : null;
+      const user = getCurrentUser();
       const negocioId = user?.negocioId || 1;
+      
+      console.log("Negocio ID:", negocioId);
       
       const response = await fetch(`https://souvenir-site.com/TarjetCashBack/api/users/${negocioId}`, {
         method: "GET",
@@ -266,7 +282,7 @@ const Abonar = () => {
               </p>
             </div>
             <Link
-              to="/admin"
+              to="/digitalwallet/admin"
               className="text-xs bg-gray-500 hover:bg-gray-600 text-white font-semibold px-3 py-1.5 rounded-lg transition"
             >
               ← Volver
@@ -471,7 +487,7 @@ const Abonar = () => {
                 )}
               </button>
               <Link
-                to="/admin"
+                to="/digitalwallet/admin"
                 className="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-semibold py-3 px-4 rounded-lg transition-colors text-sm text-center"
               >
                 Cancelar

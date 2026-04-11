@@ -12,9 +12,15 @@ const AdminHeader = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleLogout = () => {
+    // Limpiar tanto localStorage como sessionStorage
     localStorage.removeItem("user");
     localStorage.removeItem("business");
-    navigate("/digitalwallet/login"); 
+    localStorage.removeItem("rememberMe");
+    sessionStorage.removeItem("user");
+    sessionStorage.removeItem("business");
+    
+    // Redirigir al login
+    navigate("/digitalwallet/login");
   };
 
   const toggleMenu = () => {

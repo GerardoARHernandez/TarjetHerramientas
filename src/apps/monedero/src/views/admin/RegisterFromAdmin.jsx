@@ -36,6 +36,21 @@ const RegisterFromAdmin = () => {
   const dropdownRef = useRef(null);
   const inputRef = useRef(null);
 
+  // Función para obtener el usuario actual (de localStorage o sessionStorage)
+  const getCurrentUser = () => {
+    const rememberMe = localStorage.getItem("rememberMe") === "true";
+    const userStr = rememberMe ? localStorage.getItem("user") : sessionStorage.getItem("user");
+    
+    if (userStr) {
+      try {
+        return JSON.parse(userStr);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  };
+
   // Cargar la lista de titulares (usuarios con titular = 1)
   useEffect(() => {
     if (formData.esTitular === "0") {
@@ -87,8 +102,7 @@ const RegisterFromAdmin = () => {
   const cargarTitulares = async () => {
     setLoadingTitulares(true);
     try {
-      const storedUser = localStorage.getItem("user");
-      const user = storedUser ? JSON.parse(storedUser) : null;
+      const user = getCurrentUser();
       const negocioId = user?.negocioId || 1;
       
       const response = await fetch(`https://souvenir-site.com/TarjetCashBack/api/users/${negocioId}`, {
