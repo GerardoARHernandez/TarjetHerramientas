@@ -44,8 +44,9 @@ const DigitalWalletRoutes = () => {
         } 
       />
       
-      {/* Rutas públicas */}
+      {/* Rutas públicas - Ahora soportan parámetro opcional */}
       <Route path="login" element={<Login />} />
+      <Route path="login/:negocioId" element={<Login />} />
       
       {/* Rutas de cliente - protegidas */}
       <Route 

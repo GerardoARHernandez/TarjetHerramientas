@@ -33,7 +33,7 @@ const ThemeToggle = () => {
 
       {showTooltip && (
         <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs bg-gray-800 text-white rounded whitespace-nowrap z-50 shadow-lg">
-          {isDark ? '🌙 Modo oscuro' : '☀️ Modo claro'}
+          {isDark ? ' Modo oscuro' : ' Modo claro'}
           <br />
           <span className="text-gray-300 text-[10px]">Click para cambiar</span>
         </div>

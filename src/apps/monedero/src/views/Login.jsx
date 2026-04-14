@@ -1,21 +1,53 @@
 // src/views/Login.jsx
-import { useState, useEffect } from "react"; // Agrega useEffect
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom"; // Agrega useParams
 import { useTheme } from "../context/ThemeContext";
 import ThemeToggle from "../components/ThemeToggle";
 
 const Login = () => {
   const navigate = useNavigate();
+  const { negocioId } = useParams(); // Obtener el parámetro de la URL
   const { isDark } = useTheme();
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
-  const [checkingSession, setCheckingSession] = useState(true); // Estado para verificar sesión
+  const [checkingSession, setCheckingSession] = useState(true);
+  const [negocioImagen, setNegocioImagen] = useState(null); // Estado para la imagen del negocio
+  const [cargandoImagen, setCargandoImagen] = useState(false);
 
   // Número de teléfono específico para admin
   const ADMIN_PHONE = "5512345678";
+
+  // Función para obtener la imagen del negocio si hay un negocioId
+  useEffect(() => {
+    const fetchNegocioImagen = async () => {
+      if (negocioId) {
+        setCargandoImagen(true);
+        try {
+          const response = await fetch(`https://souvenir-site.com/TarjetCashBack/api/negocios/${negocioId}`);
+          const data = await response.json();
+          
+          if (data.success && data.data && data.data.negocioImagenUrl) {
+            setNegocioImagen(data.data.negocioImagenUrl);
+          } else {
+            // Si no se encuentra la imagen, usar la default
+            setNegocioImagen(null);
+          }
+        } catch (error) {
+          console.error("Error al cargar imagen del negocio:", error);
+          setNegocioImagen(null);
+        } finally {
+          setCargandoImagen(false);
+        }
+      } else {
+        setNegocioImagen(null);
+      }
+    };
+
+    fetchNegocioImagen();
+  }, [negocioId]);
 
   // Función para obtener el usuario actual
   const getCurrentUser = () => {
@@ -182,12 +214,32 @@ const Login = () => {
     );
   }
 
+  // Determinar la URL de la imagen a mostrar
+  const imagenUrl = negocioImagen || "/1.jpeg";
+
   return (
     <div className={`min-h-screen bg-gradient-to-br ${isDark ? 'from-indigo-900 to-indigo-950' : 'from-indigo-100 to-indigo-200'} flex items-center justify-center px-4 transition-colors duration-300`}>
       <div className="w-full max-w-md">
-        {/* Card */}
+        {/* Card con imagen dinámica */}
         <div className="p-2 mb-6">
-          <img src="/1.jpeg" alt="Logo Monedero" className="w-full h-auto rounded-t-2xl" />
+          {cargandoImagen ? (
+            <div className="w-full h-48 bg-gray-200 rounded-t-2xl animate-pulse flex items-center justify-center">
+              <svg className="animate-spin h-8 w-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            </div>
+          ) : (
+            <img 
+              src={imagenUrl} 
+              alt="Logo Monedero" 
+              className="w-full h-auto rounded-t-2xl"
+              onError={(e) => {
+                // Si la imagen falla, usar la default
+                e.target.src = "/1.jpeg";
+              }}
+            />
+          )}
         </div>
         <div className={` ${isDark ? 'dark:bg-gray-800' : 'bg-white'} rounded-2xl shadow-xl p-8`}>
           <div className="flex flex-col items-center mb-8">
