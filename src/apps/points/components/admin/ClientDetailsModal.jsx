@@ -58,36 +58,49 @@ const ClientDetailsModal = ({ client, onClose, business }) => {
     }
 
     try {
-      // Intentar parsear la fecha
-      const date = new Date(dateString);
+      let year, month, day;
       
-      // Verificar si la fecha es válida
-      if (isNaN(date.getTime())) {
-        // Si no se puede parsear directamente, intentar con formato DD/MM/YYYY
-        const parts = dateString.split('/');
+      // Si la fecha viene en formato ISO (YYYY-MM-DD)
+      if (dateString.includes('-')) {
+        const parts = dateString.split('-');
         if (parts.length === 3) {
-          const day = parseInt(parts[0], 10);
-          const month = parseInt(parts[1], 10) - 1; // Meses en JS son 0-11
-          const year = parseInt(parts[2], 10);
-          const alternativeDate = new Date(year, month, day);
+          year = parseInt(parts[0], 10);
+          month = parseInt(parts[1], 10) - 1; // Meses en JS son 0-11
+          day = parseInt(parts[2], 10);
           
-          if (!isNaN(alternativeDate.getTime())) {
-            return alternativeDate.toLocaleDateString('es-MX', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            });
-          }
+          // Crear fecha en UTC para evitar problemas de zona horaria
+          const date = new Date(Date.UTC(year, month, day));
+          
+          // Formatear usando UTC
+          return date.toLocaleDateString('es-MX', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            timeZone: 'UTC'
+          });
         }
-        return "Fecha inválida";
       }
       
-      // Formatear fecha válida
-      return date.toLocaleDateString('es-MX', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
+      // Intentar con formato DD/MM/YYYY
+      const parts = dateString.split('/');
+      if (parts.length === 3) {
+        day = parseInt(parts[0], 10);
+        month = parseInt(parts[1], 10) - 1;
+        year = parseInt(parts[2], 10);
+        
+        // Crear fecha en UTC
+        const date = new Date(Date.UTC(year, month, day));
+        
+        // Formatear usando UTC
+        return date.toLocaleDateString('es-MX', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          timeZone: 'UTC'
+        });
+      }
+      
+      return "Fecha inválida";
     } catch (error) {
       console.error('Error formatting date:', error);
       return "Fecha inválida";
