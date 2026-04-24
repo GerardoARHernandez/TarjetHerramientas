@@ -86,16 +86,12 @@ const RegistrarClienteFromAdmin = () => {
           UsuarioNombre: firstName,
           UsuarioApellido: lastName,
           UsuarioTelefono: formData.phone,
-          UsuarioCorreo: formData.email || '' // Si está vacío, enviar string vacío
+          UsuarioCorreo: formData.email || '', // Si está vacío, enviar string vacío
+          UsuarioFecha: formData.birthDate 
+            ? formData.birthDate.split('-').reverse().join('-') // Convierte YYYY-MM-DD a DD-MM-YYYY
+            : '01-01-1900' // Fecha por defecto si no se proporciona
         }
       };
-
-      // Agregar fecha de nacimiento solo si se proporcionó
-      if (formData.birthDate) {
-        // Formatear fecha de YYYY-MM-DD a DD-MM-YYYY
-        const [year, month, day] = formData.birthDate.split('-');
-        requestData.ListUsuario.UsuarioFecha = `${day}-${month}-${year}`;
-      }
 
       // Llamar a la API
       const response = await fetch('https://souvenir-site.com/WebPuntos/API1/RegistrarCliente', {
